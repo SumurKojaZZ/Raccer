@@ -1,1 +1,0 @@
-# Sumur Koja ZZ
