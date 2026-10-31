@@ -365,7 +365,7 @@
                             <small class="text-muted" style="font-size: 0.7rem;">{{ Auth::user()->email ?? 'admin@racer-robotic.id' }}</small>
                         </div>
                     </div>
-                    <form method="POST" action="{{ route('logout') }}" class="d-inline m-0">
+                    <form id="formLogout" method="POST" action="{{ route('logout') }}" class="d-inline m-0">
                         @csrf
                         <button type="submit" class="btn btn-link text-muted p-1 text-decoration-none" title="Logout">
                             <i class="bi bi-box-arrow-right fs-5"></i>
@@ -880,6 +880,15 @@
                 sidebar.classList.toggle('show');
             });
         }
+
+        // Auto-logout otomatis setelah 15 menit berada di halaman admin
+        const sisaDetik = {{ $sisaWaktuDetik ?? 900 }};
+        const timeoutDurasi = (sisaDetik > 0 ? sisaDetik : 900) * 1000;
+
+        setTimeout(() => {
+            alert('Sesi Anda telah mencapai batas 15 menit. Anda akan dialihkan kembali ke halaman login.');
+            window.location.href = "{{ route('logout') }}";
+        }, timeoutDurasi);
     </script>
 </body>
 
