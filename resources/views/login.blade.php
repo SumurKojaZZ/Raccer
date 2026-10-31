@@ -53,8 +53,8 @@
                                 placeholder="Password" required>
                         </div>
                         <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                            <label class="form-check-label" for="remember">Remember me</label>
+                            <input type="checkbox" class="form-check-input" id="remember" name="remember" checked>
+                            <label class="form-check-label text-muted" for="remember">Remember me</label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 py-2">Masuk</button>
 

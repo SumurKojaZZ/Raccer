@@ -16,7 +16,7 @@ Route::get('/', function () {
 // ── Login & Logout ─────────────────────────────────────
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate']);
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::match(['get', 'post'], '/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ── Admin Protected Routes ─────────────────────────────
 Route::middleware('auth')->group(function () {
