@@ -49,8 +49,8 @@ Route::get('/reset-password/{token}', function (string $token) {
 
 Route::post('/reset-password', function (Request $request) {
     $request->validate([
-        'token'    => 'required',
-        'email'    => 'required|email',
+        'token' => 'required',
+        'email' => 'required|email',
         'password' => 'required|min:8|confirmed',
     ]);
 
@@ -58,7 +58,7 @@ Route::post('/reset-password', function (Request $request) {
         $request->only('email', 'password', 'password_confirmation', 'token'),
         function ($user, $password) {
             $user->forceFill(['password' => Hash::make($password)])
-                 ->setRememberToken(Str::random(60));
+                ->setRememberToken(Str::random(60));
             $user->save();
 
             event(new PasswordReset($user));
