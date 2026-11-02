@@ -20,7 +20,7 @@
             <div class="col-12 col-md-7 d-flex flex-column justify-content-center align-items-start text-start text-white p-4 p-md-5 left">
                 <h1 class="display-5 fw-bold mb-3">Membangun Generasi AI & Robotika Masa Depan</h1>
                 <p class="fs-6 fw-light w-75">Platform manajemen pembelajaran kelas STEM,
-                    inventaris robotik, dan pendampingan sekolah mitra.</p>
+                    inventaris robotik, dan pendampingan sekolah mitra a.</p>
             </div>
 
             <!-- Kolom Kanan -->
