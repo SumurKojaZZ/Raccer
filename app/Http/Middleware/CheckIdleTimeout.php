@@ -10,9 +10,9 @@ use Symfony\Component\HttpFoundation\Response;
 class CheckIdleTimeout
 {
     /**
-     * Waktu batas tidak aktif (AFK) dalam detik (Testing: 30 detik).
+     * Waktu batas tidak aktif (AFK) dalam detik: 15 menit = 900 detik.
      */
-    protected int $maxIdleSeconds = 30;
+    protected int $maxIdleSeconds = 900;
 
     /**
      * Handle an incoming request.
@@ -22,14 +22,14 @@ class CheckIdleTimeout
         if (Auth::check()) {
             $lastActivity = $request->session()->get('last_activity_time');
 
-            // Jika ada riwayat aktivitas dan jeda waktu melebihi batas AFK (30 detik)
+            // Jika ada riwayat aktivitas dan jeda waktu melebihi batas AFK (15 menit)
             if ($lastActivity && (now()->timestamp - $lastActivity > $this->maxIdleSeconds)) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
                 return redirect()->route('login')->withErrors([
-                    'username' => 'Sesi Anda telah berakhir karena tidak ada aktivitas (AFK) selama 30 detik. Silakan masuk kembali.',
+                    'username' => 'Sesi Anda telah berakhir karena tidak ada aktivitas (AFK) selama 15 menit. Silakan masuk kembali.',
                 ]);
             }
 

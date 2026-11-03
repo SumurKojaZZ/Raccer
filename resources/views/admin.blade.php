@@ -878,7 +878,7 @@
                     </div>
                     <h5 class="fw-bold text-dark mb-2" id="modalSesiAfkLabel">Sesi Telah Berakhir</h5>
                     <p class="text-muted mb-4" style="font-size: 0.92rem; line-height: 1.5;">
-                        Anda tidak melakukan aktivitas selama <span class="fw-semibold text-danger">30 detik</span>. Demi keamanan akun, sesi Anda telah dinonaktifkan secara otomatis.
+                        Anda tidak melakukan aktivitas selama <span class="fw-semibold text-danger">15 menit</span>. Demi keamanan akun, sesi Anda telah dinonaktifkan secara otomatis.
                     </p>
                     <a href="{{ route('login') }}" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm" style="background-color: var(--primary-blue, #0d6efd);">
                         <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Kembali
@@ -903,9 +903,9 @@
             });
         }
 
-        // Auto-logout otomatis jika AFK (tidak ada aktivitas) selama 30 detik (Testing)
+        // Auto-logout otomatis jika AFK (tidak ada aktivitas) selama 15 menit
         let timerAfk;
-        const durasiAfk = 30 * 1000; // 30 detik = 30.000 milidetik
+        const durasiAfk = 15 * 60 * 1000; // 15 menit = 900.000 milidetik
         const aktifitasEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
 
         function resetTimerAfk() {
