@@ -866,6 +866,28 @@
         </div>
     </div>
 
+    <!-- Modal Peringatan Sesi Berakhir (AFK) -->
+    <div class="modal fade" id="modalSesiAfk" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalSesiAfkLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+                <div class="modal-body p-2">
+                    <div class="mb-3 d-flex justify-content-center">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 75px; height: 75px; background-color: #fff3cd; color: #ffc107;">
+                            <i class="bi bi-clock-history fs-1 text-warning"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2" id="modalSesiAfkLabel">Sesi Telah Berakhir</h5>
+                    <p class="text-muted mb-4" style="font-size: 0.92rem; line-height: 1.5;">
+                        Anda tidak melakukan aktivitas selama <span class="fw-semibold text-danger">30 detik</span>. Demi keamanan akun, sesi Anda telah dinonaktifkan secara otomatis.
+                    </p>
+                    <a href="{{ route('login') }}" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm" style="background-color: var(--primary-blue, #0d6efd);">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Kembali
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
@@ -881,14 +903,46 @@
             });
         }
 
-        // Auto-logout otomatis setelah 15 menit berada di halaman admin
-        const sisaDetik = {{ $sisaWaktuDetik ?? 900 }};
-        const timeoutDurasi = (sisaDetik > 0 ? sisaDetik : 900) * 1000;
+        // Auto-logout otomatis jika AFK (tidak ada aktivitas) selama 30 detik (Testing)
+        let timerAfk;
+        const durasiAfk = 30 * 1000; // 30 detik = 30.000 milidetik
+        const aktifitasEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
 
-        setTimeout(() => {
-            alert('Sesi Anda telah mencapai batas 15 menit. Anda akan dialihkan kembali ke halaman login.');
-            window.location.href = "{{ route('logout') }}";
-        }, timeoutDurasi);
+        function resetTimerAfk() {
+            clearTimeout(timerAfk);
+            timerAfk = setTimeout(handleAfkTimeout, durasiAfk);
+        }
+
+        function handleAfkTimeout() {
+            // Hentikan pemantauan event aktivitas setelah timeout terjadi
+            aktifitasEvents.forEach(event => {
+                window.removeEventListener(event, resetTimerAfk);
+            });
+
+            // Tampilkan Modal Bootstrap elegan di tengah layar (bukan alert bawaan browser)
+            const modalEl = document.getElementById('modalSesiAfk');
+            if (modalEl && window.bootstrap) {
+                const modalInstance = new bootstrap.Modal(modalEl);
+                modalInstance.show();
+            }
+
+            // Invalidate sesi di server secara otomatis di background
+            fetch("{{ route('logout') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            }).catch(() => {});
+        }
+
+        // Pantau seluruh interaksi pengguna di halaman admin
+        aktifitasEvents.forEach(event => {
+            window.addEventListener(event, resetTimerAfk, { passive: true });
+        });
+
+        // Mulai timer AFK saat halaman pertama kali dimuat
+        resetTimerAfk();
     </script>
 </body>
 

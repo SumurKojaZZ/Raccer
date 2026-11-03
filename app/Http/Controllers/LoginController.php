@@ -97,10 +97,10 @@ class LoginController extends Controller
             // Bersihkan riwayat percobaan gagal setelah login berhasil
             RateLimiter::clear($throttleKey);
 
-            // Login dengan pembatasan sesi aktif maksimal 15 menit
+            // Login langsung dengan sesi idle/AFK 15 menit (tanpa remember me)
             Auth::login($user, false);
             $request->session()->put('login_at', now()->timestamp);
-            $request->session()->put('expires_at', now()->addMinutes(15)->timestamp);
+            $request->session()->put('last_activity_time', now()->timestamp);
             $request->session()->regenerate();
 
             // Catat log sukses tanpa menyertakan password

@@ -20,20 +20,6 @@ class AdminController extends Controller
      */
     public function index(Request $request): View|RedirectResponse
     {
-        // Periksa apakah sesi 15 menit telah habis
-        if ($request->session()->has('expires_at') && now()->timestamp > $request->session()->get('expires_at')) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('login')->withErrors([
-                'username' => 'Sesi login Anda telah berakhir setelah 15 menit. Silakan masuk kembali.',
-            ]);
-        }
-
-        $expiresAt = $request->session()->get('expires_at', now()->addMinutes(15)->timestamp);
-        $sisaWaktuDetik = max(0, $expiresAt - now()->timestamp);
-
         // Pastikan tabel-tabel dashboard ada di database
         $this->ensureTablesExist();
 
@@ -101,8 +87,7 @@ class AdminController extends Controller
             'rescheduleList',
             'presensi',
             'pengumumanList',
-            'search',
-            'sisaWaktuDetik'
+            'search'
         ));
     }
 
