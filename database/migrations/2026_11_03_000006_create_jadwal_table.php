@@ -10,17 +10,19 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('jadwal', function (Blueprint $table) {
-            $table->id();
-            $table->string('kelas');
-            $table->string('lokasi');
-            $table->string('tutor');
-            $table->string('waktu_mulai');
-            $table->string('waktu_selesai');
-            $table->string('status')->default('Terjadwal');
-            $table->date('tanggal')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('jadwal')) {
+            Schema::create('jadwal', function (Blueprint $table) {
+                $table->id();
+                $table->string('kelas');
+                $table->string('lokasi');
+                $table->string('tutor');
+                $table->string('waktu_mulai');
+                $table->string('waktu_selesai');
+                $table->string('status')->default('Terjadwal');
+                $table->date('tanggal')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -31,4 +33,3 @@ return new class extends Migration {
         Schema::dropIfExists('jadwal');
     }
 };
-

@@ -10,15 +10,17 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('pengumuman', function (Blueprint $table) {
-            $table->id();
-            $table->string('judul');
-            $table->text('konten')->nullable();
-            $table->string('kategori')->default('Umum');
-            $table->boolean('is_penting')->default(false);
-            $table->string('tanggal')->nullable();
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('pengumuman')) {
+            Schema::create('pengumuman', function (Blueprint $table) {
+                $table->id();
+                $table->string('judul');
+                $table->text('konten')->nullable();
+                $table->string('kategori')->default('Umum');
+                $table->boolean('is_penting')->default(false);
+                $table->string('tanggal')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     /**
@@ -29,4 +31,3 @@ return new class extends Migration {
         Schema::dropIfExists('pengumuman');
     }
 };
-

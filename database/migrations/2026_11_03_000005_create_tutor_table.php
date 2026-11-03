@@ -10,22 +10,24 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('tutor', function (Blueprint $table) {
-            $table->increments('id_tutor');
-            $table->unsignedInteger('id_pengguna');
-            $table->string('nama_lengkap', 150);
-            $table->string('nama_panggilan', 50);
-            $table->string('nomor_whatsapp', 16);
-            $table->enum('spesialisasi', ['TK', 'SD']);
-            $table->enum('status', ['Aktif', 'Nonaktif'])->default('Aktif');
-            $table->dateTime('dibuat_pada')->useCurrent();
+        if (!Schema::hasTable('tutor')) {
+            Schema::create('tutor', function (Blueprint $table) {
+                $table->increments('id_tutor');
+                $table->unsignedInteger('id_pengguna');
+                $table->string('nama_lengkap', 150);
+                $table->string('nama_panggilan', 50);
+                $table->string('nomor_whatsapp', 16);
+                $table->enum('spesialisasi', ['TK', 'SD']);
+                $table->enum('status', ['Aktif', 'Nonaktif'])->default('Aktif');
+                $table->dateTime('dibuat_pada')->useCurrent();
 
-            $table->unique('id_pengguna', 'uq_tutor_pengguna');
+                $table->unique('id_pengguna', 'uq_tutor_pengguna');
 
-            $table->foreign('id_pengguna', 'fk_tutor_pengguna')
-                ->references('id_pengguna')->on('pengguna')
-                ->onDelete('cascade');
-        });
+                $table->foreign('id_pengguna', 'fk_tutor_pengguna')
+                    ->references('id_pengguna')->on('pengguna')
+                    ->onDelete('cascade');
+            });
+        }
     }
 
     /**
@@ -36,4 +38,3 @@ return new class extends Migration {
         Schema::dropIfExists('tutor');
     }
 };
-
