@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->string('nama_panggilan', 50);
             $table->string('nomor_whatsapp', 16);
             $table->enum('spesialisasi', ['TK', 'SD']);
+            $table->enum('status', ['Aktif', 'Nonaktif'])->default('Aktif');
             $table->dateTime('dibuat_pada')->useCurrent();
 
             $table->unique('id_pengguna', 'uq_tutor_pengguna');

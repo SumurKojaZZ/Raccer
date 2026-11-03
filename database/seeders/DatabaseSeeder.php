@@ -54,7 +54,7 @@ class DatabaseSeeder extends Seeder
 
         // 6. Tutor
         DB::table('tutor')->insertOrIgnore([
-            ['id_tutor' => 1, 'id_pengguna' => 7, 'nama_lengkap' => 'Rina Maharani', 'nama_panggilan' => 'Kak Rina', 'nomor_whatsapp' => '081234567891', 'spesialisasi' => 'SD', 'dibuat_pada' => '2026-11-01 13:54:09'],
+            ['id_tutor' => 1, 'id_pengguna' => 7, 'nama_lengkap' => 'Rina Maharani', 'nama_panggilan' => 'Kak Rina', 'nomor_whatsapp' => '081234567891', 'spesialisasi' => 'SD', 'status' => 'Aktif', 'dibuat_pada' => '2026-11-01 13:54:09'],
         ]);
 
         // 7. Jadwal
