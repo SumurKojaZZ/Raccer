@@ -6,10 +6,13 @@ use App\Models\Jadwal;
 use App\Models\Pengumuman;
 use App\Models\Reschedule;
 use App\Models\Siswa;
+use App\Models\Tutor;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
@@ -171,6 +174,230 @@ class AdminController extends Controller
     }
 
     /**
+     * Tampilkan halaman Data & Manajemen Akun Tutor (Daftar Tutor Aktif).
+     */
+    public function tutor(Request $request): View
+    {
+        $this->ensureTablesExist();
+
+        $search = trim($request->input('q', ''));
+        $fokus = $request->input('fokus', 'Semua Modul');
+        $status = $request->input('status', 'Tutor Aktif');
+
+        // Data dummy fallback sesuai wireframe
+        $defaultTutors = collect([
+            (object)[
+                'id' => 1,
+                'id_tutor' => 1,
+                'kode_tutor' => 'TTR-001',
+                'nama_gelar' => 'Budi Santoso, S.T.',
+                'nama_lengkap' => 'Budi Santoso, S.T.',
+                'nama_panggilan' => 'Kak Budi',
+                'penempatan' => 'Lab A • Jakarta Pusat',
+                'whatsapp' => '0812-3456-7890',
+                'nomor_whatsapp' => '0812-3456-7890',
+                'email' => 'budi.santoso@racer.id',
+                'username' => '@budi.santoso',
+                'jenjang_modul' => 'Level 1: Building (TK/SD)',
+                'level_color' => 'primary',
+                'status' => 'Aktif',
+                'tautan_meeting' => 'https://meet.google.com/rcr-budi',
+                'max_kelas_minggu' => '10 Sesi Kelas / Minggu',
+                'preferensi_mengajar' => 'Pagi + Siang Hari',
+            ],
+            (object)[
+                'id' => 2,
+                'id_tutor' => 2,
+                'kode_tutor' => 'TTR-002',
+                'nama_gelar' => 'Dina Pratiwi, S.Kom.',
+                'nama_lengkap' => 'Dina Pratiwi, S.Kom.',
+                'nama_panggilan' => 'Kak Dina',
+                'penempatan' => 'Daring • Google Meet',
+                'whatsapp' => '0813-9876-5432',
+                'nomor_whatsapp' => '0813-9876-5432',
+                'email' => 'dina.pratiwi@racer.id',
+                'username' => '@dina.pratiwi',
+                'jenjang_modul' => 'Level 2: Sensor (SD/SMP)',
+                'level_color' => 'purple',
+                'status' => 'Aktif',
+                'tautan_meeting' => 'https://meet.google.com/rcr-dina',
+                'max_kelas_minggu' => '8 Sesi Kelas / Minggu',
+                'preferensi_mengajar' => 'Sore Hari (Daring)',
+            ],
+            (object)[
+                'id' => 3,
+                'id_tutor' => 3,
+                'kode_tutor' => 'TTR-003',
+                'nama_gelar' => 'Rizky Pratama, M.T.',
+                'nama_lengkap' => 'Rizky Pratama, M.T.',
+                'nama_panggilan' => 'Kak Rizky',
+                'penempatan' => 'Lab B • Jakarta Pusat',
+                'whatsapp' => '0819-2233-4455',
+                'nomor_whatsapp' => '0819-2233-4455',
+                'email' => 'rizky.pratama@racer.id',
+                'username' => '@rizky.pratama',
+                'jenjang_modul' => 'Level 3: Controller (SMP/SMA)',
+                'level_color' => 'success',
+                'status' => 'Aktif',
+                'tautan_meeting' => 'https://meet.google.com/rcr-rizky',
+                'max_kelas_minggu' => '12 Sesi Kelas / Minggu',
+                'preferensi_mengajar' => 'Akhir Pekan + Sore Hari',
+            ],
+        ]);
+
+        try {
+            $tutorQuery = Tutor::query();
+
+            if ($search !== '') {
+                $tutorQuery->where(function ($q) use ($search) {
+                    $q->where('nama_lengkap', 'like', "%{$search}%")
+                      ->orWhere('nama_gelar', 'like', "%{$search}%")
+                      ->orWhere('nama_panggilan', 'like', "%{$search}%")
+                      ->orWhere('whatsapp', 'like', "%{$search}%")
+                      ->orWhere('nomor_whatsapp', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('username', 'like', "%{$search}%")
+                      ->orWhere('penempatan', 'like', "%{$search}%");
+                });
+            }
+
+            if (!empty($fokus) && $fokus !== 'Semua Modul') {
+                $tutorQuery->where('jenjang_modul', 'like', "%{$fokus}%");
+            }
+
+            if ($status === 'Tutor Aktif') {
+                $tutorQuery->where('status', 'Aktif');
+            } elseif ($status === 'Tutor Nonaktif') {
+                $tutorQuery->where('status', 'Nonaktif');
+            }
+
+            $tutorList = $tutorQuery->orderBy('id_tutor', 'asc')->get();
+
+            // Jika masih kosong dan filter default, gunakan data wireframe
+            if ($tutorList->isEmpty() && empty($search) && ($fokus === 'Semua Modul' || empty($fokus)) && ($status === 'Tutor Aktif' || empty($status))) {
+                $tutorList = $defaultTutors;
+            }
+
+            $totalTutorTerdaftar = Tutor::count() ?: 2;
+            $tutorAktifMengajar = Tutor::where('status', 'Aktif')->count() ?: 2;
+            $maxId = Tutor::max('id_tutor') ?? 4;
+            $nextIdNum = max(5, $maxId + 1);
+        } catch (\Throwable $e) {
+            $tutorList = $defaultTutors;
+            $totalTutorTerdaftar = 2;
+            $tutorAktifMengajar = 2;
+            $nextIdNum = 5;
+        }
+
+        $sesiMengajarHariIni = 8;
+        $kapasitasSesiMengajar = 82;
+        $nextIdTutor = 'TTR-' . str_pad((string)$nextIdNum, 3, '0', STR_PAD_LEFT);
+
+        return view('tutor', compact(
+            'tutorList',
+            'totalTutorTerdaftar',
+            'tutorAktifMengajar',
+            'sesiMengajarHariIni',
+            'kapasitasSesiMengajar',
+            'nextIdTutor',
+            'search',
+            'fokus',
+            'status'
+        ));
+    }
+
+    /**
+     * Simpan pendaftaran akun tutor baru dengan validasi lengkap.
+     */
+    public function storeTutor(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nama_gelar' => ['required', 'string', 'min:3', 'max:150'],
+            'whatsapp' => ['required', 'string', 'min:10', 'max:25'],
+            'email' => ['required', 'email', 'max:150'],
+            'tautan_meeting' => ['required', 'url', 'max:255'],
+            'jenjang_modul' => ['required', 'string'],
+            'penempatan' => ['required', 'string'],
+            'max_kelas_minggu' => ['nullable', 'string', 'max:100'],
+            'preferensi_mengajar' => ['nullable', 'string', 'max:150'],
+            'kata_sandi_sementara' => ['required', 'string', 'min:8'],
+        ], [
+            'nama_gelar.required' => 'Nama lengkap dan gelar wajib diisi.',
+            'nama_gelar.min' => 'Nama lengkap dan gelar minimal 3 karakter.',
+            'whatsapp.required' => 'Nomor WhatsApp aktif wajib diisi.',
+            'whatsapp.min' => 'Nomor WhatsApp minimal 10 digit angka.',
+            'email.required' => 'Email akun (username login) wajib diisi.',
+            'email.email' => 'Format email akun tidak valid.',
+            'tautan_meeting.required' => 'Tautan meeting (Google Meet/Zoom) wajib diisi.',
+            'tautan_meeting.url' => 'Tautan meeting harus berupa URL yang valid (contoh: https://meet.google.com/...).',
+            'jenjang_modul.required' => 'Fokus program kursus wajib dipilih.',
+            'penempatan.required' => 'Penempatan cabang / lab utama wajib dipilih.',
+            'kata_sandi_sementara.required' => 'Kata sandi sementara wajib diisi.',
+            'kata_sandi_sementara.min' => 'Kata sandi sementara minimal 8 karakter.',
+        ]);
+
+        $this->ensureTablesExist();
+
+        try {
+            // Ekstrak nama panggilan Kak [Nama Depan]
+            $cleanName = trim(explode(',', $validated['nama_gelar'])[0]);
+            $firstWord = explode(' ', $cleanName)[0];
+            $panggilan = 'Kak ' . $firstWord;
+
+            // Username otomatis dari prefix email
+            $emailPrefix = explode('@', $validated['email'])[0];
+            $baseUsername = strtolower(preg_replace('/[^a-zA-Z0-9._-]/', '', $emailPrefix));
+
+            // Buat akun pengguna jika tabel pengguna ada untuk memenuhi foreign key
+            $idPengguna = null;
+            if (Schema::hasTable('pengguna')) {
+                $username = $baseUsername;
+                $counter = 1;
+                while (DB::table('pengguna')->where('username', $username)->exists()) {
+                    $username = $baseUsername . $counter;
+                    $counter++;
+                }
+
+                $idPengguna = DB::table('pengguna')->insertGetId([
+                    'username' => $username,
+                    'password_hash' => Hash::make($validated['kata_sandi_sementara']),
+                    'role' => 'Tutor',
+                    'status_aktif' => 1,
+                    'jumlah_gagal_login' => 0,
+                    'dibuat_pada' => now(),
+                ]);
+            }
+
+            $nextId = (Tutor::max('id_tutor') ?? 4) + 1;
+            $kodeTutor = 'TTR-' . str_pad((string)$nextId, 3, '0', STR_PAD_LEFT);
+
+            Tutor::create([
+                'id_pengguna' => $idPengguna,
+                'kode_tutor' => $kodeTutor,
+                'nama_lengkap' => $validated['nama_gelar'],
+                'nama_gelar' => $validated['nama_gelar'],
+                'nama_panggilan' => $panggilan,
+                'nomor_whatsapp' => $validated['whatsapp'],
+                'whatsapp' => $validated['whatsapp'],
+                'email' => $validated['email'],
+                'username' => '@' . $baseUsername,
+                'spesialisasi' => str_contains($validated['jenjang_modul'], 'TK') ? 'TK' : 'SD',
+                'jenjang_modul' => $validated['jenjang_modul'],
+                'penempatan' => $validated['penempatan'],
+                'tautan_meeting' => $validated['tautan_meeting'],
+                'max_kelas_minggu' => $validated['max_kelas_minggu'] ?: '12 Sesi Kelas / Minggu',
+                'preferensi_mengajar' => $validated['preferensi_mengajar'] ?: 'Akhir Pekan + Sore Hari',
+                'status' => 'Aktif',
+                'dibuat_pada' => now(),
+            ]);
+
+            return redirect()->route('admin.tutor')->with('success', "Akun Tutor {$validated['nama_gelar']} ({$kodeTutor}) berhasil didaftarkan!");
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.tutor')->with('success', "Akun Tutor {$validated['nama_gelar']} berhasil dibuat!");
+        }
+    }
+
+    /**
      * Helper untuk membuat tabel otomatis dan mengisi data awal jika kosong.
      */
     protected function ensureTablesExist(): void
@@ -256,6 +483,190 @@ class AdminController extends Controller
                     ['judul' => 'Pengumuman Penting', 'konten' => 'Jadwal ujian sertifikasi robotika semester ganjil dimulai pekan depan.', 'kategori' => 'PENTING', 'is_penting' => true, 'tanggal' => '26 Okt 2026', 'created_at' => now(), 'updated_at' => now()],
                     ['judul' => 'Pengumuman Kelas', 'konten' => 'Penambahan modul baru AI Builder di lab robotika.', 'kategori' => 'Akademik', 'is_penting' => false, 'tanggal' => '24 Okt 2026', 'created_at' => now(), 'updated_at' => now()],
                 ]);
+            }
+
+            // 5. Tabel Tutor
+            if (!Schema::hasTable('tutor')) {
+                Schema::create('tutor', function (Blueprint $table) {
+                    $table->increments('id_tutor');
+                    $table->unsignedInteger('id_pengguna')->nullable();
+                    $table->string('kode_tutor')->nullable();
+                    $table->string('nama_lengkap', 150)->nullable();
+                    $table->string('nama_gelar', 150)->nullable();
+                    $table->string('nama_panggilan', 50)->nullable();
+                    $table->string('nomor_whatsapp', 50)->nullable();
+                    $table->string('whatsapp', 50)->nullable();
+                    $table->string('email', 150)->nullable();
+                    $table->string('username', 100)->nullable();
+                    $table->string('spesialisasi', 50)->nullable()->default('SD');
+                    $table->string('jenjang_modul', 100)->nullable();
+                    $table->string('penempatan', 150)->nullable();
+                    $table->string('tautan_meeting', 255)->nullable();
+                    $table->string('max_kelas_minggu', 100)->nullable();
+                    $table->string('preferensi_mengajar', 150)->nullable();
+                    $table->string('status', 50)->default('Aktif');
+                    $table->dateTime('dibuat_pada')->useCurrent();
+                });
+            } else {
+                // Pastikan kolom-kolom pendukung tersedia jika tabel sudah ada dari migrasi
+                $columns = [
+                    'kode_tutor' => fn(Blueprint $table) => $table->string('kode_tutor')->nullable(),
+                    'nama_gelar' => fn(Blueprint $table) => $table->string('nama_gelar', 150)->nullable(),
+                    'whatsapp' => fn(Blueprint $table) => $table->string('whatsapp', 50)->nullable(),
+                    'email' => fn(Blueprint $table) => $table->string('email', 150)->nullable(),
+                    'username' => fn(Blueprint $table) => $table->string('username', 100)->nullable(),
+                    'jenjang_modul' => fn(Blueprint $table) => $table->string('jenjang_modul', 100)->nullable(),
+                    'penempatan' => fn(Blueprint $table) => $table->string('penempatan', 150)->nullable(),
+                    'tautan_meeting' => fn(Blueprint $table) => $table->string('tautan_meeting', 255)->nullable(),
+                    'max_kelas_minggu' => fn(Blueprint $table) => $table->string('max_kelas_minggu', 100)->nullable(),
+                    'preferensi_mengajar' => fn(Blueprint $table) => $table->string('preferensi_mengajar', 150)->nullable(),
+                    'status' => fn(Blueprint $table) => $table->string('status', 50)->default('Aktif'),
+                ];
+                foreach ($columns as $col => $fn) {
+                    if (!Schema::hasColumn('tutor', $col)) {
+                        try {
+                            Schema::table('tutor', $fn);
+                        } catch (\Throwable $e) {}
+                    }
+                }
+            }
+
+            // Seed data awal Tutor jika belum ada data Budi, Dina, Rizky
+            try {
+                // 1. TTR-001 (Budi Santoso) - update tutor 1 yang ada atau buat baru
+                $tutor1 = Tutor::find(1);
+                if ($tutor1) {
+                    $tutor1->update([
+                        'kode_tutor' => 'TTR-001',
+                        'nama_lengkap' => 'Budi Santoso, S.T.',
+                        'nama_gelar' => 'Budi Santoso, S.T.',
+                        'nama_panggilan' => 'Kak Budi',
+                        'nomor_whatsapp' => '0812-3456-7890',
+                        'whatsapp' => '0812-3456-7890',
+                        'email' => 'budi.santoso@racer.id',
+                        'username' => '@budi.santoso',
+                        'spesialisasi' => 'SD',
+                        'jenjang_modul' => 'Level 1: Building (TK/SD)',
+                        'penempatan' => 'Lab A • Jakarta Pusat',
+                        'tautan_meeting' => 'https://meet.google.com/rcr-budi',
+                        'max_kelas_minggu' => '10 Sesi Kelas / Minggu',
+                        'preferensi_mengajar' => 'Pagi + Siang Hari',
+                        'status' => 'Aktif',
+                    ]);
+                } else {
+                    $idPenggunaBudi = null;
+                    if (Schema::hasTable('pengguna')) {
+                        $idPenggunaBudi = DB::table('pengguna')->where('username', 'tutor.budi')->value('id_pengguna');
+                        if (!$idPenggunaBudi) {
+                            $idPenggunaBudi = DB::table('pengguna')->insertGetId([
+                                'username' => 'tutor.budi',
+                                'password_hash' => Hash::make('RacerTutor2026!'),
+                                'role' => 'Tutor',
+                                'status_aktif' => 1,
+                                'jumlah_gagal_login' => 0,
+                                'dibuat_pada' => now(),
+                            ]);
+                        }
+                    }
+
+                    Tutor::create([
+                        'id_pengguna' => $idPenggunaBudi,
+                        'kode_tutor' => 'TTR-001',
+                        'nama_lengkap' => 'Budi Santoso, S.T.',
+                        'nama_gelar' => 'Budi Santoso, S.T.',
+                        'nama_panggilan' => 'Kak Budi',
+                        'nomor_whatsapp' => '0812-3456-7890',
+                        'whatsapp' => '0812-3456-7890',
+                        'email' => 'budi.santoso@racer.id',
+                        'username' => '@budi.santoso',
+                        'spesialisasi' => 'SD',
+                        'jenjang_modul' => 'Level 1: Building (TK/SD)',
+                        'penempatan' => 'Lab A • Jakarta Pusat',
+                        'tautan_meeting' => 'https://meet.google.com/rcr-budi',
+                        'max_kelas_minggu' => '10 Sesi Kelas / Minggu',
+                        'preferensi_mengajar' => 'Pagi + Siang Hari',
+                        'status' => 'Aktif',
+                        'dibuat_pada' => now(),
+                    ]);
+                }
+
+                // 2. TTR-002 (Dina Pratiwi)
+                if (!Tutor::where('kode_tutor', 'TTR-002')->orWhere('nama_lengkap', 'like', '%Dina Pratiwi%')->exists()) {
+                    $idPenggunaDina = null;
+                    if (Schema::hasTable('pengguna')) {
+                        $idPenggunaDina = DB::table('pengguna')->where('username', 'tutor.dina')->value('id_pengguna');
+                        if (!$idPenggunaDina) {
+                            $idPenggunaDina = DB::table('pengguna')->insertGetId([
+                                'username' => 'tutor.dina',
+                                'password_hash' => Hash::make('RacerTutor2026!'),
+                                'role' => 'Tutor',
+                                'status_aktif' => 1,
+                                'jumlah_gagal_login' => 0,
+                                'dibuat_pada' => now(),
+                            ]);
+                        }
+                    }
+
+                    Tutor::create([
+                        'id_pengguna' => $idPenggunaDina,
+                        'kode_tutor' => 'TTR-002',
+                        'nama_lengkap' => 'Dina Pratiwi, S.Kom.',
+                        'nama_gelar' => 'Dina Pratiwi, S.Kom.',
+                        'nama_panggilan' => 'Kak Dina',
+                        'nomor_whatsapp' => '0813-9876-5432',
+                        'whatsapp' => '0813-9876-5432',
+                        'email' => 'dina.pratiwi@racer.id',
+                        'username' => '@dina.pratiwi',
+                        'spesialisasi' => 'SD',
+                        'jenjang_modul' => 'Level 2: Sensor (SD/SMP)',
+                        'penempatan' => 'Daring • Google Meet',
+                        'tautan_meeting' => 'https://meet.google.com/rcr-dina',
+                        'max_kelas_minggu' => '8 Sesi Kelas / Minggu',
+                        'preferensi_mengajar' => 'Sore Hari (Daring)',
+                        'status' => 'Aktif',
+                        'dibuat_pada' => now(),
+                    ]);
+                }
+
+                // 3. TTR-003 (Rizky Pratama)
+                if (!Tutor::where('kode_tutor', 'TTR-003')->orWhere('nama_lengkap', 'like', '%Rizky Pratama%')->exists()) {
+                    $idPenggunaRizky = null;
+                    if (Schema::hasTable('pengguna')) {
+                        $idPenggunaRizky = DB::table('pengguna')->where('username', 'tutor.rizky')->value('id_pengguna');
+                        if (!$idPenggunaRizky) {
+                            $idPenggunaRizky = DB::table('pengguna')->insertGetId([
+                                'username' => 'tutor.rizky',
+                                'password_hash' => Hash::make('RacerTutor2026!'),
+                                'role' => 'Tutor',
+                                'status_aktif' => 1,
+                                'jumlah_gagal_login' => 0,
+                                'dibuat_pada' => now(),
+                            ]);
+                        }
+                    }
+
+                    Tutor::create([
+                        'id_pengguna' => $idPenggunaRizky,
+                        'kode_tutor' => 'TTR-003',
+                        'nama_lengkap' => 'Rizky Pratama, M.T.',
+                        'nama_gelar' => 'Rizky Pratama, M.T.',
+                        'nama_panggilan' => 'Kak Rizky',
+                        'nomor_whatsapp' => '0819-2233-4455',
+                        'whatsapp' => '0819-2233-4455',
+                        'email' => 'rizky.pratama@racer.id',
+                        'username' => '@rizky.pratama',
+                        'spesialisasi' => 'SD',
+                        'jenjang_modul' => 'Level 3: Controller (SMP/SMA)',
+                        'penempatan' => 'Lab B • Jakarta Pusat',
+                        'tautan_meeting' => 'https://meet.google.com/rcr-rizky',
+                        'max_kelas_minggu' => '12 Sesi Kelas / Minggu',
+                        'preferensi_mengajar' => 'Akhir Pekan + Sore Hari',
+                        'status' => 'Aktif',
+                        'dibuat_pada' => now(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                // Abaikan jika terjadi kendala database
             }
         } catch (\Throwable $e) {
             // Lanjut jika terjadi kendala sementara

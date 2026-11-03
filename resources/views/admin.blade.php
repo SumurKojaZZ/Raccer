@@ -11,8 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
@@ -317,6 +316,10 @@
                             <i class="bi bi-people"></i>
                             <span>Akun Keluarga & Siswa</span>
                         </a>
+                        <a href="{{ route('admin.tutor') }}" class="nav-link-custom">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Data Tutor</span>
+                        </a>
                         <a href="#modalBuatJadwal" data-bs-toggle="modal" class="nav-link-custom">
                             <i class="bi bi-calendar4-week"></i>
                             <span>Penjadwalan Terpusat</span>
@@ -328,6 +331,10 @@
                         <a href="#tabelPengumuman" class="nav-link-custom">
                             <i class="bi bi-megaphone"></i>
                             <span>Pengumuman Lembaga</span>
+                        </a>
+                        <a href="#" class="nav-link-custom">
+                            <i class="bi bi-graph-up"></i>
+                            <span>Laporan Bulanan</span>
                         </a>
                     </nav>
                 </div>
@@ -889,9 +896,7 @@
     </div>
 
     <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         // Toggle mobile sidebar
