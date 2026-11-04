@@ -462,12 +462,9 @@
                             <small class="text-muted" style="font-size: 0.7rem;">{{ Auth::user()->email ?? 'admin@racer-robotic.id' }}</small>
                         </div>
                     </div>
-                    <form id="formLogout" method="POST" action="{{ route('logout') }}" class="d-inline m-0">
-                        @csrf
-                        <button type="submit" class="btn btn-link text-muted p-1 text-decoration-none" title="Logout">
-                            <i class="bi bi-box-arrow-right fs-5"></i>
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-link text-muted p-1 text-decoration-none" title="Logout" data-bs-toggle="modal" data-bs-target="#modalKonfirmasiLogout">
+                        <i class="bi bi-box-arrow-right fs-5"></i>
+                    </button>
                 </div>
             </div>
         </aside>
@@ -991,6 +988,36 @@
             </div>
         </div>
     @endforeach
+
+    <!-- Modal Konfirmasi Logout -->
+    <div class="modal fade" id="modalKonfirmasiLogout" tabindex="-1" aria-labelledby="modalKonfirmasiLogoutLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+            <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+                <div class="modal-body p-2">
+                    <div class="mb-3 d-flex justify-content-center">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; background-color: #fee2e2; color: #dc2626;">
+                            <i class="bi bi-box-arrow-right fs-1"></i>
+                        </div>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-2" id="modalKonfirmasiLogoutLabel">Konfirmasi Keluar</h5>
+                    <p class="text-muted mb-4" style="font-size: 0.9rem; line-height: 1.5;">
+                        Apakah Anda yakin ingin keluar dari akun ini? Sesi Anda akan diakhiri.
+                    </p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light border bg-white px-3 py-2 rounded-3 text-secondary fw-semibold w-50" data-bs-dismiss="modal">
+                            Batal
+                        </button>
+                        <form method="POST" action="{{ route('logout') }}" class="m-0 w-50">
+                            @csrf
+                            <button type="submit" class="btn btn-danger px-3 py-2 rounded-3 fw-semibold w-100 shadow-sm" style="background-color: #dc2626; border-color: #dc2626;">
+                                Ya, Keluar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

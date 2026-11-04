@@ -32,6 +32,13 @@
                 <div class="w-100" style="max-width: 500px;">
                     <h2 class="fw-bold mb-4 text-center">Login</h2>
 
+                    {{-- Pesan Sukses / Status --}}
+                    @if (session('success'))
+                        <div class="alert alert-success py-2 px-3 rounded-3 mb-3" style="font-size: 0.88rem;">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
                     {{-- Error --}}
                     @if ($errors->any())
                         <div class="alert alert-danger">
