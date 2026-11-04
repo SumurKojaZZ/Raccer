@@ -320,21 +320,30 @@ CREATE TABLE `siswa` (
   `id_siswa` int UNSIGNED NOT NULL,
   `id_keluarga` int UNSIGNED NOT NULL,
   `id_pengguna` int UNSIGNED NOT NULL,
+  `nisn` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `nama_lengkap` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `nama_panggilan` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nama` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nama_wali` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `jenjang` enum('TK','SD') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `kelas` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `tanggal_lahir` date NOT NULL,
   `status_siswa` enum('Aktif','Non_Aktif_Alumni') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Aktif',
-  `dibuat_pada` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `paket_belajar` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Regular Gold (1 Orang) · Bulanan (4x Pertemuan)',
+  `total_sesi` int NOT NULL DEFAULT '4',
+  `sesi_terpakai` int NOT NULL DEFAULT '0',
+  `status_paket` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Aktif',
+  `dibuat_pada` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `siswa`
 --
 
-INSERT INTO `siswa` (`id_siswa`, `id_keluarga`, `id_pengguna`, `nama_lengkap`, `nama_panggilan`, `jenjang`, `kelas`, `tanggal_lahir`, `status_siswa`, `dibuat_pada`) VALUES
-(1, 1, 8, 'Andi Santoso', 'Andi', 'SD', '3', '2017-05-12', 'Aktif', '2026-11-01 14:17:24');
+INSERT INTO `siswa` (`id_siswa`, `id_keluarga`, `id_pengguna`, `nisn`, `nama_lengkap`, `nama_panggilan`, `nama`, `nama_wali`, `jenjang`, `kelas`, `tanggal_lahir`, `status_siswa`, `paket_belajar`, `total_sesi`, `sesi_terpakai`, `status_paket`, `dibuat_pada`, `created_at`, `updated_at`) VALUES
+(1, 1, 8, '0012345678', 'Andi Santoso', 'Andi', 'Andi Santoso', 'Wali: Budi Santoso', 'SD', '3', '2017-05-12', 'Aktif', 'Regular Gold (1 Orang) · Bulanan (4x Pertemuan)', 4, 0, 'Aktif', '2026-11-01 14:17:24', NULL, NULL);
 
 -- --------------------------------------------------------
 

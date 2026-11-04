@@ -50,10 +50,12 @@ class AdminController extends Controller
         if ($search !== '') {
             $siswaQuery->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nama_panggilan', 'like', "%{$search}%")
                   ->orWhere('nama_wali', 'like', "%{$search}%");
             });
         }
-        $paketPerhatian = $siswaQuery->get();
+        $paketPerhatian = $siswaQuery->orderBy('id_siswa', 'desc')->get();
 
         // Hitung Metrik Statistik
         $siswaAktifCount = Siswa::count() ?: 142;
@@ -334,19 +336,143 @@ class AdminController extends Controller
     public function storeKeluarga(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255'],
-            'nama_wali' => ['required', 'string', 'max:255'],
+            'nama' => ['required_without:nama_lengkap', 'nullable', 'string', 'max:150'],
+            'nama_lengkap' => ['required_without:nama', 'nullable', 'string', 'max:150'],
+            'nama_panggilan' => ['nullable', 'string', 'max:50'],
+            'nisn' => ['nullable', 'string', 'max:20'],
+            'jenjang' => ['nullable', 'in:TK,SD'],
+            'kelas' => ['nullable', 'string', 'max:20'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'nama_wali' => ['required', 'string', 'max:150'],
+            'nama_keluarga' => ['nullable', 'string', 'max:150'],
+            'hubungan' => ['nullable', 'string', 'max:50'],
+            'nomor_whatsapp' => ['nullable', 'string', 'max:25'],
+            'alamat_domisili' => ['nullable', 'string'],
+            'kelurahan' => ['nullable', 'string', 'max:100'],
+            'kecamatan' => ['nullable', 'string', 'max:100'],
+            'kota_kabupaten' => ['nullable', 'string', 'max:100'],
             'paket_belajar' => ['required', 'string', 'max:255'],
-            'total_sesi' => ['required', 'integer', 'min:1'],
+            'total_sesi' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $this->ensureTablesExist();
 
+        $paketBelajar = trim((string) $validated['paket_belajar']);
+        $totalSesi = isset($validated['total_sesi']) ? (int) $validated['total_sesi'] : (
+            (stripos($paketBelajar, 'semester') !== false || stripos($paketBelajar, '12') !== false) ? 12 : 4
+        );
+
+        $namaSiswa = trim((string) ($validated['nama'] ?? $validated['nama_lengkap']));
+        $firstWordSiswa = explode(' ', $namaSiswa)[0] ?: $namaSiswa;
+        $namaPanggilan = substr(trim((string) ($validated['nama_panggilan'] ?? $firstWordSiswa)), 0, 50);
+        $jenjang = $validated['jenjang'] ?? 'SD';
+        $kelas = substr(trim((string) ($validated['kelas'] ?? ($jenjang === 'TK' ? 'TK A' : '1'))), 0, 20);
+        $tanggalLahir = $validated['tanggal_lahir'] ?? '2018-01-01';
+        $nisn = !empty($validated['nisn']) ? trim((string) $validated['nisn']) : null;
+
+        $rawWali = trim((string) $validated['nama_wali']);
+        $cleanWali = trim((string) preg_replace('/^(Wali\s*:\s*|Bpk\.?\s*|Ibu\s*|Pak\s*)/i', '', $rawWali));
+        if ($cleanWali === '') {
+            $cleanWali = $rawWali;
+        }
+        $displayWali = str_starts_with(strtolower($rawWali), 'wali') ? $rawWali : 'Wali: ' . $rawWali;
+
+        $namaKeluarga = trim((string) ($validated['nama_keluarga'] ?? ''));
+        if ($namaKeluarga === '') {
+            $namaKeluarga = 'Keluarga ' . $cleanWali;
+        }
+
+        $alamatDomisili = trim((string) ($validated['alamat_domisili'] ?? '')) ?: 'Jl. Contoh No. 1, RT 01/RW 01';
+        $kelurahan = trim((string) ($validated['kelurahan'] ?? '')) ?: 'Menteng';
+        $kecamatan = trim((string) ($validated['kecamatan'] ?? '')) ?: 'Menteng';
+        $kotaKabupaten = trim((string) ($validated['kota_kabupaten'] ?? '')) ?: 'Jakarta Pusat';
+
+        $hubungan = trim((string) ($validated['hubungan'] ?? ''));
+        if ($hubungan === '') {
+            $hubungan = preg_match('/\b(ibu|mama|bunda)\b/i', $rawWali) ? 'Ibu' : 'Ayah';
+        }
+        $nomorWhatsapp = substr(preg_replace('/[^0-9+]/', '', (string) ($validated['nomor_whatsapp'] ?? '081234567890')), 0, 16) ?: '081234567890';
+
+        // 1. Simpan ke tabel akun_keluarga
+        $idKeluarga = 1;
+        if (Schema::hasTable('akun_keluarga')) {
+            $idKeluarga = DB::table('akun_keluarga')->insertGetId([
+                'nama_keluarga' => $namaKeluarga,
+                'alamat_domisili' => $alamatDomisili,
+                'kelurahan' => $kelurahan,
+                'kecamatan' => $kecamatan,
+                'kota_kabupaten' => $kotaKabupaten,
+                'dibuat_pada' => now(),
+            ]);
+        }
+
+        // 2. Simpan akun pengguna & orang_tua untuk Wali
+        $idPenggunaWali = null;
+        $idPenggunaSiswa = null;
+        if (Schema::hasTable('pengguna')) {
+            $waliSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', explode(' ', $cleanWali)[0])) ?: 'wali';
+            $waliUsername = 'wali.' . $waliSlug;
+            $wCounter = 1;
+            while (DB::table('pengguna')->where('username', $waliUsername)->exists()) {
+                $waliUsername = 'wali.' . $waliSlug . $wCounter;
+                $wCounter++;
+            }
+
+            $idPenggunaWali = DB::table('pengguna')->insertGetId([
+                'username' => $waliUsername,
+                'password_hash' => Hash::make('RacerWali2026!'),
+                'role' => 'Orang_Tua',
+                'status_aktif' => 1,
+                'jumlah_gagal_login' => 0,
+                'dibuat_pada' => now(),
+            ]);
+
+            if (Schema::hasTable('orang_tua')) {
+                DB::table('orang_tua')->insert([
+                    'id_keluarga' => $idKeluarga,
+                    'id_pengguna' => $idPenggunaWali,
+                    'jenis_wali' => 'Primary_Parent',
+                    'nama_lengkap' => $cleanWali,
+                    'hubungan' => $hubungan,
+                    'nomor_whatsapp' => $nomorWhatsapp,
+                ]);
+            }
+
+            // 3. Simpan akun pengguna untuk Siswa
+            $siswaSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $namaPanggilan)) ?: 'siswa';
+            $siswaUsername = 'siswa.' . $siswaSlug;
+            $sCounter = 1;
+            while (DB::table('pengguna')->where('username', $siswaUsername)->exists()) {
+                $siswaUsername = 'siswa.' . $siswaSlug . $sCounter;
+                $sCounter++;
+            }
+
+            $idPenggunaSiswa = DB::table('pengguna')->insertGetId([
+                'username' => $siswaUsername,
+                'password_hash' => Hash::make('123456'),
+                'role' => 'Siswa',
+                'status_aktif' => 1,
+                'jumlah_gagal_login' => 0,
+                'dibuat_pada' => now(),
+            ]);
+        }
+
+        // 4. Simpan ke tabel siswa
         Siswa::create([
-            'nama' => $validated['nama'],
-            'nama_wali' => $validated['nama_wali'],
-            'paket_belajar' => $validated['paket_belajar'],
-            'total_sesi' => $validated['total_sesi'],
+            'id_keluarga' => $idKeluarga,
+            'id_pengguna' => $idPenggunaSiswa ?? 1,
+            'nisn' => $nisn,
+            'nama_lengkap' => $namaSiswa,
+            'nama_panggilan' => $namaPanggilan,
+            'jenjang' => $jenjang,
+            'kelas' => $kelas,
+            'tanggal_lahir' => $tanggalLahir,
+            'status_siswa' => 'Aktif',
+            'dibuat_pada' => now(),
+            'nama' => $namaSiswa,
+            'nama_wali' => $displayWali,
+            'paket_belajar' => $paketBelajar,
+            'total_sesi' => $totalSesi,
             'sesi_terpakai' => 0,
             'status_paket' => 'Aktif',
         ]);
@@ -691,11 +817,20 @@ class AdminController extends Controller
             // 2. Tabel Siswa
             if (!Schema::hasTable('siswa')) {
                 Schema::create('siswa', function (Blueprint $table) {
-                    $table->id();
+                    $table->increments('id_siswa');
+                    $table->unsignedInteger('id_keluarga')->default(1);
+                    $table->unsignedInteger('id_pengguna')->nullable();
                     $table->string('nisn', 20)->nullable();
-                    $table->string('nama');
-                    $table->string('nama_wali');
-                    $table->string('paket_belajar');
+                    $table->string('nama_lengkap', 150)->nullable();
+                    $table->string('nama_panggilan', 50)->nullable();
+                    $table->string('jenjang', 10)->default('SD');
+                    $table->string('kelas', 20)->default('1');
+                    $table->date('tanggal_lahir')->default('2018-01-01');
+                    $table->string('status_siswa', 30)->default('Aktif');
+                    $table->dateTime('dibuat_pada')->useCurrent();
+                    $table->string('nama')->nullable();
+                    $table->string('nama_wali')->nullable();
+                    $table->string('paket_belajar')->nullable();
                     $table->integer('total_sesi')->default(8);
                     $table->integer('sesi_terpakai')->default(0);
                     $table->string('status_paket')->default('Aktif');
@@ -703,10 +838,56 @@ class AdminController extends Controller
                 });
 
                 Siswa::insert([
-                    ['nama' => 'Alya Putri', 'nama_wali' => 'Wali: Ibu Ratna', 'paket_belajar' => 'Gold · 8 sesi', 'total_sesi' => 8, 'sesi_terpakai' => 7, 'status_paket' => 'Sisa 1 sesi', 'created_at' => now(), 'updated_at' => now()],
-                    ['nama' => 'Bima Aditya', 'nama_wali' => 'Wali: Bpk. Dimas', 'paket_belajar' => 'Silver · 8 sesi', 'total_sesi' => 8, 'sesi_terpakai' => 6, 'status_paket' => 'Sisa 2 sesi', 'created_at' => now(), 'updated_at' => now()],
-                    ['nama' => 'Citra Maharani', 'nama_wali' => 'Wali: Ibu Maya', 'paket_belajar' => 'Private · 8 sesi', 'total_sesi' => 8, 'sesi_terpakai' => 8, 'status_paket' => 'Paket habis', 'created_at' => now(), 'updated_at' => now()],
+                    ['id_keluarga' => 1, 'id_pengguna' => 1, 'nama_lengkap' => 'Alya Putri', 'nama_panggilan' => 'Alya', 'jenjang' => 'SD', 'kelas' => '3', 'tanggal_lahir' => '2017-05-12', 'status_siswa' => 'Aktif', 'nama' => 'Alya Putri', 'nama_wali' => 'Wali: Ibu Ratna', 'paket_belajar' => 'Gold · 8 sesi', 'total_sesi' => 8, 'sesi_terpakai' => 7, 'status_paket' => 'Sisa 1 sesi', 'created_at' => now(), 'updated_at' => now()],
+                    ['id_keluarga' => 1, 'id_pengguna' => 2, 'nama_lengkap' => 'Bima Aditya', 'nama_panggilan' => 'Bima', 'jenjang' => 'SD', 'kelas' => '4', 'tanggal_lahir' => '2016-08-20', 'status_siswa' => 'Aktif', 'nama' => 'Bima Aditya', 'nama_wali' => 'Wali: Bpk. Dimas', 'paket_belajar' => 'Silver · 8 sesi', 'total_sesi' => 8, 'sesi_terpakai' => 6, 'status_paket' => 'Sisa 2 sesi', 'created_at' => now(), 'updated_at' => now()],
+                    ['id_keluarga' => 1, 'id_pengguna' => 3, 'nama_lengkap' => 'Citra Maharani', 'nama_panggilan' => 'Citra', 'jenjang' => 'SD', 'kelas' => '5', 'tanggal_lahir' => '2015-11-10', 'status_siswa' => 'Aktif', 'nama' => 'Citra Maharani', 'nama_wali' => 'Wali: Ibu Maya', 'paket_belajar' => 'Private · 8 sesi', 'total_sesi' => 8, 'sesi_terpakai' => 8, 'status_paket' => 'Paket habis', 'created_at' => now(), 'updated_at' => now()],
                 ]);
+            } else {
+                $siswaColumns = [
+                    'nisn' => fn (Blueprint $table) => $table->string('nisn', 20)->nullable(),
+                    'nama' => fn (Blueprint $table) => $table->string('nama')->nullable(),
+                    'nama_wali' => fn (Blueprint $table) => $table->string('nama_wali')->nullable(),
+                    'paket_belajar' => fn (Blueprint $table) => $table->string('paket_belajar')->nullable()->default('Gold · 8 sesi'),
+                    'total_sesi' => fn (Blueprint $table) => $table->integer('total_sesi')->default(8),
+                    'sesi_terpakai' => fn (Blueprint $table) => $table->integer('sesi_terpakai')->default(0),
+                    'status_paket' => fn (Blueprint $table) => $table->string('status_paket')->default('Aktif'),
+                    'created_at' => fn (Blueprint $table) => $table->timestamp('created_at')->nullable(),
+                    'updated_at' => fn (Blueprint $table) => $table->timestamp('updated_at')->nullable(),
+                ];
+
+                foreach ($siswaColumns as $col => $fn) {
+                    if (!Schema::hasColumn('siswa', $col)) {
+                        try {
+                            Schema::table('siswa', $fn);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                }
+
+                // Sinkronkan baris siswa lama yang kolom nama/paketnya masih kosong
+                try {
+                    $existingRows = DB::table('siswa')->whereNull('nama')->orWhere('nama', '')->get();
+                    foreach ($existingRows as $row) {
+                        $waliText = 'Wali Siswa';
+                        if (!empty($row->id_keluarga) && Schema::hasTable('orang_tua')) {
+                            $ortu = DB::table('orang_tua')->where('id_keluarga', $row->id_keluarga)->orderBy('jenis_wali', 'asc')->first();
+                            if ($ortu && !empty($ortu->nama_lengkap)) {
+                                $waliText = 'Wali: ' . $ortu->nama_lengkap;
+                            }
+                        }
+                        DB::table('siswa')
+                            ->where('id_siswa', $row->id_siswa)
+                            ->update([
+                                'nama' => $row->nama_lengkap ?? $row->nama_panggilan ?? 'Siswa',
+                                'nama_wali' => $row->nama_wali ?: $waliText,
+                                'paket_belajar' => $row->paket_belajar ?: 'Gold · 8 sesi',
+                                'total_sesi' => $row->total_sesi ?? 8,
+                                'sesi_terpakai' => $row->sesi_terpakai ?? 0,
+                                'status_paket' => $row->status_paket ?: 'Aktif',
+                            ]);
+                    }
+                } catch (\Throwable $e) {
+                }
             }
 
             // 3. Tabel Reschedule

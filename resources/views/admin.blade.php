@@ -645,8 +645,21 @@
                                         @forelse ($paketPerhatian as $p)
                                             <tr>
                                                 <td>
-                                                    <div class="fw-semibold text-dark">{{ $p->nama }}</div>
-                                                    <small class="text-muted" style="font-size: 0.75rem;">{{ $p->nama_wali }}</small>
+                                                    <div class="fw-semibold text-dark">
+                                                        {{ $p->nama }}
+                                                        @if (!empty($p->nama_panggilan))
+                                                            <span class="text-muted fw-normal" style="font-size: 0.78rem;">({{ $p->nama_panggilan }})</span>
+                                                        @endif
+                                                    </div>
+                                                    <small class="text-muted d-block" style="font-size: 0.75rem;">
+                                                        {{ $p->nama_wali }}
+                                                        @if (!empty($p->jenjang) || !empty($p->kelas))
+                                                            · {{ $p->jenjang }} {{ !str_starts_with(strtoupper((string) $p->kelas), strtoupper((string) $p->jenjang)) ? 'Kelas ' . $p->kelas : $p->kelas }}
+                                                        @endif
+                                                        @if (!empty($p->tanggal_lahir))
+                                                            · Lahir: {{ \Carbon\Carbon::parse($p->tanggal_lahir)->format('d/m/Y') }}
+                                                        @endif
+                                                    </small>
                                                 </td>
                                                 <td>
                                                     <span class="text-muted">{{ $p->paket_belajar }}</span>
@@ -862,7 +875,7 @@
 
     <!-- ================= MODAL: AKUN KELUARGA & SISWA ================= -->
     <div class="modal fade" id="modalAkunKeluarga" tabindex="-1" aria-labelledby="modalAkunKeluargaLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow rounded-4">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold text-dark" id="modalAkunKeluargaLabel">Tambah Akun Keluarga & Siswa</h5>
@@ -871,21 +884,106 @@
                 <form action="{{ route('admin.keluarga.store') }}" method="POST">
                     @csrf
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Siswa</label>
-                            <input type="text" name="nama" class="form-control rounded-3" placeholder="Nama lengkap siswa" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Wali</label>
-                            <input type="text" name="nama_wali" class="form-control rounded-3" placeholder="Contoh: Wali: Ibu Ratna" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Paket Belajar</label>
-                            <input type="text" name="paket_belajar" class="form-control rounded-3" placeholder="Contoh: Gold · 8 sesi" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Total Sesi</label>
-                            <input type="number" name="total_sesi" class="form-control rounded-3" value="8" min="1" required>
+                        <div class="row g-3">
+                            <!-- Data Siswa -->
+                            <div class="col-12">
+                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Siswa (Anak)</small>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Lengkap Siswa</label>
+                                <input type="text" name="nama" id="inputNamaLengkapSiswa" class="form-control rounded-3" placeholder="Contoh: Andi Santoso" required>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Panggilan</label>
+                                <input type="text" name="nama_panggilan" id="inputNamaPanggilanSiswa" class="form-control rounded-3" placeholder="Contoh: Andi" required>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tanggal Lahir</label>
+                                <input type="date" name="tanggal_lahir" class="form-control rounded-3" value="2017-05-12" required>
+                            </div>
+
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Jenjang</label>
+                                <select name="jenjang" class="form-select rounded-3" required>
+                                    <option value="SD" selected>SD</option>
+                                    <option value="TK">TK</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kelas</label>
+                                <input type="text" name="kelas" class="form-control rounded-3" value="3" placeholder="Contoh: 3 / TK B" required>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">NISN <span class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="nisn" class="form-control rounded-3" placeholder="Nomor Induk Siswa Nasional">
+                            </div>
+
+                            <!-- Paket Belajar -->
+                            <div class="col-12 pt-2 border-top">
+                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar</small>
+                            </div>
+                            <div class="col-12 col-md-8">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Paket Belajar</label>
+                                <select name="paket_belajar" id="selectPaketBelajar" class="form-select rounded-3" required>
+                                    <optgroup label="Paket Regular — Per Bulan (4x Pertemuan)">
+                                        <option value="Regular Gold (1 Orang) · Bulanan (4x Pertemuan)" data-sesi="4" selected>Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Regular Silver (2 Orang) · Bulanan (4x Pertemuan)" data-sesi="4">Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Regular Bronze (3 Orang) · Bulanan (4x Pertemuan)" data-sesi="4">Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Regular — 1 Semester (12x Pertemuan)">
+                                        <option value="Regular Gold (1 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)</option>
+                                        <option value="Regular Silver (2 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)</option>
+                                        <option value="Regular Bronze (3 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Private">
+                                        <option value="Private · Bulanan (4x Pertemuan)" data-sesi="4">Paket Private · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Private · 1 Semester (12x Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Online">
+                                        <option value="Online · Bulanan (4x Pertemuan)" data-sesi="4">Paket Online · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12x Pertemuan)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Total Sesi (Pertemuan)</label>
+                                <input type="number" name="total_sesi" id="inputTotalSesi" class="form-control rounded-3 bg-light" value="4" min="1" readonly required>
+                            </div>
+
+                            <!-- Data Akun Keluarga & Wali -->
+                            <div class="col-12 pt-2 border-top">
+                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Wali</small>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Wali</label>
+                                <input type="text" name="nama_wali" class="form-control rounded-3" placeholder="Contoh: Ibu Ratna" required>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga <span class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="nama_keluarga" class="form-control rounded-3" placeholder="Contoh: Keluarga Ratna (Otomatis jika kosong)">
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">No. WhatsApp Wali</label>
+                                <input type="text" name="nomor_whatsapp" class="form-control rounded-3" value="081234567890" placeholder="Contoh: 081234567890">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Alamat Domisili</label>
+                                <input type="text" name="alamat_domisili" class="form-control rounded-3" value="Jl. Contoh No. 1, RT 02/RW 05" placeholder="Jalan, nomor rumah, RT/RW">
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kelurahan</label>
+                                <input type="text" name="kelurahan" class="form-control rounded-3" value="Menteng" placeholder="Kelurahan">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kecamatan</label>
+                                <input type="text" name="kecamatan" class="form-control rounded-3" value="Menteng" placeholder="Kecamatan">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kota / Kabupaten</label>
+                                <input type="text" name="kota_kabupaten" class="form-control rounded-3" value="Jakarta Pusat" placeholder="Kota / Kabupaten">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
@@ -960,6 +1058,43 @@
             toggleBtn.addEventListener('click', () => {
                 sidebar.classList.toggle('show');
             });
+        }
+
+        // Sinkronisasi otomatis Total Sesi berdasarkan dropdown Paket Belajar (Bulanan = 4x, Semester = 12x)
+        const selectPaketBelajar = document.getElementById('selectPaketBelajar');
+        const inputTotalSesi = document.getElementById('inputTotalSesi');
+        if (selectPaketBelajar && inputTotalSesi) {
+            selectPaketBelajar.addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                const sesi = selectedOption ? selectedOption.getAttribute('data-sesi') : null;
+                if (sesi) {
+                    inputTotalSesi.value = sesi;
+                }
+            });
+        }
+
+        // Otomatis isi Nama Panggilan dari kata pertama Nama Lengkap jika Nama Panggilan belum diubah manual
+        const inputNamaLengkap = document.getElementById('inputNamaLengkapSiswa');
+        const inputNamaPanggilan = document.getElementById('inputNamaPanggilanSiswa');
+        if (inputNamaLengkap && inputNamaPanggilan) {
+            let manualPanggilan = false;
+            inputNamaPanggilan.addEventListener('input', () => {
+                manualPanggilan = inputNamaPanggilan.value.trim() !== '';
+            });
+            inputNamaLengkap.addEventListener('input', () => {
+                if (!manualPanggilan) {
+                    const firstWord = inputNamaLengkap.value.trim().split(/\s+/)[0] || '';
+                    inputNamaPanggilan.value = firstWord;
+                }
+            });
+        }
+
+        // Buka modal otomatis jika terdapat hash #modalAkunKeluarga di URL
+        if (window.location.hash === '#modalAkunKeluarga') {
+            const modalKeluargaEl = document.getElementById('modalAkunKeluarga');
+            if (modalKeluargaEl && window.bootstrap) {
+                new bootstrap.Modal(modalKeluargaEl).show();
+            }
         }
 
         // Auto-logout otomatis jika AFK (tidak ada aktivitas) selama 15 menit

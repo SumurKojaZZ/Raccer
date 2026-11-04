@@ -80,6 +80,14 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     Route::post('/admin/jadwal/{id}/status', [AdminController::class, 'updateStatusJadwal'])->name('admin.jadwal.status');
 });
 
+// ── API Admin Endpoint ──────────────────────────────────
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/api/admin/jadwal', [AdminController::class, 'indexJadwal'])->name('api.admin.jadwal.index');
+    Route::get('/api/jadwal', [AdminController::class, 'indexJadwal'])->name('api.jadwal.index');
+    Route::post('/api/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('api.admin.jadwal.store');
+    Route::post('/api/jadwal', [AdminController::class, 'storeJadwal'])->name('api.jadwal.store');
+});
+
 // ── Tutor Protected Routes (Khusus Portal Tutor) ───────
 Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
     Route::get('/tutor', [TutorController::class, 'index'])->name('tutor');
