@@ -479,35 +479,14 @@
                     <button class="btn btn-light d-lg-none border" id="toggleSidebar">
                         <i class="bi bi-list fs-5"></i>
                     </button>
-                    <form action="{{ route('admin.tutor') }}" method="GET" class="search-container">
+                    <form action="{{ route('admin.tutor') }}" method="GET" class="search-container flex-grow-1" style="max-width: 480px;">
                         <i class="bi bi-search search-icon"></i>
                         <input type="text" name="q" class="search-input w-100"
                             value="{{ $search ?? '' }}"
                             placeholder="Cari nama siswa, nama wali, atau tutor...">
-                        <span class="search-shortcut">⌘ K</span>
                         @if(!empty($fokus)) <input type="hidden" name="fokus" value="{{ $fokus }}"> @endif
                         @if(!empty($status)) <input type="hidden" name="status" value="{{ $status }}"> @endif
                     </form>
-                </div>
-
-                <!-- Right items: Tahun Ajaran, Notifikasi, Profile -->
-                <div class="d-flex align-items-center gap-2">
-                    <div class="badge-soft-primary px-3 py-2 d-flex align-items-center gap-2"
-                        style="font-size: 0.82rem;">
-                        <i class="bi bi-calendar3"></i>
-                        <span>T.A 2026/2027</span>
-                    </div>
-
-                    <button class="btn btn-white border bg-white rounded-3 px-2 py-2 position-relative text-muted" type="button">
-                        <i class="bi bi-bell"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-                    </button>
-
-                    <div class="d-flex align-items-center gap-2 bg-white border rounded-3 px-2 py-1 ms-1">
-                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin') }}&background=fee2e2&color=dc2626&bold=true"
-                            alt="Avatar" class="rounded-circle" width="28" height="28">
-                        <i class="bi bi-chevron-down text-muted" style="font-size: 0.7rem;"></i>
-                    </div>
                 </div>
             </header>
 
