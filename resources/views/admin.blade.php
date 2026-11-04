@@ -900,7 +900,7 @@
                             <div class="col-12 pt-2 border-top">
                                 <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar</small>
                             </div>
-                            <div class="col-12 col-md-8">
+                            <div class="col-12">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Paket Belajar</label>
                                 <select name="paket_belajar" id="selectPaketBelajar" class="form-select rounded-3" required>
                                     <optgroup label="Paket Regular — Per Bulan (4x Pertemuan)">
@@ -922,10 +922,7 @@
                                         <option value="Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12x Pertemuan)</option>
                                     </optgroup>
                                 </select>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Total Sesi (Pertemuan)</label>
-                                <input type="number" name="total_sesi" id="inputTotalSesi" class="form-control rounded-3 bg-light" value="4" min="1" readonly required>
+                                <input type="hidden" name="total_sesi" id="inputTotalSesi" value="4">
                             </div>
 
                             <!-- Data Akun Keluarga & Wali -->
@@ -933,12 +930,12 @@
                                 <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Wali</small>
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Wali</label>
-                                <input type="text" name="nama_wali" class="form-control rounded-3" placeholder="Contoh: Ibu Ratna" required>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Wali <span class="text-muted fw-normal">(Primary Parent)</span></label>
+                                <input type="text" name="nama_wali" class="form-control rounded-3" placeholder="Contoh: Bpk. Budi Santoso / Ibu Ratna" required>
                             </div>
                             <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga <span class="text-muted fw-normal">(Opsional)</span></label>
-                                <input type="text" name="nama_keluarga" class="form-control rounded-3" placeholder="Contoh: Keluarga Ratna (Otomatis jika kosong)">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga / Wali Kedua <span class="text-muted fw-normal">(Secondary Parent)</span></label>
+                                <input type="text" name="nama_keluarga" class="form-control rounded-3" placeholder="Contoh: Ibu Siti Aminah (Opsional)">
                             </div>
 
                             <div class="col-12 col-md-6">

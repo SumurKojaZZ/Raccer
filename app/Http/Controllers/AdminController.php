@@ -370,6 +370,7 @@ class AdminController extends Controller
         $tanggalLahir = $validated['tanggal_lahir'] ?? '2018-01-01';
         $nisn = !empty($validated['nisn']) ? trim((string) $validated['nisn']) : null;
 
+        $validatedSecondary = $request->input('nama_wali_kedua') ?? $validated['nama_keluarga'] ?? '';
         $rawWali = trim((string) $validated['nama_wali']);
         $cleanWali = trim((string) preg_replace('/^(Wali\s*:\s*|Bpk\.?\s*|Ibu\s*|Pak\s*)/i', '', $rawWali));
         if ($cleanWali === '') {
@@ -377,10 +378,13 @@ class AdminController extends Controller
         }
         $displayWali = str_starts_with(strtolower($rawWali), 'wali') ? $rawWali : 'Wali: ' . $rawWali;
 
-        $namaKeluarga = trim((string) ($validated['nama_keluarga'] ?? ''));
-        if ($namaKeluarga === '') {
-            $namaKeluarga = 'Keluarga ' . $cleanWali;
+        $rawSecondaryWali = trim((string) $validatedSecondary);
+        $cleanSecondaryWali = trim((string) preg_replace('/^(Wali\s*:\s*|Keluarga\s+|Bpk\.?\s*|Ibu\s*|Pak\s*)/i', '', $rawSecondaryWali));
+        if ($cleanSecondaryWali === '' && $rawSecondaryWali !== '') {
+            $cleanSecondaryWali = $rawSecondaryWali;
         }
+
+        $namaKeluarga = 'Keluarga ' . $cleanWali;
 
         $alamatDomisili = trim((string) ($validated['alamat_domisili'] ?? '')) ?: 'Jl. Contoh No. 1, RT 01/RW 01';
         $kelurahan = trim((string) ($validated['kelurahan'] ?? '')) ?: 'Menteng';
@@ -389,7 +393,7 @@ class AdminController extends Controller
 
         $hubungan = trim((string) ($validated['hubungan'] ?? ''));
         if ($hubungan === '') {
-            $hubungan = preg_match('/\b(ibu|mama|bunda)\b/i', $rawWali) ? 'Ibu' : 'Ayah';
+            $hubungan = preg_match('/\b(ibu|mama|bunda|ny\.?)\b/i', $rawWali) ? 'Ibu' : 'Ayah';
         }
         $nomorWhatsapp = substr(preg_replace('/[^0-9+]/', '', (string) ($validated['nomor_whatsapp'] ?? '081234567890')), 0, 16) ?: '081234567890';
 
@@ -406,7 +410,7 @@ class AdminController extends Controller
             ]);
         }
 
-        // 2. Simpan akun pengguna & orang_tua untuk Wali
+        // 2. Simpan akun pengguna & orang_tua untuk Primary_Parent (Nama Wali) & Secondary_Parent (Nama Keluarga / Wali Kedua)
         $idPenggunaWali = null;
         $idPenggunaSiswa = null;
         if (Schema::hasTable('pengguna')) {
@@ -436,6 +440,41 @@ class AdminController extends Controller
                     'hubungan' => $hubungan,
                     'nomor_whatsapp' => $nomorWhatsapp,
                 ]);
+
+                // Jika field Nama Keluarga / Wali Kedua diisi, simpan sebagai Secondary_Parent di tabel orang_tua
+                if ($cleanSecondaryWali !== '') {
+                    $secSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', explode(' ', $cleanSecondaryWali)[0])) ?: 'wali2';
+                    $secUsername = 'wali.' . $secSlug;
+                    $secCounter = 1;
+                    while (DB::table('pengguna')->where('username', $secUsername)->exists()) {
+                        $secUsername = 'wali.' . $secSlug . $secCounter;
+                        $secCounter++;
+                    }
+
+                    $idPenggunaSecondary = DB::table('pengguna')->insertGetId([
+                        'username' => $secUsername,
+                        'password_hash' => Hash::make('RacerWali2026!'),
+                        'role' => 'Orang_Tua',
+                        'status_aktif' => 1,
+                        'jumlah_gagal_login' => 0,
+                        'dibuat_pada' => now(),
+                    ]);
+
+                    $hubunganSecondary = preg_match('/\b(ibu|mama|bunda|ny\.?)\b/i', $rawSecondaryWali)
+                        ? 'Ibu'
+                        : (preg_match('/\b(bpk\.?|pak|ayah|papa)\b/i', $rawSecondaryWali)
+                            ? 'Ayah'
+                            : ($hubungan === 'Ayah' ? 'Ibu' : 'Ayah'));
+
+                    DB::table('orang_tua')->insert([
+                        'id_keluarga' => $idKeluarga,
+                        'id_pengguna' => $idPenggunaSecondary,
+                        'jenis_wali' => 'Secondary_Parent',
+                        'nama_lengkap' => $cleanSecondaryWali,
+                        'hubungan' => $hubunganSecondary,
+                        'nomor_whatsapp' => $nomorWhatsapp,
+                    ]);
+                }
             }
 
             // 3. Simpan akun pengguna untuk Siswa
