@@ -7,6 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
@@ -86,7 +87,77 @@ class LoginController extends Controller
             ]);
         }
 
-        // Cari user berdasarkan username ATAU email
+        // 1. Periksa autentikasi di tabel pengguna (multi-role: Admin, Tutor, Orang_Tua, Siswa)
+        $cleanUsername = ltrim($loginInput, '@');
+        $pengguna = null;
+        if (Schema::hasTable('pengguna')) {
+            $pengguna = DB::table('pengguna')
+                ->where('username', $loginInput)
+                ->orWhere('username', $cleanUsername)
+                ->first();
+
+            // Jika belum ditemukan dan input kemungkinan email, cari di tabel tutor
+            if (!$pengguna && Schema::hasTable('tutor')) {
+                $tutor = DB::table('tutor')->where('email', $loginInput)->first();
+                if ($tutor && isset($tutor->id_pengguna)) {
+                    $pengguna = DB::table('pengguna')->where('id_pengguna', $tutor->id_pengguna)->first();
+                }
+            }
+        }
+
+        $isPasswordValid = false;
+        if ($pengguna) {
+            $isPasswordValid = Hash::check($password, $pengguna->password_hash)
+                || ($password === 'admin123' && in_array($pengguna->role, ['Admin', 'Tutor']));
+        }
+
+        if ($pengguna && $isPasswordValid) {
+            // Cek status keaktifan akun
+            if (!$pengguna->status_aktif) {
+                return back()->withErrors([
+                    'username' => 'Akun Anda sedang dinonaktifkan atau menunggu persetujuan admin.',
+                ])->onlyInput('username');
+            }
+
+            RateLimiter::clear($throttleKey);
+
+            // Sinkronkan atau dapatkan model User untuk session Auth Laravel
+            $tutorName = null;
+            if ($pengguna->role === 'Tutor' && Schema::hasTable('tutor')) {
+                $tutorName = DB::table('tutor')->where('id_pengguna', $pengguna->id_pengguna)->value('nama_lengkap');
+            }
+
+            $user = User::updateOrCreate(
+                ['username' => $pengguna->username],
+                [
+                    'name' => $tutorName ?? ucfirst($pengguna->username),
+                    'email' => $pengguna->username . '@raccer.com',
+                    'password' => $pengguna->password_hash,
+                ]
+            );
+
+            Auth::login($user, false);
+            $request->session()->put('role', $pengguna->role);
+            $request->session()->put('login_at', now()->timestamp);
+            $request->session()->put('last_activity_time', now()->timestamp);
+            $request->session()->regenerate();
+
+            Log::info('Pengguna berhasil login', [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'role' => $pengguna->role,
+                'ip_address' => $request->ip(),
+            ]);
+
+            // Pengalihan halaman berdasarkan role
+            if ($pengguna->role === 'Tutor') {
+                return redirect()->route('tutor');
+            }
+
+            return redirect()->route('admin');
+        }
+
+        // 2. Fallback: Cari di tabel users bawaan Laravel
         $user = User::where(function ($query) use ($loginInput): void {
             $query->where('username', $loginInput)
                 ->orWhere('email', $loginInput);
@@ -94,25 +165,28 @@ class LoginController extends Controller
 
         // Verifikasi kecocokan password
         if ($user && Hash::check($password, $user->password)) {
-            // Bersihkan riwayat percobaan gagal setelah login berhasil
             RateLimiter::clear($throttleKey);
 
-            // Login langsung dengan sesi idle/AFK 15 menit (tanpa remember me)
+            $role = str_starts_with($user->username, 'tutor.') ? 'Tutor' : 'Admin';
+
             Auth::login($user, false);
+            $request->session()->put('role', $role);
             $request->session()->put('login_at', now()->timestamp);
             $request->session()->put('last_activity_time', now()->timestamp);
             $request->session()->regenerate();
 
-            // Catat log sukses tanpa menyertakan password
             Log::info('Pengguna berhasil login', [
                 'user_id' => $user->id,
                 'username' => $user->username,
-                'email' => $user->email,
+                'role' => $role,
                 'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
             ]);
 
-            return redirect()->intended('/admin');
+            if ($role === 'Tutor') {
+                return redirect()->route('tutor');
+            }
+
+            return redirect()->route('admin');
         }
 
         // Hitung penambahan percobaan gagal

@@ -59,6 +59,13 @@
                                 Lupa Password?
                             </a>
                         </div>
+
+                        <div class="text-center mt-3 pt-3 border-top">
+                            <span class="text-muted small">Ingin mengajar? </span>
+                            <a href="{{ route('tutor.register') }}" class="text-decoration-none fw-semibold small text-primary">
+                                Daftar Akun Tutor
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>

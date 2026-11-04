@@ -23,6 +23,11 @@ class AdminController extends Controller
      */
     public function index(Request $request): View|RedirectResponse
     {
+        // Proteksi hak akses: Jika tutor mencoba akses dashboard admin, alihkan ke portal tutor
+        if ($request->session()->get('role') === 'Tutor' || (Auth::check() && str_starts_with(Auth::user()->username, 'tutor.'))) {
+            return redirect()->route('tutor');
+        }
+
         // Pastikan tabel-tabel dashboard ada di database
         $this->ensureTablesExist();
 
@@ -395,6 +400,30 @@ class AdminController extends Controller
         } catch (\Throwable $e) {
             return redirect()->route('admin.tutor')->with('success', "Akun Tutor {$validated['nama_gelar']} berhasil dibuat!");
         }
+    }
+
+    /**
+     * Aktifkan atau Nonaktifkan akun tutor (Persetujuan / Aktivasi Admin).
+     */
+    public function toggleStatusTutor(int $id): RedirectResponse
+    {
+        $this->ensureTablesExist();
+
+        $tutor = DB::table('tutor')->where('id_tutor', $id)->first();
+        if ($tutor) {
+            $newStatus = ($tutor->status === 'Aktif') ? 'Nonaktif' : 'Aktif';
+            DB::table('tutor')->where('id_tutor', $id)->update(['status' => $newStatus]);
+
+            if ($tutor->id_pengguna && Schema::hasTable('pengguna')) {
+                DB::table('pengguna')
+                    ->where('id_pengguna', $tutor->id_pengguna)
+                    ->update(['status_aktif' => ($newStatus === 'Aktif' ? 1 : 0)]);
+            }
+
+            return redirect()->route('admin.tutor')->with('success', "Status tutor {$tutor->nama_lengkap} berhasil diubah menjadi {$newStatus}!");
+        }
+
+        return redirect()->route('admin.tutor')->with('error', 'Data tutor tidak ditemukan.');
     }
 
     /**
