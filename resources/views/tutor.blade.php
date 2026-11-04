@@ -412,7 +412,7 @@
                             <i class="bi bi-person-badge"></i>
                             <span>Data Tutor</span>
                         </a>
-                        <a href="{{ route('admin') }}#modalBuatJadwal" class="nav-link-custom">
+                        <a href="{{ route('admin.penjadwalan') }}" class="nav-link-custom {{ request()->routeIs('admin.penjadwalan') ? 'active' : '' }}">
                             <i class="bi bi-calendar4-week"></i>
                             <span>Penjadwalan Terpusat</span>
                         </a>

@@ -19,14 +19,24 @@ Route::post('/login', [LoginController::class, 'authenticate']);
 Route::match(['get', 'post'], '/logout', [LoginController::class, 'logout'])->name('logout');
 
 // ── Admin Protected Routes ─────────────────────────────
-Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
+Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class, 'admin'])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin');
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+    Route::get('/admin/penjadwalan', [AdminController::class, 'penjadwalan'])->name('admin.penjadwalan');
     Route::get('/admin/tutor', [AdminController::class, 'tutor'])->name('admin.tutor');
     Route::post('/admin/tutor', [AdminController::class, 'storeTutor'])->name('admin.tutor.store');
     Route::post('/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('admin.jadwal.store');
     Route::post('/admin/keluarga', [AdminController::class, 'storeKeluarga'])->name('admin.keluarga.store');
     Route::post('/admin/reschedule/{id}/approve', [AdminController::class, 'approveReschedule'])->name('admin.reschedule.approve');
     Route::post('/admin/jadwal/{id}/status', [AdminController::class, 'updateStatusJadwal'])->name('admin.jadwal.status');
+});
+
+// ── API Admin Endpoint ──────────────────────────────────
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/api/admin/jadwal', [AdminController::class, 'indexJadwal'])->name('api.admin.jadwal.index');
+    Route::get('/api/jadwal', [AdminController::class, 'indexJadwal'])->name('api.jadwal.index');
+    Route::post('/api/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('api.admin.jadwal.store');
+    Route::post('/api/jadwal', [AdminController::class, 'storeJadwal'])->name('api.jadwal.store');
 });
 
 // ── Lupa Password ──────────────────────────────────────

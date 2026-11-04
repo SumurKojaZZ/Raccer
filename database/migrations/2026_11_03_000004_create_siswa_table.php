@@ -15,6 +15,7 @@ return new class extends Migration {
                 $table->increments('id_siswa');
                 $table->unsignedInteger('id_keluarga');
                 $table->unsignedInteger('id_pengguna');
+                $table->string('nisn', 20)->nullable()->unique('uq_siswa_nisn');
                 $table->string('nama_lengkap', 150);
                 $table->string('nama_panggilan', 50);
                 $table->enum('jenjang', ['TK', 'SD']);

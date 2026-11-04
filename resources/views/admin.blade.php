@@ -320,7 +320,7 @@
                             <i class="bi bi-person-badge"></i>
                             <span>Data Tutor</span>
                         </a>
-                        <a href="#modalBuatJadwal" data-bs-toggle="modal" class="nav-link-custom">
+                        <a href="{{ route('admin.penjadwalan') }}" class="nav-link-custom {{ request()->routeIs('admin.penjadwalan') ? 'active' : '' }}">
                             <i class="bi bi-calendar4-week"></i>
                             <span>Penjadwalan Terpusat</span>
                         </a>
@@ -616,8 +616,8 @@
                             </div>
 
                             <div class="text-center pt-3 border-top mt-2">
-                                <a href="#modalBuatJadwal" data-bs-toggle="modal" class="text-primary fw-semibold text-decoration-none" style="font-size: 0.85rem;">
-                                    + Tambah Jadwal Kelas Baru <i class="bi bi-arrow-right"></i>
+                                <a href="{{ route('admin.penjadwalan') }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1" style="font-size: 0.85rem;">
+                                    Buka penjadwalan terpusat <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
                         </div>
@@ -797,34 +797,61 @@
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Kelas</label>
-                            <input type="text" name="kelas" class="form-control rounded-3" placeholder="Contoh: Junior Robotics" required>
+                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Program Kelas</label>
+                            <input type="text" name="program" class="form-control rounded-3" placeholder="Contoh: Junior Robotics" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold" style="font-size: 0.85rem;">Lokasi / Ruangan</label>
-                            <input type="text" name="lokasi" class="form-control rounded-3" placeholder="Contoh: Lab Robotika 1" required>
+                            <input type="text" name="lokasi" class="form-control rounded-3" placeholder="Contoh: Lab Robotika 1, Lab Maker, atau Tautan Google Meet" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Tutor</label>
-                            <input type="text" name="tutor" class="form-control rounded-3" placeholder="Contoh: Kak Dimas" required>
+                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tutor Pengampu <span class="badge bg-success-subtle text-success fw-normal ms-1" style="font-size: 0.72rem;">Aktif</span></label>
+                            <select name="tutor_pengampu" class="form-select rounded-3" required>
+                                <option value="" disabled selected>Pilih Tutor Pengampu...</option>
+                                @if(isset($activeTutors) && count($activeTutors) > 0)
+                                    @foreach($activeTutors as $tut)
+                                        <option value="{{ $tut->nama_panggilan ?? $tut->nama_lengkap }}">
+                                            {{ $tut->nama_gelar ?? $tut->nama_lengkap }} ({{ $tut->nama_panggilan }})
+                                        </option>
+                                    @endforeach
+                                @else
+                                    <option value="Kak Dimas">Kak Dimas</option>
+                                    <option value="Kak Sarah">Kak Sarah</option>
+                                    <option value="Kak Reza">Kak Reza</option>
+                                @endif
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tanggal Kelas</label>
+                            <input type="date" name="tanggal" class="form-control rounded-3" value="{{ date('Y-m-d') }}" required>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Waktu Mulai</label>
-                                <input type="text" name="waktu_mulai" class="form-control rounded-3" placeholder="09.00" required>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Jam Mulai</label>
+                                <input type="time" name="jam_mulai" class="form-control rounded-3" value="09:00" required>
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Waktu Selesai</label>
-                                <input type="text" name="waktu_selesai" class="form-control rounded-3" placeholder="10.00 WIB" required>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Jam Selesai</label>
+                                <input type="time" name="jam_selesai" class="form-control rounded-3" value="10:30" required>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Status</label>
-                            <select name="status" class="form-select rounded-3">
-                                <option value="Terjadwal">Terjadwal</option>
-                                <option value="Berlangsung">Berlangsung</option>
-                                <option value="Selesai">Selesai</option>
-                            </select>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Moda Pembelajaran</label>
+                                <select name="moda" class="form-select rounded-3">
+                                    <option value="Offline" selected>Offline (Tatap Muka)</option>
+                                    <option value="Online">Online (Daring / Meet)</option>
+                                    <option value="Hybrid">Hybrid</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Status</label>
+                                <select name="status" class="form-select rounded-3">
+                                    <option value="Terjadwal" selected>Terjadwal</option>
+                                    <option value="Berlangsung">Berlangsung</option>
+                                    <option value="Selesai">Selesai</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">

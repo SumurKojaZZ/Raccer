@@ -8,6 +8,7 @@ use App\Models\Reschedule;
 use App\Models\Siswa;
 use App\Models\Tutor;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -76,6 +77,8 @@ class AdminController extends Controller
         // Pengumuman
         $pengumumanList = Pengumuman::orderBy('id', 'desc')->get();
 
+        $activeTutors = Tutor::where('status', 'Aktif')->orderBy('nama_lengkap')->get();
+
         return view('admin', compact(
             'jadwalHariIni',
             'paketPerhatian',
@@ -90,29 +93,234 @@ class AdminController extends Controller
             'rescheduleList',
             'presensi',
             'pengumumanList',
+            'activeTutors',
             'search'
         ));
     }
 
     /**
-     * Tambah Jadwal Kelas Baru.
+     * Halaman Modul Penjadwalan Terpusat (Admin).
      */
-    public function storeJadwal(Request $request): RedirectResponse
+    public function penjadwalan(Request $request): View
     {
-        $validated = $request->validate([
-            'kelas' => ['required', 'string', 'max:255'],
-            'lokasi' => ['required', 'string', 'max:255'],
-            'tutor' => ['required', 'string', 'max:255'],
-            'waktu_mulai' => ['required', 'string'],
-            'waktu_selesai' => ['required', 'string'],
-            'status' => ['required', 'string'],
+        $this->ensureTablesExist();
+
+        $search = trim((string) $request->input('q', ''));
+        $status = $request->input('status', 'Semua Status');
+        $moda = $request->input('moda', 'Semua Moda');
+        $tanggal = $request->input('tanggal', '');
+
+        $query = Jadwal::query();
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('program', 'like', "%{$search}%")
+                  ->orWhere('kelas', 'like', "%{$search}%")
+                  ->orWhere('tutor', 'like', "%{$search}%")
+                  ->orWhere('tutor_pengampu', 'like', "%{$search}%")
+                  ->orWhere('lokasi', 'like', "%{$search}%");
+            });
+        }
+
+        if (!empty($status) && $status !== 'Semua Status') {
+            $query->where('status', $status);
+        }
+
+        if (!empty($moda) && $moda !== 'Semua Moda') {
+            $query->where('moda', $moda);
+        }
+
+        if (!empty($tanggal)) {
+            $query->whereDate('tanggal', $tanggal);
+        }
+
+        $jadwalList = $query->orderBy('tanggal', 'desc')->orderBy('waktu_mulai', 'asc')->get();
+
+        // Statistik Penjadwalan
+        $totalJadwal = Jadwal::count();
+        $totalTerjadwal = Jadwal::where('status', 'Terjadwal')->count();
+        $totalBerlangsung = Jadwal::where('status', 'Berlangsung')->count();
+        $totalSelesai = Jadwal::where('status', 'Selesai')->count();
+
+        $activeTutors = Tutor::where('status', 'Aktif')->orderBy('nama_lengkap')->get();
+
+        return view('penjadwalan', compact(
+            'jadwalList',
+            'totalJadwal',
+            'totalTerjadwal',
+            'totalBerlangsung',
+            'totalSelesai',
+            'activeTutors',
+            'search',
+            'status',
+            'moda',
+            'tanggal'
+        ));
+    }
+
+    /**
+     * Endpoint Daftar Jadwal Kelas (Khusus Admin).
+     */
+    public function indexJadwal(Request $request): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $query = Jadwal::query();
+
+        // Filter berdasarkan tanggal
+        if ($request->filled('tanggal')) {
+            $query->whereDate('tanggal', $request->input('tanggal'));
+        }
+
+        // Filter berdasarkan status
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        // Filter berdasarkan moda
+        if ($request->filled('moda')) {
+            $query->where('moda', $request->input('moda'));
+        }
+
+        // Filter pencarian teks
+        if ($request->filled('q') || $request->filled('search')) {
+            $search = trim($request->input('q') ?? $request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('program', 'like', "%{$search}%")
+                  ->orWhere('kelas', 'like', "%{$search}%")
+                  ->orWhere('tutor', 'like', "%{$search}%")
+                  ->orWhere('tutor_pengampu', 'like', "%{$search}%")
+                  ->orWhere('lokasi', 'like', "%{$search}%");
+            });
+        }
+
+        $jadwalList = $query->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar jadwal kelas berhasil diambil.',
+            'data' => $jadwalList,
+        ], 200);
+    }
+
+    /**
+     * Tambah Jadwal Kelas Baru (Khusus Admin).
+     * Parameter: program, tutor pengampu, tanggal, jam mulai-selesai, moda.
+     * Validasi: jam_selesai > jam_mulai & Tutor berstatus Aktif.
+     */
+    public function storeJadwal(Request $request): JsonResponse|RedirectResponse
+    {
+        // Proteksi otorisasi khusus Admin
+        $user = Auth::user();
+        if ($user && method_exists($user, 'isAdmin') && !$user->isAdmin()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Akses ini khusus untuk Admin.',
+                ], 403);
+            }
+            abort(403, 'Akses ditolak. Tindakan ini hanya dapat dilakukan oleh Admin.');
+        }
+
+        $request->validate([
+            'program' => ['required_without:kelas', 'nullable', 'string', 'max:255'],
+            'kelas' => ['required_without:program', 'nullable', 'string', 'max:255'],
+            'tutor_pengampu' => ['required_without:tutor', 'nullable', 'string', 'max:255'],
+            'tutor' => ['required_without:tutor_pengampu', 'nullable', 'string', 'max:255'],
+            'tanggal' => ['nullable', 'date'],
+            'jam_mulai' => ['required_without:waktu_mulai', 'nullable', 'string', 'max:50'],
+            'waktu_mulai' => ['required_without:jam_mulai', 'nullable', 'string', 'max:50'],
+            'jam_selesai' => ['required_without:waktu_selesai', 'nullable', 'string', 'max:50'],
+            'waktu_selesai' => ['required_without:jam_selesai', 'nullable', 'string', 'max:50'],
+            'moda' => ['nullable', 'string', 'max:50'],
+            'lokasi' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'string', 'max:50'],
         ]);
 
         $this->ensureTablesExist();
 
-        Jadwal::create($validated);
+        $program = $request->input('program') ?? $request->input('kelas');
+        $tutor = $request->input('tutor_pengampu') ?? $request->input('tutor');
+        $tanggal = $request->input('tanggal') ?? now()->toDateString();
+        $jamMulai = $request->input('jam_mulai') ?? $request->input('waktu_mulai');
+        $jamSelesai = $request->input('jam_selesai') ?? $request->input('waktu_selesai');
+        $moda = $request->input('moda') ?? 'Offline';
+        $lokasiInput = trim((string) $request->input('lokasi', ''));
+        $lokasi = $lokasiInput !== '' ? $lokasiInput : ($moda === 'Online' ? 'Daring / Google Meet' : 'Lab Robotika 1');
+        $status = $request->input('status') ?? 'Terjadwal';
+
+        // 1. Validasi: jam selesai harus lebih besar dari jam mulai (jam_selesai > jam_mulai)
+        $startMinutes = $this->parseTimeToMinutes((string) $jamMulai);
+        $endMinutes = $this->parseTimeToMinutes((string) $jamSelesai);
+        if ($startMinutes !== null && $endMinutes !== null && $endMinutes <= $startMinutes) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'jam_selesai' => ['Jam selesai harus lebih besar dari jam mulai.'],
+            ]);
+        }
+
+        // 2. Validasi: Tutor berstatus Aktif
+        $tutorRecord = Tutor::where(function ($q) use ($tutor) {
+            $q->where('nama_lengkap', $tutor)
+              ->orWhere('nama_panggilan', $tutor);
+
+            if (is_numeric($tutor)) {
+                $q->orWhere('id_tutor', (int) $tutor);
+            }
+        })->first();
+
+        if ($tutorRecord && strcasecmp((string) $tutorRecord->status, 'Aktif') !== 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'tutor_pengampu' => ['Tutor yang dipilih harus berstatus Aktif.'],
+            ]);
+        }
+
+        $jadwal = Jadwal::create([
+            'program' => $program,
+            'kelas' => $program,
+            'tutor' => $tutor,
+            'tutor_pengampu' => $tutor,
+            'tanggal' => $tanggal,
+            'jam_mulai' => $jamMulai,
+            'jam_selesai' => $jamSelesai,
+            'waktu_mulai' => $jamMulai,
+            'waktu_selesai' => $jamSelesai,
+            'moda' => $moda,
+            'lokasi' => $lokasi,
+            'status' => $status,
+        ]);
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Jadwal kelas berhasil dibuat.',
+                'data' => $jadwal,
+            ], 201);
+        }
 
         return redirect()->route('admin')->with('success', 'Jadwal kelas berhasil ditambahkan!');
+    }
+
+    /**
+     * Konversi string jam/waktu ke total menit untuk validasi perbandingan waktu.
+     */
+    protected function parseTimeToMinutes(string $timeStr): ?int
+    {
+        $clean = trim(preg_replace('/[^0-9:\.]/', '', $timeStr));
+        if ($clean === '') {
+            return null;
+        }
+
+        $parts = preg_split('/[:\.]/', $clean);
+        if (count($parts) >= 2) {
+            return ((int) $parts[0] * 60) + (int) $parts[1];
+        }
+
+        $timestamp = strtotime($clean);
+        if ($timestamp !== false) {
+            return ((int) date('H', $timestamp) * 60) + (int) date('i', $timestamp);
+        }
+
+        return null;
     }
 
     /**
@@ -407,31 +615,55 @@ class AdminController extends Controller
             if (!Schema::hasTable('jadwal')) {
                 Schema::create('jadwal', function (Blueprint $table) {
                     $table->id();
-                    $table->string('kelas');
-                    $table->string('lokasi');
-                    $table->string('tutor');
-                    $table->string('waktu_mulai');
-                    $table->string('waktu_selesai');
-                    $table->string('status')->default('Terjadwal');
+                    $table->string('program')->nullable();
+                    $table->string('kelas')->nullable();
+                    $table->string('lokasi')->nullable();
+                    $table->string('tutor')->nullable();
+                    $table->string('tutor_pengampu')->nullable();
                     $table->date('tanggal')->nullable();
+                    $table->string('jam_mulai')->nullable();
+                    $table->string('jam_selesai')->nullable();
+                    $table->string('waktu_mulai')->nullable();
+                    $table->string('waktu_selesai')->nullable();
+                    $table->string('moda')->default('Offline');
+                    $table->string('status')->default('Terjadwal');
                     $table->timestamps();
                 });
 
                 // Seed data awal
                 Jadwal::insert([
-                    ['kelas' => 'Junior Robotics', 'lokasi' => 'Lab STEM 1', 'tutor' => 'Kak Dimas', 'waktu_mulai' => '09.00', 'waktu_selesai' => '10.00 WIB', 'status' => 'Selesai', 'created_at' => now(), 'updated_at' => now()],
-                    ['kelas' => 'Python for Kids', 'lokasi' => 'Lab Komputer A', 'tutor' => 'Kak Sarah', 'waktu_mulai' => '10.30', 'waktu_selesai' => '11.30 WIB', 'status' => 'Selesai', 'created_at' => now(), 'updated_at' => now()],
-                    ['kelas' => 'Arduino Explorer', 'lokasi' => 'Lab Maker', 'tutor' => 'Kak Reza', 'waktu_mulai' => '13.00', 'waktu_selesai' => '14.00 WIB', 'status' => 'Berlangsung', 'created_at' => now(), 'updated_at' => now()],
-                    ['kelas' => 'Robotic Scratch', 'lokasi' => 'Ruang Teori 2', 'tutor' => 'Kak Budi', 'waktu_mulai' => '14.30', 'waktu_selesai' => '15.30 WIB', 'status' => 'Terjadwal', 'created_at' => now(), 'updated_at' => now()],
-                    ['kelas' => 'AI Builder', 'lokasi' => 'Lab Robotika', 'tutor' => 'Kak Nita', 'waktu_mulai' => '16.00', 'waktu_selesai' => '17.00 WIB', 'status' => 'Terjadwal', 'created_at' => now(), 'updated_at' => now()],
-                    ['kelas' => 'IoT Smart Home', 'lokasi' => 'Lab Inovasi', 'tutor' => 'Kak Fajar', 'waktu_mulai' => '17.00', 'waktu_selesai' => '18.00 WIB', 'status' => 'Terjadwal', 'created_at' => now(), 'updated_at' => now()],
+                    ['program' => 'Junior Robotics', 'kelas' => 'Junior Robotics', 'lokasi' => 'Lab STEM 1', 'tutor' => 'Kak Dimas', 'tutor_pengampu' => 'Kak Dimas', 'tanggal' => now()->toDateString(), 'jam_mulai' => '09.00', 'jam_selesai' => '10.00 WIB', 'waktu_mulai' => '09.00', 'waktu_selesai' => '10.00 WIB', 'moda' => 'Offline', 'status' => 'Selesai', 'created_at' => now(), 'updated_at' => now()],
+                    ['program' => 'Python for Kids', 'kelas' => 'Python for Kids', 'lokasi' => 'Lab Komputer A', 'tutor' => 'Kak Sarah', 'tutor_pengampu' => 'Kak Sarah', 'tanggal' => now()->toDateString(), 'jam_mulai' => '10.30', 'jam_selesai' => '11.30 WIB', 'waktu_mulai' => '10.30', 'waktu_selesai' => '11.30 WIB', 'moda' => 'Offline', 'status' => 'Selesai', 'created_at' => now(), 'updated_at' => now()],
+                    ['program' => 'Arduino Explorer', 'kelas' => 'Arduino Explorer', 'lokasi' => 'Lab Maker', 'tutor' => 'Kak Reza', 'tutor_pengampu' => 'Kak Reza', 'tanggal' => now()->toDateString(), 'jam_mulai' => '13.00', 'jam_selesai' => '14.00 WIB', 'waktu_mulai' => '13.00', 'waktu_selesai' => '14.00 WIB', 'moda' => 'Offline', 'status' => 'Berlangsung', 'created_at' => now(), 'updated_at' => now()],
+                    ['program' => 'Robotic Scratch', 'kelas' => 'Robotic Scratch', 'lokasi' => 'Ruang Teori 2', 'tutor' => 'Kak Budi', 'tutor_pengampu' => 'Kak Budi', 'tanggal' => now()->toDateString(), 'jam_mulai' => '14.30', 'jam_selesai' => '15.30 WIB', 'waktu_mulai' => '14.30', 'waktu_selesai' => '15.30 WIB', 'moda' => 'Offline', 'status' => 'Terjadwal', 'created_at' => now(), 'updated_at' => now()],
+                    ['program' => 'AI Builder', 'kelas' => 'AI Builder', 'lokasi' => 'Lab Robotika', 'tutor' => 'Kak Nita', 'tutor_pengampu' => 'Kak Nita', 'tanggal' => now()->toDateString(), 'jam_mulai' => '16.00', 'jam_selesai' => '17.00 WIB', 'waktu_mulai' => '16.00', 'waktu_selesai' => '17.00 WIB', 'moda' => 'Offline', 'status' => 'Terjadwal', 'created_at' => now(), 'updated_at' => now()],
+                    ['program' => 'IoT Smart Home', 'kelas' => 'IoT Smart Home', 'lokasi' => 'Lab Inovasi', 'tutor' => 'Kak Fajar', 'tutor_pengampu' => 'Kak Fajar', 'tanggal' => now()->toDateString(), 'jam_mulai' => '17.00', 'jam_selesai' => '18.00 WIB', 'waktu_mulai' => '17.00', 'waktu_selesai' => '18.00 WIB', 'moda' => 'Offline', 'status' => 'Terjadwal', 'created_at' => now(), 'updated_at' => now()],
                 ]);
+            } else {
+                Schema::table('jadwal', function (Blueprint $table) {
+                    if (!Schema::hasColumn('jadwal', 'program')) {
+                        $table->string('program')->nullable();
+                    }
+                    if (!Schema::hasColumn('jadwal', 'tutor_pengampu')) {
+                        $table->string('tutor_pengampu')->nullable();
+                    }
+                    if (!Schema::hasColumn('jadwal', 'jam_mulai')) {
+                        $table->string('jam_mulai')->nullable();
+                    }
+                    if (!Schema::hasColumn('jadwal', 'jam_selesai')) {
+                        $table->string('jam_selesai')->nullable();
+                    }
+                    if (!Schema::hasColumn('jadwal', 'moda')) {
+                        $table->string('moda')->default('Offline');
+                    }
+                });
             }
 
             // 2. Tabel Siswa
             if (!Schema::hasTable('siswa')) {
                 Schema::create('siswa', function (Blueprint $table) {
                     $table->id();
+                    $table->string('nisn', 20)->nullable();
                     $table->string('nama');
                     $table->string('nama_wali');
                     $table->string('paket_belajar');
@@ -534,26 +766,28 @@ class AdminController extends Controller
             // Seed data awal Tutor jika belum ada data Budi, Dina, Rizky
             try {
                 // 1. TTR-001 (Budi Santoso) - update tutor 1 yang ada atau buat baru
-                $tutor1 = Tutor::find(1);
-                if ($tutor1) {
-                    $tutor1->update([
-                        'kode_tutor' => 'TTR-001',
-                        'nama_lengkap' => 'Budi Santoso, S.T.',
-                        'nama_gelar' => 'Budi Santoso, S.T.',
-                        'nama_panggilan' => 'Kak Budi',
-                        'nomor_whatsapp' => '0812-3456-7890',
-                        'whatsapp' => '0812-3456-7890',
-                        'email' => 'budi.santoso@racer.id',
-                        'username' => '@budi.santoso',
-                        'spesialisasi' => 'SD',
-                        'jenjang_modul' => 'Level 1: Building (TK/SD)',
-                        'penempatan' => 'Lab A • Jakarta Pusat',
-                        'tautan_meeting' => 'https://meet.google.com/rcr-budi',
-                        'max_kelas_minggu' => '10 Sesi Kelas / Minggu',
-                        'preferensi_mengajar' => 'Pagi + Siang Hari',
-                        'status' => 'Aktif',
-                    ]);
-                } else {
+                // 1. TTR-001 (Budi Santoso) - buat atau isi jika belum ada
+                if (!Tutor::where('kode_tutor', 'TTR-001')->orWhere('nama_lengkap', 'like', '%Budi Santoso%')->exists()) {
+                    $tutor1 = Tutor::find(1);
+                    if ($tutor1) {
+                        $tutor1->update([
+                            'kode_tutor' => 'TTR-001',
+                            'nama_lengkap' => 'Budi Santoso, S.T.',
+                            'nama_gelar' => 'Budi Santoso, S.T.',
+                            'nama_panggilan' => 'Kak Budi',
+                            'nomor_whatsapp' => '0812-3456-7890',
+                            'whatsapp' => '0812-3456-7890',
+                            'email' => 'budi.santoso@racer.id',
+                            'username' => '@budi.santoso',
+                            'spesialisasi' => 'SD',
+                            'jenjang_modul' => 'Level 1: Building (TK/SD)',
+                            'penempatan' => 'Lab A • Jakarta Pusat',
+                            'tautan_meeting' => 'https://meet.google.com/rcr-budi',
+                            'max_kelas_minggu' => '10 Sesi Kelas / Minggu',
+                            'preferensi_mengajar' => 'Pagi + Siang Hari',
+                            'status' => 'Aktif',
+                        ]);
+                    } else {
                     $idPenggunaBudi = null;
                     if (Schema::hasTable('pengguna')) {
                         $idPenggunaBudi = DB::table('pengguna')->where('username', 'tutor.budi')->value('id_pengguna');
@@ -588,6 +822,7 @@ class AdminController extends Controller
                         'status' => 'Aktif',
                         'dibuat_pada' => now(),
                     ]);
+                }
                 }
 
                 // 2. TTR-002 (Dina Pratiwi)

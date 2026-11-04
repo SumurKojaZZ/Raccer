@@ -49,7 +49,7 @@ class DatabaseSeeder extends Seeder
 
         // 5. Siswa
         DB::table('siswa')->insertOrIgnore([
-            ['id_siswa' => 1, 'id_keluarga' => 1, 'id_pengguna' => 8, 'nama_lengkap' => 'Andi Santoso', 'nama_panggilan' => 'Andi', 'jenjang' => 'SD', 'kelas' => '3', 'tanggal_lahir' => '2017-05-12', 'status_siswa' => 'Aktif', 'dibuat_pada' => '2026-11-01 14:17:24'],
+            ['id_siswa' => 1, 'id_keluarga' => 1, 'id_pengguna' => 8, 'nisn' => '0012345678', 'nama_lengkap' => 'Andi Santoso', 'nama_panggilan' => 'Andi', 'jenjang' => 'SD', 'kelas' => '3', 'tanggal_lahir' => '2017-05-12', 'status_siswa' => 'Aktif', 'dibuat_pada' => '2026-11-01 14:17:24'],
         ]);
 
         // 6. Tutor

@@ -13,13 +13,18 @@ return new class extends Migration {
         if (!Schema::hasTable('jadwal')) {
             Schema::create('jadwal', function (Blueprint $table) {
                 $table->id();
-                $table->string('kelas');
-                $table->string('lokasi');
-                $table->string('tutor');
-                $table->string('waktu_mulai');
-                $table->string('waktu_selesai');
-                $table->string('status')->default('Terjadwal');
+                $table->string('program')->nullable();
+                $table->string('kelas')->nullable();
+                $table->string('lokasi')->nullable();
+                $table->string('tutor')->nullable();
+                $table->string('tutor_pengampu')->nullable();
                 $table->date('tanggal')->nullable();
+                $table->string('jam_mulai')->nullable();
+                $table->string('jam_selesai')->nullable();
+                $table->string('waktu_mulai')->nullable();
+                $table->string('waktu_selesai')->nullable();
+                $table->string('moda')->default('Offline');
+                $table->string('status')->default('Terjadwal');
                 $table->timestamps();
             });
         }
