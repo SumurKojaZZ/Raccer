@@ -2,15 +2,59 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\TutorController;
+use App\Models\Pengumuman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 Route::get('/', function () {
-    return view('welcome');
+    $pengumumanList = collect();
+    try {
+        if (Schema::hasTable('pengumuman')) {
+            $pengumumanList = Pengumuman::orderBy('id', 'desc')->take(5)->get();
+        }
+    } catch (\Throwable $e) {}
+
+    // Fallback data pengumuman realistis jika tabel masih kosong
+    if ($pengumumanList->isEmpty()) {
+        $pengumumanList = collect([
+            (object)[
+                'id' => 1,
+                'judul' => 'Pembukaan Pendaftaran Kelas Robotika Gelombang Baru',
+                'konten' => 'Pendaftaran program kursus STEM & Robotika untuk tingkat TK, SD, dan SMP telah dibuka. Kuota lab terbatas.',
+                'kategori' => 'PENTING',
+                'is_penting' => true,
+                'tanggal' => '04 Nov 2026',
+            ],
+            (object)[
+                'id' => 2,
+                'judul' => 'Pembaruan Modul Controller & AI v2.4',
+                'konten' => 'Modul praktikum mikrokontroler dan logika kontrol berbasis Arduino kini tersedia untuk peserta didik Level 3.',
+                'kategori' => 'Akademik',
+                'is_penting' => false,
+                'tanggal' => '02 Nov 2026',
+            ],
+            (object)[
+                'id' => 3,
+                'judul' => 'Jadwal Workshop Praktikum Offline Akhir Pekan',
+                'konten' => 'Sesi belajar tatap muka di Robotics Hub Lab B Jakarta Pusat berlangsung setiap hari Sabtu & Minggu.',
+                'kategori' => 'Workshop',
+                'is_penting' => false,
+                'tanggal' => '30 Okt 2026',
+            ],
+        ]);
+    }
+
+    return view('home', compact('pengumumanList'));
+})->name('home');
+
+Route::get('/home', function () {
+    return redirect('/');
 });
 
 // ── Login & Logout ─────────────────────────────────────
@@ -18,25 +62,28 @@ Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate']);
 Route::match(['get', 'post'], '/logout', [LoginController::class, 'logout'])->name('logout');
 
-// ── Admin Protected Routes ─────────────────────────────
-Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class, 'admin'])->group(function () {
+// ── Registrasi Mandiri Tutor ───────────────────────────
+Route::get('/register-tutor', [TutorController::class, 'showRegister'])->name('tutor.register');
+Route::post('/register-tutor', [TutorController::class, 'processRegister'])->name('tutor.register.store');
+
+// ── Admin Protected Routes (Khusus Admin) ──────────────
+Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
     Route::get('/admin', [AdminController::class, 'index'])->name('admin');
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
     Route::get('/admin/penjadwalan', [AdminController::class, 'penjadwalan'])->name('admin.penjadwalan');
     Route::get('/admin/tutor', [AdminController::class, 'tutor'])->name('admin.tutor');
     Route::post('/admin/tutor', [AdminController::class, 'storeTutor'])->name('admin.tutor.store');
+    Route::post('/admin/tutor/{id}/toggle-status', [AdminController::class, 'toggleStatusTutor'])->name('admin.tutor.toggle-status');
     Route::post('/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('admin.jadwal.store');
     Route::post('/admin/keluarga', [AdminController::class, 'storeKeluarga'])->name('admin.keluarga.store');
     Route::post('/admin/reschedule/{id}/approve', [AdminController::class, 'approveReschedule'])->name('admin.reschedule.approve');
     Route::post('/admin/jadwal/{id}/status', [AdminController::class, 'updateStatusJadwal'])->name('admin.jadwal.status');
 });
 
-// ── API Admin Endpoint ──────────────────────────────────
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/api/admin/jadwal', [AdminController::class, 'indexJadwal'])->name('api.admin.jadwal.index');
-    Route::get('/api/jadwal', [AdminController::class, 'indexJadwal'])->name('api.jadwal.index');
-    Route::post('/api/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('api.admin.jadwal.store');
-    Route::post('/api/jadwal', [AdminController::class, 'storeJadwal'])->name('api.jadwal.store');
+// ── Tutor Protected Routes (Khusus Portal Tutor) ───────
+Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
+    Route::get('/tutor', [TutorController::class, 'index'])->name('tutor');
+    Route::post('/tutor/password', [TutorController::class, 'updatePassword'])->name('tutor.password.update');
 });
 
 // ── Lupa Password ──────────────────────────────────────
