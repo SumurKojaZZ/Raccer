@@ -925,7 +925,6 @@
                                 <input type="hidden" name="total_sesi" id="inputTotalSesi" value="4">
                             </div>
 
-<<<<<<< HEAD
                             <!-- Data Akun Keluarga & Primary Parent (Wali) -->
                             <div class="col-12 pt-2 border-top">
                                 <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Primary Parent</small>
@@ -945,19 +944,6 @@
                             <div class="col-12 col-md-4">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga <span class="text-muted fw-normal">(Opsional)</span></label>
                                 <input type="text" name="nama_keluarga" id="inputNamaKeluarga" class="form-control rounded-3" placeholder="Contoh: Keluarga Andi (Otomatis)">
-=======
-                            <!-- Data Akun Keluarga & Wali -->
-                            <div class="col-12 pt-2 border-top">
-                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Wali</small>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Wali <span class="text-muted fw-normal">(Primary Parent)</span></label>
-                                <input type="text" name="nama_wali" class="form-control rounded-3" placeholder="Contoh: Bpk. Budi Santoso / Ibu Ratna" required>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga / Wali Kedua <span class="text-muted fw-normal">(Secondary Parent)</span></label>
-                                <input type="text" name="nama_keluarga" class="form-control rounded-3" placeholder="Contoh: Ibu Siti Aminah (Opsional)">
->>>>>>> 9c4b97bb18b423d629fa16daa22975b4a7c7ba6a
                             </div>
 
                             <div class="col-12 col-md-4">
