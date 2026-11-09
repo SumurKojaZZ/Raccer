@@ -381,8 +381,8 @@
                     </nav>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
-                    <span class="text-muted fw-medium d-flex align-items-center gap-1" style="font-size: 0.82rem;">
+                <div class="d-flex align-items-center gap-2 gap-md-3">
+                    <span class="text-muted fw-medium d-none d-sm-flex align-items-center gap-1" style="font-size: 0.82rem;">
                         <i class="bi bi-geo-alt text-primary"></i> {{ $tutorProfile->penempatan ?? 'Robotics Hub' }}
                     </span>
                     <button class="btn btn-light position-relative p-1 rounded-circle border-0 text-muted"
@@ -1108,6 +1108,13 @@
                 }
             }
         }
+
+        // Anti-Back-Button: Cegah tombol Back browser menampilkan halaman dari cache setelah logout
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted || (window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0] && window.performance.getEntriesByType('navigation')[0].type === 'back_forward')) {
+                window.location.reload();
+            }
+        });
     </script>
 </body>
 

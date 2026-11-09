@@ -30,9 +30,17 @@ class LoginController extends Controller
     /**
      * Tampilkan halaman login.
      */
-    public function show(): View
+    public function show(): \Symfony\Component\HttpFoundation\Response|View
     {
-        return view('login');
+        if (Auth::check()) {
+            return redirect()->route('admin');
+        }
+
+        return response()
+            ->view('login')
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sun, 02 Jan 1990 00:00:00 GMT');
     }
 
     /**
@@ -122,15 +130,17 @@ class LoginController extends Controller
             RateLimiter::clear($throttleKey);
 
             // Sinkronkan atau dapatkan model User untuk session Auth Laravel
-            $tutorName = null;
+            $displayName = null;
             if ($pengguna->role === 'Tutor' && Schema::hasTable('tutor')) {
-                $tutorName = DB::table('tutor')->where('id_pengguna', $pengguna->id_pengguna)->value('nama_lengkap');
+                $displayName = DB::table('tutor')->where('id_pengguna', $pengguna->id_pengguna)->value('nama_lengkap');
+            } elseif ($pengguna->role === 'Orang_Tua' && Schema::hasTable('orang_tua')) {
+                $displayName = DB::table('orang_tua')->where('id_pengguna', $pengguna->id_pengguna)->value('nama_lengkap');
             }
 
             $user = User::updateOrCreate(
                 ['username' => $pengguna->username],
                 [
-                    'name' => $tutorName ?? ucfirst($pengguna->username),
+                    'name' => $displayName ?? ucfirst($pengguna->username),
                     'email' => $pengguna->username . '@raccer.com',
                     'password' => $pengguna->password_hash,
                 ]
@@ -152,6 +162,10 @@ class LoginController extends Controller
             // Pengalihan halaman berdasarkan role
             if ($pengguna->role === 'Tutor') {
                 return redirect()->route('tutor');
+            }
+
+            if ($pengguna->role === 'Orang_Tua') {
+                return redirect()->route('home')->with('info', 'Selamat datang. Layanan portal Orang Tua sedang dalam tahap penyelesaian (B-41).');
             }
 
             return redirect()->route('admin');
@@ -230,7 +244,11 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login')->with('success', 'Anda telah berhasil keluar dari akun.');
+        return redirect('/login')
+            ->with('success', 'Anda telah berhasil keluar dari akun.')
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sun, 02 Jan 1990 00:00:00 GMT');
     }
 
     /**

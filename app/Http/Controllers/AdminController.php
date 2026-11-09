@@ -346,13 +346,23 @@ class AdminController extends Controller
             'nama_wali' => ['required', 'string', 'max:150'],
             'nama_keluarga' => ['nullable', 'string', 'max:150'],
             'hubungan' => ['nullable', 'string', 'max:50'],
-            'nomor_whatsapp' => ['nullable', 'string', 'max:25'],
+            'nomor_whatsapp' => [
+                'nullable',
+                'string',
+                'max:25',
+                'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/'
+            ],
+            'username_wali' => ['nullable', 'string', 'max:50'],
+            'password_wali' => ['nullable', 'string', 'min:6'],
             'alamat_domisili' => ['nullable', 'string'],
             'kelurahan' => ['nullable', 'string', 'max:100'],
             'kecamatan' => ['nullable', 'string', 'max:100'],
             'kota_kabupaten' => ['nullable', 'string', 'max:100'],
             'paket_belajar' => ['required', 'string', 'max:255'],
             'total_sesi' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'nama_wali.required' => 'Nama Primary Parent (Wali) wajib diisi.',
+            'nomor_whatsapp.regex' => 'Nomor WhatsApp tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
         ]);
 
         $this->ensureTablesExist();
@@ -377,105 +387,138 @@ class AdminController extends Controller
         }
         $displayWali = str_starts_with(strtolower($rawWali), 'wali') ? $rawWali : 'Wali: ' . $rawWali;
 
+        $hubungan = trim((string) ($validated['hubungan'] ?? ''));
+        if ($hubungan === '') {
+            $hubungan = preg_match('/\b(ibu|mama|bunda)\b/i', $rawWali) ? 'Ibu' : 'Ayah';
+        }
+        $hubunganLower = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $hubungan));
+        $prefixHubungan = in_array($hubunganLower, ['ayah', 'wali'], true) ? $hubunganLower : 'ibu';
+
+        // Tentukan nama dan slug berbasis data siswa (anak)
+        $targetSiswaName = $namaPanggilan ?: $firstWordSiswa ?: $cleanWali;
+        $siswaSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $namaPanggilan ?: $firstWordSiswa)) ?: strtolower(preg_replace('/[^a-zA-Z0-9]/', '', explode(' ', $cleanWali)[0])) ?: 'siswa';
+
+        $customUsername = !empty($validated['username_wali']) ? strtolower(ltrim(trim($validated['username_wali']), '@')) : null;
+        $waliUsername = $customUsername ?: ($prefixHubungan . '.' . $siswaSlug);
+        $passwordWali = $validated['password_wali'] ?? 'RacerWali2026!';
+
+        // Tolak penyimpanan bila username Primary Parent sudah dipakai
+        if (Schema::hasTable('pengguna') && DB::table('pengguna')->where('username', $waliUsername)->exists()) {
+            return back()->withInput()->withErrors([
+                'username_wali' => "Username '{$waliUsername}' untuk Primary Parent sudah dipakai.",
+                'nama_wali' => "Kredensial Primary Parent sudah terdaftar dengan username '{$waliUsername}'.",
+            ]);
+        }
+
         $namaKeluarga = trim((string) ($validated['nama_keluarga'] ?? ''));
         if ($namaKeluarga === '') {
-            $namaKeluarga = 'Keluarga ' . $cleanWali;
+            $namaKeluarga = 'Keluarga ' . $targetSiswaName;
         }
 
         $alamatDomisili = trim((string) ($validated['alamat_domisili'] ?? '')) ?: 'Jl. Contoh No. 1, RT 01/RW 01';
         $kelurahan = trim((string) ($validated['kelurahan'] ?? '')) ?: 'Menteng';
         $kecamatan = trim((string) ($validated['kecamatan'] ?? '')) ?: 'Menteng';
         $kotaKabupaten = trim((string) ($validated['kota_kabupaten'] ?? '')) ?: 'Jakarta Pusat';
-
-        $hubungan = trim((string) ($validated['hubungan'] ?? ''));
-        if ($hubungan === '') {
-            $hubungan = preg_match('/\b(ibu|mama|bunda)\b/i', $rawWali) ? 'Ibu' : 'Ayah';
-        }
         $nomorWhatsapp = substr(preg_replace('/[^0-9+]/', '', (string) ($validated['nomor_whatsapp'] ?? '081234567890')), 0, 16) ?: '081234567890';
 
-        // 1. Simpan ke tabel akun_keluarga
-        $idKeluarga = 1;
-        if (Schema::hasTable('akun_keluarga')) {
-            $idKeluarga = DB::table('akun_keluarga')->insertGetId([
-                'nama_keluarga' => $namaKeluarga,
-                'alamat_domisili' => $alamatDomisili,
-                'kelurahan' => $kelurahan,
-                'kecamatan' => $kecamatan,
-                'kota_kabupaten' => $kotaKabupaten,
-                'dibuat_pada' => now(),
-            ]);
-        }
-
-        // 2. Simpan akun pengguna & orang_tua untuk Wali
-        $idPenggunaWali = null;
-        $idPenggunaSiswa = null;
-        if (Schema::hasTable('pengguna')) {
-            $waliSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', explode(' ', $cleanWali)[0])) ?: 'wali';
-            $waliUsername = 'wali.' . $waliSlug;
-            $wCounter = 1;
-            while (DB::table('pengguna')->where('username', $waliUsername)->exists()) {
-                $waliUsername = 'wali.' . $waliSlug . $wCounter;
-                $wCounter++;
-            }
-
-            $idPenggunaWali = DB::table('pengguna')->insertGetId([
-                'username' => $waliUsername,
-                'password_hash' => Hash::make('RacerWali2026!'),
-                'role' => 'Orang_Tua',
-                'status_aktif' => 1,
-                'jumlah_gagal_login' => 0,
-                'dibuat_pada' => now(),
-            ]);
-
-            if (Schema::hasTable('orang_tua')) {
-                DB::table('orang_tua')->insert([
-                    'id_keluarga' => $idKeluarga,
-                    'id_pengguna' => $idPenggunaWali,
-                    'jenis_wali' => 'Primary_Parent',
-                    'nama_lengkap' => $cleanWali,
-                    'hubungan' => $hubungan,
-                    'nomor_whatsapp' => $nomorWhatsapp,
+        // Eksekusi penyimpanan dalam Database Transaction agar tidak ada data keluarga setengah jadi yang tersimpan
+        DB::transaction(function () use (
+            $namaKeluarga,
+            $alamatDomisili,
+            $kelurahan,
+            $kecamatan,
+            $kotaKabupaten,
+            $waliUsername,
+            $passwordWali,
+            $cleanWali,
+            $hubungan,
+            $nomorWhatsapp,
+            $namaPanggilan,
+            $nisn,
+            $namaSiswa,
+            $jenjang,
+            $kelas,
+            $tanggalLahir,
+            $displayWali,
+            $paketBelajar,
+            $totalSesi
+        ) {
+            // 1. Simpan ke tabel akun_keluarga
+            $idKeluarga = 1;
+            if (Schema::hasTable('akun_keluarga')) {
+                $idKeluarga = DB::table('akun_keluarga')->insertGetId([
+                    'nama_keluarga' => $namaKeluarga,
+                    'alamat_domisili' => $alamatDomisili,
+                    'kelurahan' => $kelurahan,
+                    'kecamatan' => $kecamatan,
+                    'kota_kabupaten' => $kotaKabupaten,
+                    'dibuat_pada' => now(),
                 ]);
             }
 
-            // 3. Simpan akun pengguna untuk Siswa
-            $siswaSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $namaPanggilan)) ?: 'siswa';
-            $siswaUsername = 'siswa.' . $siswaSlug;
-            $sCounter = 1;
-            while (DB::table('pengguna')->where('username', $siswaUsername)->exists()) {
-                $siswaUsername = 'siswa.' . $siswaSlug . $sCounter;
-                $sCounter++;
+            // 2. Simpan akun pengguna & orang_tua untuk Primary Parent (Wali)
+            $idPenggunaWali = null;
+            $idPenggunaSiswa = null;
+            if (Schema::hasTable('pengguna')) {
+                $idPenggunaWali = DB::table('pengguna')->insertGetId([
+                    'username' => $waliUsername,
+                    'password_hash' => Hash::make($passwordWali),
+                    'role' => 'Orang_Tua',
+                    'status_aktif' => 1,
+                    'jumlah_gagal_login' => 0,
+                    'dibuat_pada' => now(),
+                ]);
+
+                if (Schema::hasTable('orang_tua')) {
+                    DB::table('orang_tua')->insert([
+                        'id_keluarga' => $idKeluarga,
+                        'id_pengguna' => $idPenggunaWali,
+                        'jenis_wali' => 'Primary_Parent',
+                        'nama_lengkap' => $cleanWali,
+                        'hubungan' => $hubungan,
+                        'nomor_whatsapp' => $nomorWhatsapp,
+                    ]);
+                }
+
+                // 3. Simpan akun pengguna untuk Siswa
+                $siswaSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $namaPanggilan)) ?: 'siswa';
+                $siswaUsername = 'siswa.' . $siswaSlug;
+                $sCounter = 1;
+                while (DB::table('pengguna')->where('username', $siswaUsername)->exists()) {
+                    $siswaUsername = 'siswa.' . $siswaSlug . $sCounter;
+                    $sCounter++;
+                }
+
+                $idPenggunaSiswa = DB::table('pengguna')->insertGetId([
+                    'username' => $siswaUsername,
+                    'password_hash' => Hash::make('123456'),
+                    'role' => 'Siswa',
+                    'status_aktif' => 1,
+                    'jumlah_gagal_login' => 0,
+                    'dibuat_pada' => now(),
+                ]);
             }
 
-            $idPenggunaSiswa = DB::table('pengguna')->insertGetId([
-                'username' => $siswaUsername,
-                'password_hash' => Hash::make('123456'),
-                'role' => 'Siswa',
-                'status_aktif' => 1,
-                'jumlah_gagal_login' => 0,
+            // 4. Simpan ke tabel siswa
+            Siswa::create([
+                'id_keluarga' => $idKeluarga,
+                'id_pengguna' => $idPenggunaSiswa ?? 1,
+                'nisn' => $nisn,
+                'nama_lengkap' => $namaSiswa,
+                'nama_panggilan' => $namaPanggilan,
+                'jenjang' => $jenjang,
+                'kelas' => $kelas,
+                'tanggal_lahir' => $tanggalLahir,
+                'status_siswa' => 'Aktif',
                 'dibuat_pada' => now(),
+                'nama' => $namaSiswa,
+                'nama_wali' => $displayWali,
+                'paket_belajar' => $paketBelajar,
+                'total_sesi' => $totalSesi,
+                'sesi_terpakai' => 0,
+                'status_paket' => 'Aktif',
             ]);
-        }
-
-        // 4. Simpan ke tabel siswa
-        Siswa::create([
-            'id_keluarga' => $idKeluarga,
-            'id_pengguna' => $idPenggunaSiswa ?? 1,
-            'nisn' => $nisn,
-            'nama_lengkap' => $namaSiswa,
-            'nama_panggilan' => $namaPanggilan,
-            'jenjang' => $jenjang,
-            'kelas' => $kelas,
-            'tanggal_lahir' => $tanggalLahir,
-            'status_siswa' => 'Aktif',
-            'dibuat_pada' => now(),
-            'nama' => $namaSiswa,
-            'nama_wali' => $displayWali,
-            'paket_belajar' => $paketBelajar,
-            'total_sesi' => $totalSesi,
-            'sesi_terpakai' => 0,
-            'status_paket' => 'Aktif',
-        ]);
+        });
 
         return redirect()->route('admin')->with('success', 'Akun keluarga & siswa berhasil dibuat!');
     }

@@ -44,7 +44,7 @@ test('admin can create akun keluarga and siswa with nama panggilan, tanggal lahi
 
     $keluarga = DB::table('akun_keluarga')->where('id_keluarga', $siswa->id_keluarga)->first();
     expect($keluarga)->not->toBeNull();
-    expect($keluarga->nama_keluarga)->toBe('Keluarga Ratna');
+    expect($keluarga->nama_keluarga)->toBe('Keluarga Fadhil');
 
     $ortu = DB::table('orang_tua')->where('id_keluarga', $siswa->id_keluarga)->first();
     expect($ortu)->not->toBeNull();

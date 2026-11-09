@@ -1314,6 +1314,13 @@
             }
         });
         @endif
+
+        // Anti-Back-Button: Cegah tombol Back browser menampilkan halaman dari cache setelah logout
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted || (window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0] && window.performance.getEntriesByType('navigation')[0].type === 'back_forward')) {
+                window.location.reload();
+            }
+        });
     </script>
 </body>
 

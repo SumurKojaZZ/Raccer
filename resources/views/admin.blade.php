@@ -900,7 +900,7 @@
                             <div class="col-12 pt-2 border-top">
                                 <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar</small>
                             </div>
-                            <div class="col-12 col-md-8">
+                            <div class="col-12">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Paket Belajar</label>
                                 <select name="paket_belajar" id="selectPaketBelajar" class="form-select rounded-3" required>
                                     <optgroup label="Paket Regular — Per Bulan (4x Pertemuan)">
@@ -922,30 +922,44 @@
                                         <option value="Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12x Pertemuan)</option>
                                     </optgroup>
                                 </select>
+                                <input type="hidden" name="total_sesi" id="inputTotalSesi" value="4">
+                            </div>
+
+                            <!-- Data Akun Keluarga & Primary Parent (Wali) -->
+                            <div class="col-12 pt-2 border-top">
+                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Primary Parent</small>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Primary Parent (Wali) <span class="text-danger">*</span></label>
+                                <input type="text" name="nama_wali" id="inputNamaWali" class="form-control rounded-3" placeholder="Contoh: Ibu Ratna" required>
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Hubungan</label>
+                                <select name="hubungan" id="selectHubunganWali" class="form-select rounded-3">
+                                    <option value="Ibu" selected>Ibu</option>
+                                    <option value="Ayah">Ayah</option>
+                                    <option value="Wali">Wali</option>
+                                </select>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Total Sesi (Pertemuan)</label>
-                                <input type="number" name="total_sesi" id="inputTotalSesi" class="form-control rounded-3 bg-light" value="4" min="1" readonly required>
-                            </div>
-
-                            <!-- Data Akun Keluarga & Wali -->
-                            <div class="col-12 pt-2 border-top">
-                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Wali</small>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Wali</label>
-                                <input type="text" name="nama_wali" class="form-control rounded-3" placeholder="Contoh: Ibu Ratna" required>
-                            </div>
-                            <div class="col-12 col-md-6">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga <span class="text-muted fw-normal">(Opsional)</span></label>
-                                <input type="text" name="nama_keluarga" class="form-control rounded-3" placeholder="Contoh: Keluarga Ratna (Otomatis jika kosong)">
+                                <input type="text" name="nama_keluarga" id="inputNamaKeluarga" class="form-control rounded-3" placeholder="Contoh: Keluarga Andi (Otomatis)">
                             </div>
 
-                            <div class="col-12 col-md-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">No. WhatsApp Wali</label>
-                                <input type="text" name="nomor_whatsapp" class="form-control rounded-3" value="081234567890" placeholder="Contoh: 081234567890">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">No. WhatsApp Wali <span class="text-danger">*</span></label>
+                                <input type="text" name="nomor_whatsapp" class="form-control rounded-3" value="081234567890" placeholder="08... / +62..." required>
                             </div>
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Username Login <span class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="username_wali" id="inputUsernameWali" class="form-control rounded-3" placeholder="ibu.andi (Otomatis)">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Password Awal</label>
+                                <input type="text" name="password_wali" class="form-control rounded-3" value="RacerWali2026!">
+                            </div>
+
+                            <div class="col-12">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Alamat Domisili</label>
                                 <input type="text" name="alamat_domisili" class="form-control rounded-3" value="Jl. Contoh No. 1, RT 02/RW 05" placeholder="Jalan, nomor rumah, RT/RW">
                             </div>
@@ -1067,6 +1081,80 @@
             });
         }
 
+        // Otomatis isi Nama Keluarga (berdasarkan nama anak) & Username Login (sesuai hubungan: ibu/ayah/wali.<nama_anak>)
+        const inputNamaLengkapSiswa = document.getElementById('inputNamaLengkapSiswa');
+        const inputNamaPanggilanSiswa = document.getElementById('inputNamaPanggilanSiswa');
+        const selectHubunganWali = document.getElementById('selectHubunganWali');
+        const inputNamaWali = document.getElementById('inputNamaWali');
+        const inputUsernameWali = document.getElementById('inputUsernameWali');
+        const inputNamaKeluarga = document.getElementById('inputNamaKeluarga');
+
+        if (inputUsernameWali && inputNamaKeluarga) {
+            let manualUsername = false;
+            let manualKeluarga = false;
+
+            inputUsernameWali.addEventListener('input', () => {
+                manualUsername = inputUsernameWali.value.trim() !== '';
+            });
+
+            inputNamaKeluarga.addEventListener('input', () => {
+                manualKeluarga = inputNamaKeluarga.value.trim() !== '';
+            });
+
+            function getNamaTargetDanSlug() {
+                const panggilan = inputNamaPanggilanSiswa ? inputNamaPanggilanSiswa.value.trim() : '';
+                if (panggilan) {
+                    const slug = panggilan.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return { name: panggilan, slug: slug };
+                }
+
+                const lengkap = inputNamaLengkapSiswa ? inputNamaLengkapSiswa.value.trim() : '';
+                if (lengkap) {
+                    const firstWord = lengkap.split(/\s+/)[0];
+                    const slug = firstWord.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return { name: firstWord, slug: slug };
+                }
+
+                // Fallback jika nama anak belum diisi tapi nama wali diisi
+                const rawWali = inputNamaWali ? inputNamaWali.value.trim() : '';
+                if (rawWali) {
+                    const cleaned = rawWali.replace(/^(wali\s*:\s*|bpk\.?\s*|ibu\s*|pak\s*|ayah\s*|bunda\s*|mama\s*|papa\s*)/i, '').trim() || rawWali;
+                    const firstWord = cleaned.split(/\s+/)[0] || '';
+                    const slug = firstWord.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    return { name: cleaned, slug: slug };
+                }
+
+                return { name: '', slug: '' };
+            }
+
+            function syncKeluargaAndUsername() {
+                const target = getNamaTargetDanSlug();
+                const hubungan = selectHubunganWali ? selectHubunganWali.value.trim().toLowerCase() : 'ibu';
+                const prefix = (hubungan === 'ayah' || hubungan === 'wali') ? hubungan : 'ibu';
+
+                if (!manualUsername) {
+                    if (target.slug) {
+                        inputUsernameWali.value = prefix + '.' + target.slug;
+                    } else {
+                        inputUsernameWali.value = '';
+                    }
+                }
+
+                if (!manualKeluarga) {
+                    if (target.name) {
+                        inputNamaKeluarga.value = 'Keluarga ' + target.name;
+                    } else {
+                        inputNamaKeluarga.value = '';
+                    }
+                }
+            }
+
+            if (inputNamaLengkapSiswa) inputNamaLengkapSiswa.addEventListener('input', syncKeluargaAndUsername);
+            if (inputNamaPanggilanSiswa) inputNamaPanggilanSiswa.addEventListener('input', syncKeluargaAndUsername);
+            if (selectHubunganWali) selectHubunganWali.addEventListener('change', syncKeluargaAndUsername);
+            if (inputNamaWali) inputNamaWali.addEventListener('input', syncKeluargaAndUsername);
+        }
+
         // Buka modal otomatis jika terdapat hash #modalAkunKeluarga di URL
         if (window.location.hash === '#modalAkunKeluarga') {
             const modalKeluargaEl = document.getElementById('modalAkunKeluarga');
@@ -1115,6 +1203,13 @@
 
         // Mulai timer AFK saat halaman pertama kali dimuat
         resetTimerAfk();
+
+        // Anti-Back-Button: Cegah tombol Back browser menampilkan halaman dari cache setelah logout
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted || (window.performance && window.performance.getEntriesByType && window.performance.getEntriesByType('navigation')[0] && window.performance.getEntriesByType('navigation')[0].type === 'back_forward')) {
+                window.location.reload();
+            }
+        });
     </script>
 </body>
 

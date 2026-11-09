@@ -37,7 +37,14 @@ class CheckIdleTimeout
             $request->session()->put('last_activity_time', now()->timestamp);
         }
 
-        return $next($request);
+        $response = $next($request);
+
+        // Anti-Cache & Anti-Back-Button: Cegah browser (Chrome) menyimpan cache halaman terlindungi
+        $response->headers->set('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate');
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', 'Sun, 02 Jan 1990 00:00:00 GMT');
+
+        return $response;
     }
 }
 

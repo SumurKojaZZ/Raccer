@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RACER ROBOTIC - Platform Pembelajaran STEM & Robotika</title>
+    <title>Racer Robotic - Robotic & Drone Coding Academy</title>
 
     <!-- Google Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
 
     <!-- Bootstrap 5.3 CSS -->
@@ -20,388 +20,837 @@
     <style>
         :root {
             --bs-body-font-family: 'Plus Jakarta Sans', sans-serif;
-            --primary-blue: #1e5ee6;
-            --navy-dark: #0f1c3f;
-            --navy-card: #142042;
+            /* Palet Warna Sesuai Referensi Gambar */
+            --racer-sky-blue: #00A3FF;
+            /* Biru cerah Hero */
+            --racer-sky-dark: #0077c8;
+            /* Biru gelap */
+            --racer-orange: #FF9900;
+            /* Oranye tombol */
+            --racer-orange-hover: #e68500;
+            /* Oranye hover */
+            --racer-yellow-accent: #FFC000;
+            /* Kuning teks highlight */
+            --racer-dark: #1e293b;
+            /* Teks utama */
+            --racer-gray-bg: #f8fafc;
+            /* Background abu terang */
+            --racer-whatsapp: #25D366;
+            /* Hijau WhatsApp */
         }
 
         body {
             font-family: var(--bs-body-font-family);
-            background-color: #0b1329;
-            color: #ffffff;
+            background-color: var(--racer-gray-bg);
+            color: var(--racer-dark);
             margin: 0;
             padding: 0;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
             overflow-x: hidden;
-        }
-
-        /* Hero Background with Dark Overlay */
-        .hero-wrapper {
-            position: relative;
             min-height: 100vh;
-            background-image: 
-                linear-gradient(rgba(10, 18, 38, 0.78), rgba(8, 14, 30, 0.88)),
-                url("{{ file_exists(public_path('assets/background.png')) ? asset('assets/background.png') : asset('assets/background-login.jpg') }}");
-            background-size: cover;
-            background-position: center center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
             display: flex;
             flex-direction: column;
         }
 
-        /* Top Navbar */
-        .landing-navbar {
-            padding: 1.25rem 2.5rem;
-            background: rgba(10, 18, 38, 0.45);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            z-index: 100;
+        /* ── Top Navbar ── */
+        .racer-navbar {
+            background-color: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 0.85rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
         }
 
-        .brand-logo-box {
-            width: 40px;
-            height: 40px;
-            background: var(--primary-blue);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            font-size: 1.3rem;
-            box-shadow: 0 4px 12px rgba(30, 94, 230, 0.35);
-        }
-
-        /* Headline styling matching wireframe */
-        .hero-headline {
-            font-size: 2.75rem;
-            font-weight: 800;
-            line-height: 1.25;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        @media (max-width: 991.98px) {
-            .hero-headline {
-                font-size: 2rem;
-            }
-            .landing-navbar {
-                padding: 1rem 1.5rem;
-            }
-        }
-
-        /* Accent bar below headline */
-        .accent-bar {
-            width: 60px;
-            height: 4px;
-            background-color: #3b82f6;
-            border-radius: 2px;
-            margin: 1.5rem 0;
-            box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
-        }
-
-        /* Phone / WhatsApp Display */
-        .phone-display {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.5px;
+        .racer-logo-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.6rem;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            padding: 0.55rem 1.25rem;
-            border-radius: 50rem;
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            gap: 10px;
             text-decoration: none;
-            transition: all 0.25s ease;
         }
 
-        .phone-display:hover {
-            color: #ffffff;
-            background: rgba(37, 211, 102, 0.25);
-            border-color: #25d366;
-            transform: translateY(-2px);
+        .racer-logo-title {
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #008be3;
+            line-height: 1;
+            margin: 0;
         }
 
-        /* Instruction prompt */
-        .instruction-text {
-            font-size: 0.92rem;
-            font-weight: 700;
-            color: rgba(255, 255, 255, 0.9);
-            letter-spacing: 0.6px;
+        .racer-logo-title span {
+            color: #ef4444;
+            /* Sentuhan merah di logo RACER */
+        }
+
+        .racer-logo-subtitle {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #475569;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
+            display: block;
+            margin-top: 2px;
         }
 
-        /* Dark Navy Pill Login Button */
-        .btn-login-navy {
-            background-color: #121e3a;
-            color: #ffffff;
-            border: 1px solid #233562;
-            border-radius: 50rem;
-            padding: 0.65rem 1.85rem;
+        .nav-link-racer {
+            color: #334155;
             font-weight: 600;
-            font-size: 0.95rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.65rem;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-            text-decoration: none;
-            transition: all 0.25s ease;
-        }
-
-        .btn-login-navy:hover {
-            background-color: var(--primary-blue);
-            border-color: var(--primary-blue);
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(30, 94, 230, 0.45);
-        }
-
-        /* Right Column: Card Pengumuman */
-        .card-pengumuman {
-            background: #ffffff;
-            color: #0f172a;
-            border-radius: 20px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
-            padding: 2.25rem;
-            min-height: 520px;
-            display: flex;
-            flex-direction: column;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .pengumuman-title {
-            font-size: 2.25rem;
-            font-weight: 800;
-            color: #0f172a;
-            letter-spacing: -0.5px;
-            margin-bottom: 0.25rem;
-        }
-
-        .pengumuman-list {
-            flex-grow: 1;
-            overflow-y: auto;
-            max-height: 420px;
-            padding-right: 0.35rem;
-        }
-
-        /* Custom Scrollbar for announcements */
-        .pengumuman-list::-webkit-scrollbar {
-            width: 5px;
-        }
-        .pengumuman-list::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-        .pengumuman-list::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-
-        .pengumuman-item {
-            padding: 1.15rem;
-            border-radius: 12px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            margin-bottom: 0.85rem;
+            font-size: 0.92rem;
+            padding: 0.5rem 0.9rem !important;
             transition: all 0.2s ease;
         }
 
-        .pengumuman-item:hover {
-            background: #ffffff;
-            border-color: #bfdbfe;
-            box-shadow: 0 4px 14px rgba(30, 94, 230, 0.08);
-            transform: translateY(-1px);
+        .nav-link-racer:hover {
+            color: var(--racer-sky-blue);
         }
 
-        .badge-penting {
-            background-color: #fee2e2;
-            color: #dc2626;
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 0.3rem 0.65rem;
-            border-radius: 6px;
+        /* ── Hero Carousel Container ── */
+        .hero-carousel-container {
+            max-width: 1360px;
+            margin: 1.5rem auto 2.5rem auto;
+            padding: 0 1.25rem;
+            width: 100%;
         }
 
-        .badge-kategori {
-            background-color: #e0edff;
-            color: var(--primary-blue);
-            font-size: 0.7rem;
-            font-weight: 700;
-            padding: 0.3rem 0.65rem;
-            border-radius: 6px;
+        /* FIX ANTI MENCIUT: Tetapkan tinggi mutlak pada container, carousel, inner, dan item */
+        .hero-slider-card,
+        .hero-slider-card .carousel,
+        .hero-slider-card .carousel-inner,
+        .hero-slider-card .carousel-item {
+            height: 540px !important;
+            min-height: 540px !important;
+            max-height: 540px !important;
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            background-color: #0284c7;
+            /* Warna dasar jika foto sedang dimuat */
         }
 
-        /* Footer */
-        .landing-footer {
-            margin-top: auto;
-            padding: 1.25rem 2.5rem;
-            background: rgba(8, 14, 30, 0.85);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
+        /* Transisi Fade Lembut & Halus */
+        .carousel-fade .carousel-item {
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out !important;
+        }
+
+        .carousel-fade .carousel-item.active {
+            opacity: 1;
+        }
+
+        .hero-slider-card {
+            box-shadow: 0 20px 45px rgba(0, 139, 227, 0.22);
+        }
+
+        /* Foto background slide diposisikan absolute agar tidak menciut saat transisi */
+        .hero-slider-card .hero-slide-img {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 100% !important;
+            min-height: 100% !important;
+            object-fit: cover !important;
+            object-position: center right !important;
+            z-index: 1;
+            display: block;
+        }
+
+        /* OVERLAY GRADIENT BIRU: Menempatkan teks langsung di dalam foto dengan kontras tajam */
+        .hero-slide-overlay {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: linear-gradient(90deg,
+                    rgba(0, 120, 215, 0.97) 0%,
+                    rgba(0, 145, 235, 0.90) 42%,
+                    rgba(0, 163, 255, 0.60) 68%,
+                    rgba(0, 0, 0, 0.15) 100%);
+            display: flex;
+            align-items: center;
+            padding: 3rem 4rem;
+            z-index: 2;
+        }
+
+        /* Tipografi Teks di Dalam Gambar */
+        .hero-headline {
+            font-size: 2.75rem;
+            font-weight: 900;
+            line-height: 1.22;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-headline .text-accent-orange {
+            color: var(--racer-yellow-accent);
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .hero-subtext {
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            max-width: 580px;
+        }
+
+        /* Tag Label Kegiatan */
+        .badge-kegiatan-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.2);
             backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            padding: 0.4rem 1rem;
+            border-radius: 50rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 1.2rem;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── Tombol Oranye Khas Referensi (Di Dalam Banner) ── */
+        .btn-racer-orange {
+            background-color: var(--racer-orange);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.98rem;
+            padding: 0.75rem 1.65rem;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 6px 18px rgba(255, 153, 0, 0.45);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .btn-racer-orange:hover {
+            background-color: var(--racer-orange-hover);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(230, 133, 0, 0.55);
+        }
+
+        .btn-racer-white {
+            background-color: #ffffff;
+            color: var(--racer-sky-dark);
+            font-weight: 700;
+            font-size: 0.98rem;
+            padding: 0.75rem 1.65rem;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .btn-racer-white:hover {
+            background-color: #f8fafc;
+            color: var(--racer-sky-blue);
+            transform: translateY(-2px);
+        }
+
+        /* Indikator Carousel Bulat */
+        .hero-slider-card .carousel-indicators {
+            margin-bottom: 1.5rem;
+            z-index: 5;
+        }
+
+        .hero-slider-card .carousel-indicators [data-bs-target] {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 5px;
+            background-color: #ffffff;
+            opacity: 0.55;
+            border: 2px solid rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .hero-slider-card .carousel-indicators .active {
+            opacity: 1;
+            background-color: var(--racer-orange);
+            transform: scale(1.3);
+            border-color: #ffffff;
+        }
+
+        /* Tombol Navigasi Panah Kiri/Kanan */
+        .hero-slider-card .carousel-control-prev,
+        .hero-slider-card .carousel-control-next {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(6px);
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+            margin: 0 1.25rem;
+            z-index: 5;
+            transition: all 0.2s;
+            opacity: 0.85;
+        }
+
+        .hero-slider-card .carousel-control-prev:hover,
+        .hero-slider-card .carousel-control-next:hover {
+            background: var(--racer-orange);
+            opacity: 1;
+        }
+
+        /* ── Section Company Profile / Program ── */
+        .section-header-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+
+        .section-header-title .title-orange {
+            color: var(--racer-orange);
+        }
+
+        .section-header-title .title-blue {
+            color: var(--racer-sky-blue);
+        }
+
+        /* ── Cards Program ── */
+        .card-feature {
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 2.2rem 1.75rem;
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .card-feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 14px 32px rgba(0, 163, 255, 0.14);
+            border-color: #bae6fd;
+        }
+
+        .feature-icon-box {
+            width: 58px;
+            height: 58px;
+            border-radius: 14px;
+            background: #e0f2fe;
+            color: var(--racer-sky-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.65rem;
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── Floating WhatsApp Button (Sesuai Referensi) ── */
+        .floating-wa-btn {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 60px;
+            height: 60px;
+            background-color: var(--racer-whatsapp);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+            z-index: 1050;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .floating-wa-btn:hover {
+            background-color: #20ba5a;
+            color: #ffffff;
+            transform: scale(1.1) translateY(-3px);
+            box-shadow: 0 12px 30px rgba(37, 211, 102, 0.55);
+        }
+
+        /* ── Modern Light Footer Sesuai Palet Warna ── */
+        .racer-footer {
+            background-color: #f8fafc;
+            border-top: 3px solid var(--racer-sky-blue);
+            color: #475569;
+            margin-top: auto;
+        }
+
+        .footer-link {
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .footer-link:hover {
+            color: var(--racer-sky-blue);
+            padding-left: 4px;
+        }
+
+        .footer-social-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            text-decoration: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            transition: all 0.2s ease;
+        }
+
+        .footer-social-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 163, 255, 0.15);
+            border-color: #bae6fd;
+        }
+
+        .footer-bottom-bar {
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        /* Responsif untuk Layar Tablet & HP */
+        @media (max-width: 991.98px) {
+
+            .hero-slider-card,
+            .hero-slider-card .carousel,
+            .hero-slider-card .carousel-inner,
+            .hero-slider-card .carousel-item {
+                height: 480px !important;
+                min-height: 480px !important;
+                max-height: 480px !important;
+            }
+
+            .hero-slide-overlay {
+                padding: 2.5rem 2rem;
+                background: linear-gradient(180deg,
+                        rgba(0, 115, 205, 0.94) 0%,
+                        rgba(0, 140, 230, 0.90) 65%,
+                        rgba(0, 0, 0, 0.35) 100%);
+            }
+
+            .hero-headline {
+                font-size: 2.1rem;
+            }
+
+            .hero-subtext {
+                font-size: 0.95rem;
+            }
+
+            .btn-group-hero {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .btn-racer-orange,
+            .btn-racer-white {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+
+            .hero-slider-card,
+            .hero-slider-card .carousel,
+            .hero-slider-card .carousel-inner,
+            .hero-slider-card .carousel-item {
+                height: 460px !important;
+                min-height: 460px !important;
+                max-height: 460px !important;
+            }
+
+            .hero-headline {
+                font-size: 1.7rem;
+            }
+
+            .hero-slide-overlay {
+                padding: 2rem 1.25rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div class="hero-wrapper">
-        <!-- Top Navbar -->
-        <header class="landing-navbar d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div class="d-flex align-items-center gap-2">
-                <div class="brand-logo-box">
-                    <i class="bi bi-robot"></i>
+
+    <!-- ================= NAVBAR ================= -->
+    <header class="racer-navbar">
+        <div class="container-fluid px-lg-5 d-flex align-items-center justify-content-between">
+            <!-- Brand Logo -->
+            <a href="{{ route('home') }}" class="racer-logo-badge">
+                <div class="bg-primary text-white rounded-3 p-2 d-flex align-items-center justify-content-center"
+                    style="width: 42px; height: 42px; background: linear-gradient(135deg, #00A3FF, #0077cc) !important;">
+                    <i class="bi bi-robot fs-4"></i>
                 </div>
                 <div>
-                    <h5 class="fw-bold text-white mb-0" style="letter-spacing: -0.2px;">RACER ROBOTIC</h5>
-                    <small class="text-white-50" style="font-size: 0.72rem;">Administrasi Akademik & STEM Center</small>
+                    <h1 class="racer-logo-title"><span>RACER</span> ROBOTIC</h1>
+                    <span class="racer-logo-subtitle">ROBOTIC & DRONE CODING ACADEMY</span>
                 </div>
-            </div>
+            </a>
 
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('tutor.register') }}" class="btn btn-outline-light btn-sm rounded-pill px-3 py-1 fw-semibold" style="font-size: 0.82rem; border-color: rgba(255,255,255,0.25);">
-                    <i class="bi bi-person-plus me-1"></i> Daftar Tutor
+            <!-- Navigation Links -->
+            <nav class="d-none d-lg-flex align-items-center gap-2">
+                <a href="#kelas" class="nav-link nav-link-racer">Our Class</a>
+                <a href="#tentang" class="nav-link nav-link-racer">About Us</a>
+                <a href="{{ route('tutor.register') }}" class="nav-link nav-link-racer text-primary">
+                    <i class="bi bi-person-plus me-1"></i> Gabung Tutor
                 </a>
-                <a href="{{ route('login') }}" class="btn btn-primary btn-sm rounded-pill px-3 py-1 fw-semibold" style="background-color: var(--primary-blue); border-color: var(--primary-blue); font-size: 0.82rem;">
+            </nav>
+
+            <!-- Tombol Masuk / Login -->
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-3 py-1 fw-bold"
+                    style="font-size: 0.85rem; border-color: var(--racer-sky-blue); color: var(--racer-sky-blue);">
                     <i class="bi bi-box-arrow-in-right me-1"></i> Masuk
                 </a>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Main Hero Section (2 Kolom sesuai Wireframe) -->
-        <main class="flex-grow-1 d-flex align-items-center py-5">
-            <div class="container-fluid px-4 px-md-5">
-                <div class="row align-items-center g-4 g-lg-5">
-                    
-                    <!-- Kolom Kiri: Informasi Pendaftaran & Login -->
-                    <div class="col-12 col-lg-7 text-start">
-                        <!-- Tagline Edukasi Kursus -->
-                        <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" style="background: rgba(30, 94, 230, 0.25); border: 1px solid rgba(59, 130, 246, 0.4); font-size: 0.78rem; font-weight: 600; color: #93c5fd;">
-                            <i class="bi bi-stars text-warning"></i> Kursus Robotika, Coding & AI Anak (Jenjang TK • SD • SMP)
-                        </div>
+    <!-- ================= HERO CAROUSEL (ANTI-MENCIUT) ================= -->
+    <section class="hero-carousel-container">
+        <div class="hero-slider-card">
+            <!-- Carousel otomatis fade halus setiap 3.5 detik -->
+            <div id="carouselHeroKegiatan" class="carousel slide carousel-fade" data-bs-ride="carousel"
+                data-bs-interval="3500">
 
-                        <!-- Headline yang disesuaikan untuk Lembaga Les Robotika TK, SD, SMP -->
-                        <h1 class="hero-headline">
-                            Mau mendaftarkan ananda (TK, SD, atau SMP) les robotika atau belum memiliki akun? Hubungi admin akademik kami di bawah ini.
-                        </h1>
+                <!-- Indikator Slide -->
+                <div class="carousel-indicators">
+                    <button type="button" data-bs-target="#carouselHeroKegiatan" data-bs-slide-to="0" class="active"
+                        aria-current="true" aria-label="Slide 1"></button>
+                    <button type="button" data-bs-target="#carouselHeroKegiatan" data-bs-slide-to="1"
+                        aria-label="Slide 2"></button>
+                    <button type="button" data-bs-target="#carouselHeroKegiatan" data-bs-slide-to="2"
+                        aria-label="Slide 3"></button>
+                    <button type="button" data-bs-target="#carouselHeroKegiatan" data-bs-slide-to="3"
+                        aria-label="Slide 4"></button>
+                </div>
 
-                        <!-- Accent bar -->
-                        <div class="accent-bar"></div>
+                <div class="carousel-inner">
 
-                        <!-- Kontak Admin WhatsApp & Konsultasi Kelas -->
-                        <div class="mb-4">
-                            <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20mendaftarkan%20ananda%20(TK/SD/SMP)%20untuk%20les%20robotika.%20Boleh%20minta%20info%20program%20dan%20jadwalnya?"
-                                target="_blank" class="phone-display" title="Klik untuk konsultasi & daftar les via WhatsApp">
-                                <i class="bi bi-whatsapp text-success fs-5"></i>
-                                <span>+62 812-3456-7890</span>
-                                <small class="text-white-50 ms-1 fw-normal">(Konsultasi & Pendaftaran)</small>
-                            </a>
-                            <div class="text-white-50 mt-2 d-flex flex-wrap align-items-center gap-3" style="font-size: 0.8rem;">
-                                <span><i class="bi bi-check-circle-fill text-success me-1"></i> Program khusus usia TK, SD, & SMP</span>
-                                <span><i class="bi bi-check-circle-fill text-success me-1"></i> Tersedia kelas coba gratis (free trial)</span>
+                    <!-- ================= SLIDE 1 ================= -->
+                    <div class="carousel-item active">
+                        <img src="{{ asset('assets/kegitatan-1.png') }}" class="hero-slide-img"
+                            alt="Kegiatan Praktikum Robotika Siswa">
+                        <div class="hero-slide-overlay">
+                            <div class="col-12 col-lg-8 col-xl-7">
+                                <div class="badge-kegiatan-tag">
+                                    <i class="bi bi-stars text-warning"></i> Sesi Praktikum & Eksplorasi Sains
+                                </div>
+                                <h2 class="hero-headline">
+                                    Menciptakan <span class="text-accent-orange">Generasi Unggul</span> Melalui
+                                    <span class="text-accent-orange">Edukasi AI STEM</span> Robotik Dan
+                                    <span class="text-accent-orange">Inovasi Digital!</span>
+                                </h2>
+                                <p class="hero-subtext">
+                                    Membimbing ananda (TK, SD, SMP) menjadi kreator teknologi dengan kurikulum berbasis
+                                    proyek praktikum yang seru dan aplikatif.
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center gap-3 btn-group-hero">
+                                    <a href="#tentang" class="btn-racer-orange">
+                                        <i class="bi bi-info-circle-fill"></i> Tentang Kami
+                                    </a>
+                                    <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20konsultasi%20pendaftaran%20kelas%20robotika"
+                                        target="_blank" class="btn-racer-orange">
+                                        <i class="bi bi-whatsapp"></i> Hubungi Kami
+                                    </a>
+                                    <a href="{{ route('login') }}" class="btn-racer-white">
+                                        <i class="bi bi-box-arrow-in-right"></i> Masuk Akun
+                                    </a>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Petunjuk Login Siswa, Orang Tua, & Tutor -->
-                        <div class="mb-3">
-                            <div class="instruction-text mb-2">
-                                Sudah terdaftar? Masuk ke akun Anda di sini:
-                            </div>
-
-                            <!-- Tombol Login Berbentuk Pill -->
-                            <a href="{{ route('login') }}" class="btn-login-navy">
-                                <i class="bi bi-box-arrow-in-right fs-5"></i>
-                                <span>Masuk ke Akun</span>
-                            </a>
-                        </div>
-
-                        <!-- Link Pendaftaran Mandiri Tutor -->
-                        <div class="mt-4 pt-3" style="border-top: 1px solid rgba(255, 255, 255, 0.12); max-width: 540px;">
-                            <span class="text-white-50" style="font-size: 0.84rem;">Tertarik bergabung sebagai pengajar les?</span>
-                            <a href="{{ route('tutor.register') }}" class="text-info fw-semibold text-decoration-none ms-1" style="font-size: 0.84rem;">
-                                Daftar Akun Tutor di sini <i class="bi bi-arrow-right"></i>
-                            </a>
                         </div>
                     </div>
 
-                    <!-- Kolom Kanan: Card Pengumuman -->
-                    <div class="col-12 col-lg-5">
-                        <div class="card-pengumuman">
-                            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-                                <h2 class="pengumuman-title">
-                                    Pengumuman
+                    <!-- ================= SLIDE 2 ================= -->
+                    <div class="carousel-item">
+                        <img src="{{ asset('assets/kegitatan-2.png') }}" class="hero-slide-img"
+                            alt="Kelas Coding & Logika Mikrokontroler">
+                        <div class="hero-slide-overlay">
+                            <div class="col-12 col-lg-8 col-xl-7">
+                                <div class="badge-kegiatan-tag">
+                                    <i class="bi bi-cpu-fill text-warning"></i> Coding, Logika Algoritma & Drone
+                                </div>
+                                <h2 class="hero-headline">
+                                    Belajar <span class="text-accent-orange">Coding & Drone</span> Dengan Cara
+                                    <span class="text-accent-orange">Menyenangkan</span> Dan
+                                    <span class="text-accent-orange">Interaktif!</span>
                                 </h2>
-                                <span class="badge bg-primary-subtle text-primary fw-semibold px-2 py-1 rounded-pill" style="font-size: 0.72rem;">
-                                    <i class="bi bi-broadcast me-1"></i> Terkini
-                                </span>
+                                <p class="hero-subtext">
+                                    Mengasah computational thinking anak sejak dini melalui simulasi blok coding hingga
+                                    perakitan drone terbang cerdas.
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center gap-3 btn-group-hero">
+                                    <a href="#tentang" class="btn-racer-orange">
+                                        <i class="bi bi-info-circle-fill"></i> Tentang Kami
+                                    </a>
+                                    <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20konsultasi%20kelas%20coding%20dan%20drone"
+                                        target="_blank" class="btn-racer-orange">
+                                        <i class="bi bi-whatsapp"></i> Hubungi Kami
+                                    </a>
+                                    <a href="{{ route('login') }}" class="btn-racer-white">
+                                        <i class="bi bi-box-arrow-in-right"></i> Masuk Akun
+                                    </a>
+                                </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- List Pengumuman -->
-                            <div class="pengumuman-list">
-                                @forelse ($pengumumanList as $item)
-                                    <div class="pengumuman-item">
-                                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                                            @if ($item->is_penting)
-                                                <span class="badge-penting">
-                                                    <i class="bi bi-pin-angle-fill me-1"></i>{{ $item->kategori ?: 'PENTING' }}
-                                                </span>
-                                            @else
-                                                <span class="badge-kategori">
-                                                    {{ $item->kategori ?: 'Akademik' }}
-                                                </span>
-                                            @endif
-                                            <small class="text-muted" style="font-size: 0.74rem;">
-                                                <i class="bi bi-calendar-event me-1"></i>{{ $item->tanggal ?: now()->format('d M Y') }}
-                                            </small>
-                                        </div>
-
-                                        <h6 class="fw-bold mb-1 text-dark" style="font-size: 0.9rem; line-height: 1.4;">
-                                            {{ $item->judul }}
-                                        </h6>
-                                        <p class="text-muted mb-0" style="font-size: 0.8rem; line-height: 1.45;">
-                                            {{ $item->konten }}
-                                        </p>
-                                    </div>
-                                @empty
-                                    <div class="text-center text-muted py-5">
-                                        <i class="bi bi-megaphone fs-1 d-block mb-2 text-secondary"></i>
-                                        Belum ada pengumuman terbaru.
-                                    </div>
-                                @endforelse
+                    <!-- ================= SLIDE 3 ================= -->
+                    <div class="carousel-item">
+                        <img src="{{ asset('assets/kegitatan-3.png') }}" class="hero-slide-img"
+                            alt="Kolaborasi Tim & Pemecahan Masalah">
+                        <div class="hero-slide-overlay">
+                            <div class="col-12 col-lg-8 col-xl-7">
+                                <div class="badge-kegiatan-tag">
+                                    <i class="bi bi-people-fill text-warning"></i> Kerja Sama Tim & Kepemimpinan
+                                </div>
+                                <h2 class="hero-headline">
+                                    Mengasah <span class="text-accent-orange">Kreativitas</span> Dan Kemampuan
+                                    <span class="text-accent-orange">Problem Solving</span> Di Setiap Sesi!
+                                </h2>
+                                <p class="hero-subtext">
+                                    Didampingi instruktur dan tutor bersertifikat yang siap mendampingi perkembangan
+                                    ananda secara personal dan intensif.
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center gap-3 btn-group-hero">
+                                    <a href="#tentang" class="btn-racer-orange">
+                                        <i class="bi bi-info-circle-fill"></i> Tentang Kami
+                                    </a>
+                                    <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20tanya%20program%20bimbingan%20robotik"
+                                        target="_blank" class="btn-racer-orange">
+                                        <i class="bi bi-whatsapp"></i> Hubungi Kami
+                                    </a>
+                                    <a href="{{ route('login') }}" class="btn-racer-white">
+                                        <i class="bi bi-box-arrow-in-right"></i> Masuk Akun
+                                    </a>
+                                </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- Card Footer -->
-                            <div class="pt-3 mt-auto border-top text-center" style="font-size: 0.8rem;">
-                                <span class="text-muted">Butuh info jadwal & kelas?</span>
-                                <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20bertanya%20seputar%20informasi%20kelas"
-                                    target="_blank" class="text-primary fw-semibold text-decoration-none ms-1">
-                                    Hubungi Admin WhatsApp <i class="bi bi-arrow-up-right"></i>
-                                </a>
+                    <!-- ================= SLIDE 4 ================= -->
+                    <div class="carousel-item">
+                        <img src="{{ asset('assets/kegitatan-4.png') }}" class="hero-slide-img"
+                            alt="Showcase Karya & Kompetisi Robotika">
+                        <div class="hero-slide-overlay">
+                            <div class="col-12 col-lg-8 col-xl-7">
+                                <div class="badge-kegiatan-tag">
+                                    <i class="bi bi-trophy-fill text-warning"></i> Prestasi & Turnamen Robotika
+                                </div>
+                                <h2 class="hero-headline">
+                                    Persiapan <span class="text-accent-orange">Kompetisi Robotika</span> Nasional
+                                    Hingga <span class="text-accent-orange">Tingkat Dunia!</span>
+                                </h2>
+                                <p class="hero-subtext">
+                                    Fasilitas lab lengkap, modul terstandarisasi, dan portofolio prestasi teknologi yang
+                                    membanggakan untuk masa depan anak.
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center gap-3 btn-group-hero">
+                                    <a href="#tentang" class="btn-racer-orange">
+                                        <i class="bi bi-info-circle-fill"></i> Tentang Kami
+                                    </a>
+                                    <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20konsultasi%20pembinaan%20kompetisi"
+                                        target="_blank" class="btn-racer-orange">
+                                        <i class="bi bi-whatsapp"></i> Hubungi Kami
+                                    </a>
+                                    <a href="{{ route('login') }}" class="btn-racer-white">
+                                        <i class="bi bi-box-arrow-in-right"></i> Masuk Akun
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                 </div>
-            </div>
-        </main>
 
-        <!-- Footer -->
-        <footer class="landing-footer d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
-            <div>© 2026 RACER ROBOTIC. Bertumbuh bersama teknologi.</div>
-            <div>Semua jadwal dalam Waktu Indonesia Barat (WIB)</div>
-        </footer>
-    </div>
+                <!-- Navigasi Kiri / Kanan -->
+                <button class="carousel-control-prev" type="button" data-bs-target="#carouselHeroKegiatan"
+                    data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Sebelumnya</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#carouselHeroKegiatan"
+                    data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Selanjutnya</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION COMPANY PROFILE ================= -->
+    <section id="tentang" class="py-5" style="background-color: #ffffff;">
+        <div class="container py-3">
+            <!-- Header Section Khas Referensi: Oranye + Biru -->
+            <div class="text-center mb-5">
+                <h3 class="section-header-title">
+                    <span class="title-orange">Company Profile</span> <span class="title-blue">RACER ROBOTIC</span>
+                </h3>
+                <p class="text-muted mx-auto" style="max-width: 650px;">
+                    Membimbing anak-anak usia dini hingga remaja dalam memahami teknologi masa depan dengan pendekatan
+                    praktikum yang menyenangkan dan berbobot.
+                </p>
+            </div>
+
+            <!-- Grid 3 Pilar Keunggulan -->
+            <div class="row g-4" id="kelas">
+                <div class="col-12 col-md-4">
+                    <div class="card-feature text-center">
+                        <div class="feature-icon-box mx-auto">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Kurikulum Robotika & IoT</h5>
+                        <p class="text-muted small mb-0">
+                            Mulai dari kit mekanik dasar hingga pemrograman Arduino dan sensor cerdas terkini.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="card-feature text-center">
+                        <div class="feature-icon-box mx-auto"
+                            style="background-color: #fef3c7; color: var(--racer-orange);">
+                            <i class="bi bi-airplane"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Drone & Coding AI</h5>
+                        <p class="text-muted small mb-0">
+                            Pemahaman logika komputasi anak, logika drone terbang otomatis, dan dasar kecerdasan buatan.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="card-feature text-center">
+                        <div class="feature-icon-box mx-auto" style="background-color: #dcfce7; color: #16a34a;">
+                            <i class="bi bi-trophy"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Persiapan Kompetisi</h5>
+                        <p class="text-muted small mb-0">
+                            Pembinaan intensif untuk olimpiade robotika nasional maupun turnamen inovasi internasional.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= FLOATING WHATSAPP BUTTON (SESUAI REFERENSI) ================= -->
+    <a href="https://wa.me/6281234567890?text=Halo%20Admin%20Racer%20Robotic,%20saya%20ingin%20tanya%20informasi%20kelas%20robotika"
+        target="_blank" class="floating-wa-btn" title="Chat Admin via WhatsApp">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+
+    <!-- ================= MODERN LIGHT FOOTER ================= -->
+    <footer class="racer-footer">
+        <div class="container py-5">
+            <div class="row g-4 justify-content-between">
+                <!-- Kolom 1: Profil Brand & Visi -->
+                <div class="col-12 col-lg-5">
+                    <a href="{{ route('home') }}" class="racer-logo-badge mb-3">
+                        <div class="rounded-3 p-2 d-flex align-items-center justify-content-center"
+                            style="width: 42px; height: 42px; background: linear-gradient(135deg, #00A3FF, #0077cc) !important; color: white;">
+                            <i class="bi bi-robot fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="racer-logo-title mb-0"><span>RACER</span> ROBOTIC</h5>
+                            <span class="racer-logo-subtitle">ROBOTIC & DRONE CODING ACADEMY</span>
+                        </div>
+                    </a>
+                    <p class="text-muted mt-3" style="font-size: 0.92rem; line-height: 1.6; max-width: 420px;">
+                        Lembaga edukasi teknologi dan STEM terdepan untuk ananda jenjang TK, SD, hingga SMP. Mendidik
+                        generasi penerus bangsa yang kreatif, mandiri, dan berdaya saing global melalui robotika dan
+                        kecerdasan buatan.
+                    </p>
+                    <div class="d-flex align-items-center gap-2 mt-3">
+                        <a href="https://wa.me/6281234567890" target="_blank" class="footer-social-btn text-success"
+                            title="WhatsApp">
+                            <i class="bi bi-whatsapp"></i>
+                        </a>
+                        <a href="#" class="footer-social-btn text-primary" title="Instagram">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                        <a href="#" class="footer-social-btn text-danger" title="YouTube">
+                            <i class="bi bi-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Kolom 2: Navigasi Cepat -->
+                <div class="col-6 col-lg-3">
+                    <h6 class="fw-bold text-dark mb-3" style="font-size: 0.95rem; letter-spacing: 0.3px;">MENU CEPAT
+                    </h6>
+                    <ul class="list-unstyled d-flex flex-column gap-2 mb-0" style="font-size: 0.9rem;">
+                        <li><a href="#kelas" class="footer-link"><i class="bi bi-chevron-right text-primary me-1"></i>
+                                Our Class</a></li>
+                        <li><a href="#tentang" class="footer-link"><i class="bi bi-chevron-right text-primary me-1"></i>
+                                About Us</a></li>
+                        <li><a href="{{ route('tutor.register') }}" class="footer-link"><i
+                                    class="bi bi-chevron-right text-primary me-1"></i> Gabung Tutor</a></li>
+                        <li><a href="{{ route('login') }}" class="footer-link"><i
+                                    class="bi bi-chevron-right text-primary me-1"></i> Masuk Akun Portal</a></li>
+                    </ul>
+                </div>
+
+                <!-- Kolom 3: Kontak & Jam Operasional -->
+                <div class="col-6 col-lg-4">
+                    <h6 class="fw-bold text-dark mb-3" style="font-size: 0.95rem; letter-spacing: 0.3px;">HUBUNGI KAMI
+                    </h6>
+                    <div class="d-flex flex-column gap-2 text-muted" style="font-size: 0.9rem;">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-geo-alt-fill text-danger mt-1"></i>
+                            <span>Robotics Hub Lab & STEM Training Center Jakarta</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-whatsapp text-success"></i>
+                            <a href="https://wa.me/6281234567890" target="_blank" class="footer-link fw-semibold">+62
+                                812-3456-7890</a>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-clock-fill text-primary"></i>
+                            <span>Senin - Sabtu (08.00 - 17.00 WIB)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Baris Bawah Copyright -->
+        <div class="footer-bottom-bar py-3">
+            <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 text-center text-md-start"
+                style="font-size: 0.84rem;">
+                <div class="text-muted">
+                    © 2026 <b class="text-primary">RACER ROBOTIC</b>. All rights reserved.
+                </div>
+                <div class="text-muted">
+                    Menciptakan Generasi Unggul Melalui Edukasi AI & STEM
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- Bootstrap 5 Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
-
