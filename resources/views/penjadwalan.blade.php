@@ -113,6 +113,49 @@
             font-size: 1.15rem;
         }
 
+        /* Tombol Logout Sidebar dengan Efek Hover */
+        .btn-logout-sidebar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            background-color: transparent;
+            border: 1px solid transparent;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-logout-sidebar:hover {
+            color: #dc2626 !important;
+            background-color: #fee2e2;
+            border-color: #fecaca;
+            transform: scale(1.08) translateX(2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+        }
+
+        .btn-logout-sidebar:active {
+            transform: scale(0.96);
+        }
+
+        /* Hover pada Tombol Konfirmasi Logout di Dalam Modal */
+        .btn-confirm-logout {
+            background-color: #dc2626 !important;
+            border-color: #dc2626 !important;
+            color: #ffffff !important;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm-logout:hover {
+            background-color: #b91c1c !important;
+            border-color: #b91c1c !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35) !important;
+        }
+
         /* Navbar & Search */
         .top-navbar {
             background: #ffffff;
@@ -306,8 +349,8 @@
                                 <small class="text-muted" style="font-size: 0.72rem;">{{ Auth::user()->email ?? 'admin@raccer.com' }}</small>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-light border text-danger p-1 px-2" title="Keluar" data-bs-toggle="modal" data-bs-target="#modalKonfirmasiLogout">
-                            <i class="bi bi-box-arrow-right"></i>
+                        <button type="button" class="btn-logout-sidebar" title="Keluar" data-bs-toggle="modal" data-bs-target="#modalKonfirmasiLogout">
+                            <i class="bi bi-box-arrow-right fs-5"></i>
                         </button>
                     </div>
                 </div>
@@ -672,7 +715,7 @@
                         </button>
                         <form method="POST" action="{{ route('logout') }}" class="m-0 w-50">
                             @csrf
-                            <button type="submit" class="btn btn-danger px-3 py-2 rounded-3 fw-semibold w-100 shadow-sm" style="background-color: #dc2626; border-color: #dc2626;">
+                            <button type="submit" class="btn btn-confirm-logout px-3 py-2 rounded-3 fw-semibold w-100 shadow-sm">
                                 Ya, Keluar
                             </button>
                         </form>
