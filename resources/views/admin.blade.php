@@ -355,7 +355,7 @@
                             <i class="bi bi-grid-fill"></i>
                             <span>Beranda</span>
                         </a>
-                        <a href="#modalAkunKeluarga" data-bs-toggle="modal" class="nav-link-custom">
+                        <a href="{{ route('admin.keluarga') }}" class="nav-link-custom">
                             <i class="bi bi-people"></i>
                             <span>Akun Keluarga & Siswa</span>
                         </a>

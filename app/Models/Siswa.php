@@ -29,10 +29,82 @@ class Siswa extends Model
         'nama',
         'nama_wali',
         'paket_belajar',
+        'program',
+        'jenis_paket',
         'total_sesi',
         'sesi_terpakai',
         'status_paket',
+        'status_pembayaran',
     ];
+
+    /**
+     * Fallback accessor untuk status pembayaran (Belum Bayar / Lunas).
+     */
+    public function getStatusPembayaranAttribute(?string $value): string
+    {
+        return !empty($value) ? $value : 'Lunas';
+    }
+
+    /**
+     * Fallback accessor untuk program kursus robotika.
+     */
+    public function getProgramAttribute(?string $value): string
+    {
+        if (!empty($value)) {
+            return $value;
+        }
+
+        $pb = (string) ($this->attributes['paket_belajar'] ?? '');
+        if (stripos($pb, 'Junior Robotics') !== false) {
+            return 'Junior Robotics';
+        }
+        if (stripos($pb, 'Python') !== false) {
+            return 'Python for Kids';
+        }
+        if (stripos($pb, 'Scratch') !== false) {
+            return 'Robotic Scratch';
+        }
+        if (stripos($pb, 'Arduino') !== false) {
+            return 'Arduino Explorer';
+        }
+        if (stripos($pb, 'AI') !== false) {
+            return 'AI Builder';
+        }
+        if (stripos($pb, 'IoT') !== false) {
+            return 'IoT Smart Home';
+        }
+
+        return 'Junior Robotics';
+    }
+
+    /**
+     * Fallback accessor untuk jenis paket (Semester / Bulanan / Private).
+     */
+    public function getJenisPaketAttribute(?string $value): string
+    {
+        if (!empty($value)) {
+            return $value;
+        }
+
+        $pb = (string) ($this->attributes['paket_belajar'] ?? '');
+        if (stripos($pb, 'Semester') !== false) {
+            return 'Semester';
+        }
+        if (stripos($pb, 'Bulanan') !== false) {
+            return 'Bulanan';
+        }
+        if (stripos($pb, 'Private') !== false) {
+            return 'Private';
+        }
+        if ($this->total_sesi >= 12) {
+            return 'Semester';
+        }
+        if ($this->total_sesi <= 4) {
+            return 'Bulanan';
+        }
+
+        return 'Semester';
+    }
 
     /**
      * Fallback accessor untuk nama siswa.

@@ -75,6 +75,9 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     Route::post('/admin/tutor', [AdminController::class, 'storeTutor'])->name('admin.tutor.store');
     Route::post('/admin/tutor/{id}/toggle-status', [AdminController::class, 'toggleStatusTutor'])->name('admin.tutor.toggle-status');
     Route::post('/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('admin.jadwal.store');
+    Route::get('/admin/keluarga', [AdminController::class, 'keluarga'])->name('admin.keluarga');
+    Route::post('/admin/keluarga/aktivasi-paket', [AdminController::class, 'aktivasiPaket'])->name('admin.keluarga.aktivasi-paket');
+    Route::post('/admin/keluarga/{id}/toggle-pembayaran', [AdminController::class, 'togglePembayaran'])->name('admin.keluarga.toggle-pembayaran');
     Route::post('/admin/keluarga', [AdminController::class, 'storeKeluarga'])->name('admin.keluarga.store');
     Route::post('/admin/reschedule/{id}/approve', [AdminController::class, 'approveReschedule'])->name('admin.reschedule.approve');
     Route::post('/admin/jadwal/{id}/status', [AdminController::class, 'updateStatusJadwal'])->name('admin.jadwal.status');
