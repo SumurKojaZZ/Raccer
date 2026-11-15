@@ -631,14 +631,6 @@ class AdminController extends Controller
         $waliUsername = $customUsername ?: ($prefixHubungan . '.' . $siswaSlug);
         $passwordWali = $validated['password_wali'] ?? 'RacerWali2026!';
 
-        // Tolak penyimpanan bila username Primary Parent sudah dipakai
-        if (Schema::hasTable('pengguna') && DB::table('pengguna')->where('username', $waliUsername)->exists()) {
-            return back()->withInput()->withErrors([
-                'username_wali' => "Username '{$waliUsername}' untuk Primary Parent sudah dipakai.",
-                'nama_wali' => "Kredensial Primary Parent sudah terdaftar dengan username '{$waliUsername}'.",
-            ]);
-        }
-
         $namaKeluarga = trim((string) ($validated['nama_keluarga'] ?? ''));
         if ($namaKeluarga === '') {
             $namaKeluarga = 'Keluarga ' . $targetSiswaName;
@@ -649,6 +641,55 @@ class AdminController extends Controller
         $kecamatan = trim((string) ($validated['kecamatan'] ?? '')) ?: 'Menteng';
         $kotaKabupaten = trim((string) ($validated['kota_kabupaten'] ?? '')) ?: 'Jakarta Pusat';
         $nomorWhatsapp = substr(preg_replace('/[^0-9+]/', '', (string) ($validated['nomor_whatsapp'] ?? '081234567890')), 0, 16) ?: '081234567890';
+
+        // Jika mode edit data siswa / keluarga yang sudah ada
+        $idSiswaInput = $request->input('id_siswa');
+        if ($idSiswaInput && ($existingSiswa = Siswa::find($idSiswaInput))) {
+            $existingSiswa->update([
+                'nama' => $namaSiswa,
+                'nama_lengkap' => $namaSiswa,
+                'nama_panggilan' => $namaPanggilan,
+                'nisn' => $nisn,
+                'jenjang' => $jenjang,
+                'kelas' => $kelas,
+                'tanggal_lahir' => $tanggalLahir,
+                'nama_wali' => $displayWali,
+                'paket_belajar' => $paketBelajar,
+                'total_sesi' => $totalSesi,
+            ]);
+
+            if ($existingSiswa->id_keluarga && Schema::hasTable('akun_keluarga')) {
+                DB::table('akun_keluarga')->where('id_keluarga', $existingSiswa->id_keluarga)->update([
+                    'nama_keluarga' => $namaKeluarga,
+                    'alamat_domisili' => $alamatDomisili,
+                    'kelurahan' => $kelurahan,
+                    'kecamatan' => $kecamatan,
+                    'kota_kabupaten' => $kotaKabupaten,
+                ]);
+            }
+
+            if ($existingSiswa->id_keluarga && Schema::hasTable('orang_tua')) {
+                DB::table('orang_tua')->where('id_keluarga', $existingSiswa->id_keluarga)->update([
+                    'nama_lengkap' => $cleanWali,
+                    'hubungan' => $hubungan,
+                    'nomor_whatsapp' => $nomorWhatsapp,
+                ]);
+            }
+
+            if ($request->headers->get('referer') && str_contains($request->headers->get('referer'), 'keluarga')) {
+                return redirect()->route('admin.keluarga')->with('success', "Data keluarga & siswa {$namaSiswa} berhasil diperbarui!");
+            }
+
+            return redirect()->route('admin')->with('success', "Data keluarga & siswa {$namaSiswa} berhasil diperbarui!");
+        }
+
+        // Tolak penyimpanan bila username Primary Parent sudah dipakai
+        if (Schema::hasTable('pengguna') && DB::table('pengguna')->where('username', $waliUsername)->exists()) {
+            return back()->withInput()->withErrors([
+                'username_wali' => "Username '{$waliUsername}' untuk Primary Parent sudah dipakai.",
+                'nama_wali' => "Kredensial Primary Parent sudah terdaftar dengan username '{$waliUsername}'.",
+            ]);
+        }
 
         // Eksekusi penyimpanan dalam Database Transaction agar tidak ada data keluarga setengah jadi yang tersimpan
         DB::transaction(function () use (

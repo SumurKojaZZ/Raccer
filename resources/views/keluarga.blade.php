@@ -421,6 +421,16 @@
             background-color: #fffbeb;
         }
 
+        /* Modal Subheader Sesuai Wireframe Tambah / Edit Keluarga */
+        .modal-section-title {
+            color: #1d68f0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-bottom: 0.85rem;
+        }
+
         /* Footer */
         footer {
             margin-top: 3rem;
@@ -683,9 +693,9 @@
                     <i class="bi bi-plus-lg text-primary"></i> Aktivasi Paket
                 </button>
 
-                <!-- Tombol 2: + Akun Keluarga (Solid Primary Button) -->
-                <button type="button" class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#modalAkunKeluarga">
-                    <i class="bi bi-plus-lg"></i> Akun Keluarga
+                <!-- Tombol 2: Edit Keluarga (Solid Primary Button Sesuai Permintaan) -->
+                <button type="button" class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#modalAkunKeluarga" onclick="openTambahKeluargaModal()">
+                    <i class="bi bi-pencil-square"></i> Edit Keluarga
                 </button>
             </div>
         </div>
@@ -790,6 +800,12 @@
                                                 <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
                                                     onclick="openAktivasiModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->status_pembayaran }}')">
                                                     <i class="bi bi-lightning-charge text-primary"></i> Aktivasi / Perbarui Paket
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                    onclick="openEditKeluargaModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_panggilan ?? '' }}', '{{ $s->jenjang ?? 'SD' }}', '{{ $s->kelas ?? '3' }}', '{{ $s->nisn ?? '' }}', '{{ $s->paket_belajar }}', '{{ $s->nama_wali }}', '{{ $s->nomor_whatsapp ?? '081234567890' }}', '{{ $s->hubungan ?? 'Ibu' }}')">
+                                                    <i class="bi bi-pencil-square text-secondary"></i> Edit Data Keluarga
                                                 </a>
                                             </li>
                                             <li>
@@ -1007,90 +1023,144 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MODAL 2: FORM TAMBAH AKUN KELUARGA & SISWA BARU                           -->
+    <!-- MODAL 2: FORM TAMBAH / EDIT AKUN KELUARGA & SISWA (Sesuai Wireframe)        -->
     <!-- ========================================================================= -->
     <div class="modal fade" id="modalAkunKeluarga" tabindex="-1" aria-labelledby="modalAkunKeluargaLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                <div class="modal-header border-bottom p-4 pb-3" style="background-color: #fafbfd;">
-                    <div>
-                        <div class="d-flex align-items-center gap-2 mb-1">
-                            <span class="badge border bg-light text-primary rounded-pill px-2 py-1 fw-bold" style="font-size: 0.72rem;">
-                                REGISTRASI
-                            </span>
-                            <h5 class="modal-title fw-bold text-dark mb-0" id="modalAkunKeluargaLabel" style="font-size: 1.15rem;">
-                                Tambah Akun Keluarga & Siswa
-                            </h5>
-                        </div>
-                        <small class="text-muted" style="font-size: 0.82rem;">
-                            Daftarkan akun keluarga, kontak wali murid, dan anak/siswa baru di Racer Robotic.
-                        </small>
-                    </div>
+                <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-center">
+                    <h5 class="modal-title fw-bold text-dark mb-0" id="modalAkunKeluargaTitle" style="font-size: 1.2rem; letter-spacing: -0.2px;">
+                        Tambah Akun Keluarga & Siswa
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
-                <form method="POST" action="{{ route('admin.keluarga.store') }}" class="needs-validation" novalidate>
+                <form method="POST" action="{{ route('admin.keluarga.store') }}" id="formAkunKeluarga" class="needs-validation" novalidate>
                     @csrf
-                    <div class="modal-body p-4">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <h6 class="fw-bold text-primary mb-2" style="font-size: 0.84rem;">
-                                    <i class="bi bi-person-fill me-1"></i> 1. DATA SISWA (ANAK)
-                                </h6>
+                    <input type="hidden" name="id_siswa" id="inputEditIdSiswa" value="">
+
+                    <div class="modal-body p-4 pt-2">
+                        <!-- 1. DATA SISWA (ANAK) -->
+                        <div class="modal-section-title">DATA SISWA (ANAK)</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-5">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Lengkap Siswa</label>
+                                <input type="text" name="nama" id="inputNamaSiswa" class="form-control rounded-2" placeholder="Contoh: Andi Santoso" required style="font-size: 0.88rem;">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.82rem;">Nama Lengkap Siswa <span class="text-danger">*</span></label>
-                                <input type="text" name="nama" class="form-control" placeholder="Alya Putri" required style="font-size: 0.88rem;">
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Panggilan</label>
+                                <input type="text" name="nama_panggilan" id="inputNamaPanggilan" class="form-control rounded-2" placeholder="Contoh: Andi" style="font-size: 0.88rem;">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.82rem;">Nama Panggilan</label>
-                                <input type="text" name="nama_panggilan" class="form-control" placeholder="Alya" style="font-size: 0.88rem;">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.82rem;">Jenjang & Kelas</label>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <select name="jenjang" class="form-select" style="font-size: 0.88rem;">
-                                            <option value="SD" selected>SD</option>
-                                            <option value="TK">TK</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="text" name="kelas" class="form-control" placeholder="Kelas 3" style="font-size: 0.88rem;">
-                                    </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Tanggal Lahir</label>
+                                <div class="input-group">
+                                    <input type="text" name="tanggal_lahir" id="inputTanggalLahir" class="form-control rounded-start-2" placeholder="12/05/2017" value="12/05/2017" style="font-size: 0.88rem;">
+                                    <span class="input-group-text bg-white border-start-0 text-muted rounded-end-2"><i class="bi bi-calendar3"></i></span>
                                 </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.82rem;">Paket Belajar Awal</label>
-                                <select name="paket_belajar" class="form-select" style="font-size: 0.88rem;">
-                                    <option value="Semester • Junior Robotics (12 Sesi)" selected>Semester • Junior Robotics (12 Sesi)</option>
-                                    <option value="Bulanan • Python for Kids (4 Sesi)">Bulanan • Python for Kids (4 Sesi)</option>
-                                    <option value="Private • Robotic Scratch (8 Sesi)">Private • Robotic Scratch (8 Sesi)</option>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Jenjang</label>
+                                <select name="jenjang" id="inputJenjang" class="form-select rounded-2" style="font-size: 0.88rem;">
+                                    <option value="SD" selected>SD</option>
+                                    <option value="TK">TK</option>
+                                    <option value="SMP">SMP</option>
+                                    <option value="SMA">SMA</option>
                                 </select>
                             </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kelas</label>
+                                <input type="text" name="kelas" id="inputKelas" class="form-control rounded-2" placeholder="3" value="3" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">NISN (Opsional)</label>
+                                <input type="text" name="nisn" id="inputNisn" class="form-control rounded-2" placeholder="Nomor Induk Siswa Nasional" style="font-size: 0.88rem;">
+                            </div>
+                        </div>
 
-                            <div class="col-12 pt-2">
-                                <h6 class="fw-bold text-primary mb-2" style="font-size: 0.84rem;">
-                                    <i class="bi bi-people-fill me-1"></i> 2. DATA WALI MURID (ORANG TUA)
-                                </h6>
+                        <!-- 2. PILIHAN PAKET BELAJAR (Sesuai Wireframe Image 2) -->
+                        <div class="modal-section-title mt-4">PILIHAN PAKET BELAJAR</div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-12">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Paket Belajar</label>
+                                <select name="paket_belajar" id="inputPaketBelajar" class="form-select rounded-2" style="font-size: 0.88rem; padding: 0.6rem 0.85rem;">
+                                    <optgroup label="Paket Regular — Per Bulan (4× Pertemuan)">
+                                        <option value="Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)" selected>Regular - Gold (1 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)">Regular - Silver (2 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)">Regular - Bronze (3 Orang) · Per Bulan (4× Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Regular — 1 Semester (12× Pertemuan)">
+                                        <option value="Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)">Regular - Gold (1 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)">Regular - Silver (2 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)">Regular - Bronze (3 Orang) · 1 Semester (12× Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Private">
+                                        <option value="Paket Private · Per Bulan (4x Pertemuan)">Paket Private · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Paket Private · 1 Semester (12x Pertemuan)">Paket Private · 1 Semester (12× Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Online">
+                                        <option value="Paket Online · Per Bulan (4x Pertemuan)">Paket Online · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Paket Online · 1 Semester (12x Pertemuan)">Paket Online · 1 Semester (12× Pertemuan)</option>
+                                    </optgroup>
+                                </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.82rem;">Nama Wali Murid <span class="text-danger">*</span></label>
-                                <input type="text" name="nama_wali" class="form-control" placeholder="Ibu Ratna" required style="font-size: 0.88rem;">
+                        </div>
+
+                        <!-- 3. DATA AKUN KELUARGA & PRIMARY PARENT -->
+                        <div class="modal-section-title mt-4">DATA AKUN KELUARGA & PRIMARY PARENT</div>
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Primary Parent (Wali) <span class="text-danger">*</span></label>
+                                <input type="text" name="nama_wali" id="inputNamaWali" class="form-control rounded-2" placeholder="Contoh: Ibu Ratna" required style="font-size: 0.88rem;">
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold text-dark" style="font-size: 0.82rem;">Nomor WhatsApp Aktif <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor_whatsapp" class="form-control" placeholder="0812-3456-7890" required style="font-size: 0.88rem;">
+                            <div class="col-md-3">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Hubungan</label>
+                                <select name="hubungan" id="inputHubungan" class="form-select rounded-2" style="font-size: 0.88rem;">
+                                    <option value="Ibu" selected>Ibu</option>
+                                    <option value="Ayah">Ayah</option>
+                                    <option value="Wali">Wali</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Keluarga (Opsional)</label>
+                                <input type="text" name="nama_keluarga" id="inputNamaKeluarga" class="form-control rounded-2" placeholder="Contoh: Keluarga Andi (Otomatis)" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">No. WhatsApp Wali <span class="text-danger">*</span></label>
+                                <input type="text" name="nomor_whatsapp" id="inputWhatsappWali" class="form-control rounded-2" placeholder="081234567890" value="081234567890" required style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Username Login (Opsional)</label>
+                                <input type="text" name="username_wali" id="inputUsernameWali" class="form-control rounded-2" placeholder="ibu.andi (Otomatis)" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Password Awal</label>
+                                <input type="text" name="password_wali" id="inputPasswordWali" class="form-control rounded-2" placeholder="RacerWali2026!" value="RacerWali2026!" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Alamat Domisili</label>
+                                <input type="text" name="alamat_domisili" id="inputAlamat" class="form-control rounded-2" placeholder="Jl. Contoh No. 1, RT 02/RW 05" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kelurahan</label>
+                                <input type="text" name="kelurahan" id="inputKelurahan" class="form-control rounded-2" placeholder="Menteng" value="Menteng" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kecamatan</label>
+                                <input type="text" name="kecamatan" id="inputKecamatan" class="form-control rounded-2" placeholder="Menteng" value="Menteng" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kota / Kabupaten</label>
+                                <input type="text" name="kota_kabupaten" id="inputKota" class="form-control rounded-2" placeholder="Jakarta Pusat" value="Jakarta Pusat" style="font-size: 0.88rem;">
                             </div>
                         </div>
                     </div>
 
-                    <div class="modal-footer border-top p-3 px-4" style="background-color: #fafbfd;">
-                        <button type="button" class="btn btn-light border px-4 py-2 rounded-3 fw-semibold text-secondary" data-bs-dismiss="modal" style="font-size: 0.86rem;">
+                    <div class="modal-footer border-0 p-4 pt-2 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light border px-4 py-2 rounded-3 fw-semibold text-secondary" data-bs-dismiss="modal" style="font-size: 0.88rem;">
                             Batal
                         </button>
-                        <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold" style="background-color: var(--primary-blue); font-size: 0.86rem;">
-                            Simpan Akun Keluarga
+                        <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold shadow-sm text-white" style="background-color: var(--primary-blue); font-size: 0.88rem;">
+                            Simpan Data
                         </button>
                     </div>
                 </form>
@@ -1243,6 +1313,55 @@
             }
         });
         @endif
+
+        // Fungsi Membuka Modal Tambah / Edit Akun Keluarga & Siswa
+        function openTambahKeluargaModal() {
+            const title = document.getElementById('modalAkunKeluargaTitle');
+            const hiddenId = document.getElementById('inputEditIdSiswa');
+            if (title) title.textContent = 'Edit Akun Keluarga & Siswa';
+            if (hiddenId) hiddenId.value = '';
+        }
+
+        function openEditKeluargaModal(idSiswa, nama, panggilan, jenjang, kelas, nisn, paketBelajar, namaWali, wa, hubungan) {
+            const title = document.getElementById('modalAkunKeluargaTitle');
+            const hiddenId = document.getElementById('inputEditIdSiswa');
+            if (title) title.textContent = 'Edit Akun Keluarga & Siswa (' + (nama || 'Siswa') + ')';
+            if (hiddenId) hiddenId.value = idSiswa || '';
+
+            const inputNama = document.getElementById('inputNamaSiswa');
+            const inputPanggilan = document.getElementById('inputNamaPanggilan');
+            const inputJenjang = document.getElementById('inputJenjang');
+            const inputKelas = document.getElementById('inputKelas');
+            const inputNisn = document.getElementById('inputNisn');
+            const inputPaket = document.getElementById('inputPaketBelajar');
+            const inputWali = document.getElementById('inputNamaWali');
+            const inputWa = document.getElementById('inputWhatsappWali');
+            const inputHub = document.getElementById('inputHubungan');
+
+            if (inputNama) inputNama.value = nama || '';
+            if (inputPanggilan) inputPanggilan.value = panggilan || (nama ? nama.split(' ')[0] : '');
+            if (inputJenjang && jenjang) inputJenjang.value = jenjang;
+            if (inputKelas) inputKelas.value = kelas || '3';
+            if (inputNisn) inputNisn.value = nisn || '';
+            if (inputWali) inputWali.value = (namaWali ? namaWali.replace(/^Wali:\s*/i, '') : '');
+            if (inputWa) inputWa.value = wa || '081234567890';
+            if (inputHub && hubungan) inputHub.value = hubungan;
+
+            if (inputPaket && paketBelajar) {
+                for (let i = 0; i < inputPaket.options.length; i++) {
+                    if (inputPaket.options[i].value === paketBelajar || paketBelajar.includes(inputPaket.options[i].value)) {
+                        inputPaket.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            const modalEl = document.getElementById('modalAkunKeluarga');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
     </script>
 </body>
 
