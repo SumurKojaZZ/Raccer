@@ -919,7 +919,7 @@
                                         data-paket="{{ $opt->jenis_paket }}"
                                         data-pembayaran="{{ $opt->status_pembayaran }}"
                                         {{ (old('id_siswa', 1) == ($opt->id_siswa ?? $opt->id)) ? 'selected' : '' }}>
-                                        {{ $opt->nama }} (Wali: {{ $opt->nama_wali }})
+                                        {{ $opt->nama }} (Wali: {{ preg_replace('/^Wali:\s*/i', '', $opt->nama_wali) }})
                                     </option>
                                 @endforeach
                             </select>
@@ -946,38 +946,37 @@
                             </div>
                         </div>
 
-                        <!-- 3. Jenis Paket (2 Cards Sesuai Wireframe Image 1) -->
+                        <!-- 3. Jenis Paket (Dropdown Sesuai Pilihan Paket Belajar) -->
                         <div class="mb-3">
-                            <label class="form-label fw-semibold text-dark mb-2" style="font-size: 0.83rem;">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
                                 Jenis Paket <span class="text-danger">*</span>
                             </label>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="card-jenis-paket active-paket w-100" id="cardSemester" onclick="selectJenisPaket('Semester', 12)">
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <input type="radio" name="jenis_paket" id="radioSemester" value="Semester" checked class="form-check-input mt-0" style="cursor: pointer;">
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Paket Semester</span>
-                                        </div>
-                                        <div class="text-muted" style="font-size: 0.76rem; padding-left: 1.45rem;">
-                                            Kuota otomatis: 12 Sesi
-                                        </div>
-                                    </label>
-                                </div>
-                                <div class="col-6">
-                                    <label class="card-jenis-paket w-100" id="cardBulanan" onclick="selectJenisPaket('Bulanan', 4)">
-                                        <div class="d-flex align-items-center gap-2 mb-1">
-                                            <input type="radio" name="jenis_paket" id="radioBulanan" value="Bulanan" class="form-check-input mt-0" style="cursor: pointer;">
-                                            <span class="fw-bold text-dark" style="font-size: 0.88rem;">Paket Bulanan</span>
-                                        </div>
-                                        <div class="text-muted" style="font-size: 0.76rem; padding-left: 1.45rem;">
-                                            Kuota otomatis: Maks. 4 Sesi
-                                        </div>
-                                    </label>
-                                </div>
+                            <select name="jenis_paket" id="aktivasiJenisPaket" class="form-select rounded-3 @error('jenis_paket') is-invalid @enderror" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;" onchange="onAktivasiPaketChange()">
+                                <optgroup label="Paket Regular — Per Bulan (4× Pertemuan)">
+                                    <option value="Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Gold (1 Orang) · Per Bulan (4× Pertemuan)</option>
+                                    <option value="Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Silver (2 Orang) · Per Bulan (4× Pertemuan)</option>
+                                    <option value="Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Bronze (3 Orang) · Per Bulan (4× Pertemuan)</option>
+                                </optgroup>
+                                <optgroup label="Paket Regular — 1 Semester (12× Pertemuan)">
+                                    <option value="Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12" selected>Regular - Gold (1 Orang) · 1 Semester (12× Pertemuan)</option>
+                                    <option value="Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12× Pertemuan)</option>
+                                    <option value="Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12× Pertemuan)</option>
+                                </optgroup>
+                                <optgroup label="Paket Private">
+                                    <option value="Paket Private · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Private · Per Bulan (4× Pertemuan)</option>
+                                    <option value="Paket Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Private · 1 Semester (12× Pertemuan)</option>
+                                </optgroup>
+                                <optgroup label="Paket Online">
+                                    <option value="Paket Online · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Online · Per Bulan (4× Pertemuan)</option>
+                                    <option value="Paket Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12× Pertemuan)</option>
+                                </optgroup>
+                            </select>
+                            <div class="invalid-feedback" style="font-size: 0.76rem;">
+                                Silakan pilih jenis paket belajar.
                             </div>
                         </div>
 
-                        <!-- Info Kuota Otomatis Sesuai Wireframe Image 1 -->
+                        <!-- Info Kuota Otomatis Sesuai Pilihan Paket -->
                         <div class="p-3 rounded-3 mb-4 d-flex align-items-start gap-2" style="background-color: #f8fafc; border: 1px solid #eef2f6;">
                             <i class="bi bi-info-circle text-secondary flex-shrink-0 mt-0" style="font-size: 1rem;"></i>
                             <span id="infoKuotaText" class="text-secondary" style="font-size: 0.79rem; line-height: 1.45;">
@@ -1207,32 +1206,41 @@
             });
         });
 
-        // Pemilihan Jenis Paket (Paket Semester 12 sesi vs Paket Bulanan 4 sesi) sesuai Wireframe Image 1
-        function selectJenisPaket(jenis, sesi) {
-            const radioSemester = document.getElementById('radioSemester');
-            const radioBulanan = document.getElementById('radioBulanan');
-            const cardSemester = document.getElementById('cardSemester');
-            const cardBulanan = document.getElementById('cardBulanan');
+        // Pemilihan Jenis Paket Aktivasi (Sinkronisasi Otomatis Total Sesi & Keterangan Kuota)
+        function onAktivasiPaketChange() {
+            const selectPaket = document.getElementById('aktivasiJenisPaket');
             const inputTotalSesi = document.getElementById('aktivasiTotalSesi');
             const infoText = document.getElementById('infoKuotaText');
+            if (!selectPaket) return;
 
-            if (jenis === 'Semester') {
-                if (radioSemester) radioSemester.checked = true;
-                if (cardSemester) cardSemester.classList.add('active-paket');
-                if (cardBulanan) cardBulanan.classList.remove('active-paket');
-                if (inputTotalSesi) inputTotalSesi.value = sesi || 12;
-                if (infoText) {
-                    infoText.textContent = 'Kuota awal otomatis terisi 12 sesi saat paket diaktifkan (berlaku walaupun status Belum Bayar).';
-                }
-            } else {
-                if (radioBulanan) radioBulanan.checked = true;
-                if (cardBulanan) cardBulanan.classList.add('active-paket');
-                if (cardSemester) cardSemester.classList.remove('active-paket');
-                if (inputTotalSesi) inputTotalSesi.value = sesi || 4;
-                if (infoText) {
-                    infoText.textContent = 'Kuota awal otomatis terisi 4 sesi saat paket diaktifkan (berlaku walaupun status Belum Bayar).';
+            const opt = selectPaket.options[selectPaket.selectedIndex];
+            let sesi = 12;
+            if (opt) {
+                sesi = opt.getAttribute('data-sesi') || (opt.value.includes('12') || opt.value.toLowerCase().includes('semester') ? 12 : 4);
+            }
+
+            if (inputTotalSesi) inputTotalSesi.value = sesi;
+            if (infoText) {
+                infoText.textContent = `Kuota awal otomatis terisi ${sesi} sesi saat paket diaktifkan (berlaku walaupun status Belum Bayar).`;
+            }
+        }
+
+        // Helper kompatibilitas
+        function selectJenisPaket(jenis, sesi) {
+            const selectPaket = document.getElementById('aktivasiJenisPaket');
+            if (selectPaket) {
+                for (let i = 0; i < selectPaket.options.length; i++) {
+                    const val = selectPaket.options[i].value;
+                    if (jenis === 'Semester' && (val.includes('1 Semester') || val.includes('12'))) {
+                        selectPaket.selectedIndex = i;
+                        break;
+                    } else if (jenis === 'Bulanan' && (val.includes('Per Bulan') || val.includes('4'))) {
+                        selectPaket.selectedIndex = i;
+                        break;
+                    }
                 }
             }
+            onAktivasiPaketChange();
         }
 
         // Deteksi konflik paket berstatus Aktif pada program yang sama (Sesuai Wireframe Image 2)
@@ -1271,6 +1279,7 @@
         function openAktivasiModal(idSiswa, nama, program, jenisPaket, totalSesi, statusPembayaran) {
             const selectSiswa = document.getElementById('aktivasiIdSiswa');
             const selectProgram = document.getElementById('aktivasiProgram');
+            const selectPaket = document.getElementById('aktivasiJenisPaket');
             const radioBelumBayar = document.getElementById('radioStatusBelumBayar');
             const radioLunas = document.getElementById('radioStatusLunas');
 
@@ -1286,7 +1295,30 @@
                 }
             }
 
-            selectJenisPaket(jenisPaket === 'Bulanan' ? 'Bulanan' : 'Semester', totalSesi || (jenisPaket === 'Bulanan' ? 4 : 12));
+            if (selectPaket && jenisPaket) {
+                let matched = false;
+                for (let i = 0; i < selectPaket.options.length; i++) {
+                    if (selectPaket.options[i].value === jenisPaket || selectPaket.options[i].value.includes(jenisPaket) || jenisPaket.includes(selectPaket.options[i].value)) {
+                        selectPaket.selectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) {
+                    for (let i = 0; i < selectPaket.options.length; i++) {
+                        if (jenisPaket.toLowerCase().includes('bulan') && selectPaket.options[i].value.toLowerCase().includes('bulan')) {
+                            selectPaket.selectedIndex = i;
+                            break;
+                        } else if (jenisPaket.toLowerCase().includes('semester') && selectPaket.options[i].value.toLowerCase().includes('semester')) {
+                            selectPaket.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                onAktivasiPaketChange();
+            } else {
+                onAktivasiPaketChange();
+            }
 
             if (statusPembayaran === 'Lunas') {
                 if (radioLunas) radioLunas.checked = true;

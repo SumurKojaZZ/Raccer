@@ -472,14 +472,14 @@ class AdminController extends Controller
         $validated = $request->validate([
             'id_siswa' => ['required'],
             'program' => ['required', 'string', 'max:150'],
-            'jenis_paket' => ['required', 'string', 'max:50'],
+            'jenis_paket' => ['required', 'string', 'max:255'],
             'total_sesi' => ['required', 'integer', 'min:1', 'max:100'],
             'status_pembayaran' => ['required', 'in:Belum Bayar,Lunas'],
             'metode_pembayaran' => ['nullable', 'string', 'max:100'],
             'catatan' => ['nullable', 'string', 'max:255'],
         ], [
             'id_siswa.required' => 'Pilih siswa yang akan diaktivasi paket belajarnya.',
-            'program.required' => 'Pilih program kursus robotika.',
+            'program.required' => 'Pilih program kelas.',
             'jenis_paket.required' => 'Pilih jenis paket belajar.',
             'total_sesi.required' => 'Jumlah total sesi kelas wajib diisi.',
             'total_sesi.min' => 'Jumlah sesi minimal 1 sesi.',
@@ -491,10 +491,14 @@ class AdminController extends Controller
 
         $idSiswa = $validated['id_siswa'];
         $program = $validated['program'];
-        $jenisPaket = $validated['jenis_paket'];
+        $rawJenisPaket = $validated['jenis_paket'];
+        $jenisPaket = $rawJenisPaket;
         $totalSesi = (int) $validated['total_sesi'];
         $statusPembayaran = $validated['status_pembayaran'];
-        $namaPaket = "{$jenisPaket} • {$program} ({$totalSesi} Sesi)";
+
+        // Tentukan kategori jenis paket (Semester / Bulanan) untuk tampilan ringkas
+        $kategoriJenis = (stripos($rawJenisPaket, 'semester') !== false || stripos($rawJenisPaket, '12') !== false) ? 'Semester' : 'Bulanan';
+        $namaPaket = (str_contains($rawJenisPaket, '•') || str_contains($rawJenisPaket, '·')) ? $rawJenisPaket : "{$rawJenisPaket} • {$program} ({$totalSesi} Sesi)";
 
         $siswa = Siswa::find($idSiswa);
 
@@ -509,7 +513,7 @@ class AdminController extends Controller
         if ($siswa) {
             $siswa->update([
                 'program' => $program,
-                'jenis_paket' => $jenisPaket,
+                'jenis_paket' => $kategoriJenis,
                 'paket_belajar' => $namaPaket,
                 'total_sesi' => $totalSesi,
                 'sesi_terpakai' => 0,
@@ -526,7 +530,7 @@ class AdminController extends Controller
                 'nama_panggilan' => explode(' ', $targetNama)[0],
                 'nama_wali' => 'Wali Siswa',
                 'program' => $program,
-                'jenis_paket' => $jenisPaket,
+                'jenis_paket' => $kategoriJenis,
                 'paket_belajar' => $namaPaket,
                 'total_sesi' => $totalSesi,
                 'sesi_terpakai' => 0,
