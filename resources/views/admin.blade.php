@@ -288,8 +288,8 @@
 
         /* Table styling */
         .table-custom th {
-            color: #94a3b8;
-            font-size: 0.75rem;
+            co or: #94a3b8;
+            font-size: 0.75rem; 
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
