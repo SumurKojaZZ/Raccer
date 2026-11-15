@@ -295,7 +295,7 @@
             letter-spacing: 0.5px;
             border-bottom: 1px dashed #cbd5e1;
             padding-bottom: 0.75rem;
-        }
+        }   
 
         .table-custom td {
             vertical-align: middle;
