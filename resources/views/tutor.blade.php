@@ -359,64 +359,6 @@
             outline: none;
             box-shadow: 0 0 0 3px rgba(29, 104, 240, 0.1);
         }
-
-        /* Modal Overlay & Fallback Display */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1055;
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
-            outline: 0;
-            display: none;
-        }
-
-        .modal.show {
-            display: block !important;
-            background-color: rgba(15, 23, 42, 0.55);
-        }
-
-        .modal-dialog {
-            position: relative;
-            width: auto;
-            margin: 1.75rem auto;
-            pointer-events: none;
-            z-index: 1060;
-        }
-
-        .modal-dialog-centered {
-            display: flex;
-            align-items: center;
-            min-height: calc(100% - 3.5rem);
-        }
-
-        .modal-content {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            pointer-events: auto;
-            background-color: #ffffff;
-            background-clip: padding-box;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 1rem;
-            outline: 0;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-        }
-
-        .modal-backdrop.show {
-            opacity: 0.5;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1050;
-            width: 100vw;
-            height: 100vh;
-            background-color: #000;
-        }
     </style>
 </head>
 
@@ -446,7 +388,7 @@
                             <i class="bi bi-grid-fill"></i>
                             <span>Beranda</span>
                         </a>
-                        <a href="{{ route('admin') }}#modalAkunKeluarga" class="nav-link-custom">
+                        <a href="{{ route('admin.keluarga') }}" class="nav-link-custom">
                             <i class="bi bi-people"></i>
                             <span>Akun Keluarga & Siswa</span>
                         </a>
@@ -627,8 +569,7 @@
                     <!-- Tombol + Tambah Tutor (Membuka Modal) -->
                     <button type="button" id="btnBukaModalTambahTutor"
                         class="btn btn-primary-blue d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 shadow-sm"
-                        data-bs-toggle="modal" data-bs-target="#modalTambahTutor"
-                        onclick="bukaModalTambahTutor()">
+                        data-bs-toggle="modal" data-bs-target="#modalTambahTutor">
                         <i class="bi bi-plus-lg"></i>
                         <span>Tambah Tutor</span>
                     </button>
@@ -655,7 +596,6 @@
                                         <!-- ID TUTOR -->
                                         <td>
                                             <a href="#modalDetailTutor{{ $tutor->id_tutor ?? $tutor->id }}" data-bs-toggle="modal"
-                                                onclick="bukaModalDetail('{{ $tutor->id_tutor ?? $tutor->id }}')"
                                                 class="fw-bold text-primary text-decoration-none" style="font-size: 0.86rem;">
                                                 {{ $tutor->kode_tutor ?: ($tutor->id_tutor ? 'TTR-' . str_pad($tutor->id_tutor, 3, '0', STR_PAD_LEFT) : ('TTR-' . str_pad($tutor->id ?? 1, 3, '0', STR_PAD_LEFT))) }}
                                             </a>
@@ -711,7 +651,7 @@
                                         <td class="text-center">
                                             <button type="button" class="btn btn-sm btn-light border bg-white text-secondary fw-semibold rounded-2 px-3 py-1 shadow-2xs"
                                                 data-bs-toggle="modal" data-bs-target="#modalDetailTutor{{ $tutor->id_tutor ?? $tutor->id }}"
-                                                onclick="bukaModalDetail('{{ $tutor->id_tutor ?? $tutor->id }}')" style="font-size: 0.82rem;">
+                                                style="font-size: 0.82rem;">
                                                 Detail
                                             </button>
                                         </td>
@@ -774,7 +714,7 @@
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 fw-semibold" style="font-size: 0.8rem;">
                                 ID: {{ $nextIdTutor ?? 'TTR-005' }} (Auto)
                             </span>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="tutupModalTambahTutor()"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                     </div>
 
@@ -938,7 +878,7 @@
 
                     <!-- Footer Modal Action Buttons -->
                     <div class="modal-footer border-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-light border bg-white px-4 py-2 rounded-3 text-secondary fw-semibold" data-bs-dismiss="modal" onclick="tutupModalTambahTutor()" style="font-size: 0.88rem;">
+                        <button type="button" class="btn btn-light border bg-white px-4 py-2 rounded-3 text-secondary fw-semibold" data-bs-dismiss="modal" style="font-size: 0.88rem;">
                             Batal
                         </button>
                         <button type="submit" id="btnSimpanTutor" class="btn btn-primary-blue px-4 py-2 rounded-3 fw-semibold shadow-sm" style="font-size: 0.88rem;">
@@ -957,7 +897,7 @@
                 <div class="modal-content border-0 rounded-4 shadow">
                     <div class="modal-header border-0 pb-0 pt-4 px-4 d-flex justify-content-between align-items-center">
                         <h5 class="modal-title fw-bold text-dark">Detail Akun Tutor</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="tutupModalDetail('{{ $tutor->id_tutor ?? $tutor->id }}')"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body px-4 py-3">
                         <div class="d-flex align-items-center gap-3 mb-4 p-3 bg-light rounded-3">
@@ -1002,7 +942,7 @@
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0 pb-4 px-4">
-                        <button type="button" class="btn btn-light border bg-white px-4 py-2 rounded-3 text-secondary fw-semibold w-100" data-bs-dismiss="modal" onclick="tutupModalDetail('{{ $tutor->id_tutor ?? $tutor->id }}')">
+                        <button type="button" class="btn btn-light border bg-white px-4 py-2 rounded-3 text-secondary fw-semibold w-100" data-bs-dismiss="modal">
                             Tutup
                         </button>
                     </div>
@@ -1060,27 +1000,11 @@
             if (!modalEl) return;
 
             if (window.bootstrap && typeof bootstrap.Modal === 'function') {
-                try {
-                    const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    inst.show();
-                    return;
-                } catch (e) {}
-            }
-
-            // Fallback Vanilla JS jika Bootstrap CDN belum termuat
-            modalEl.classList.add('show');
-            modalEl.style.display = 'block';
-            modalEl.removeAttribute('aria-hidden');
-            modalEl.setAttribute('aria-modal', 'true');
-            document.body.classList.add('modal-open');
-
-            let backdrop = document.getElementById('customBackdropTutor');
-            if (!backdrop) {
-                backdrop = document.createElement('div');
-                backdrop.id = 'customBackdropTutor';
-                backdrop.className = 'modal-backdrop fade show';
-                document.body.appendChild(backdrop);
-                backdrop.addEventListener('click', window.tutupModalTambahTutor);
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else {
+                modalEl.classList.add('show');
+                modalEl.style.display = 'block';
+                document.body.classList.add('modal-open');
             }
         };
 
@@ -1089,21 +1013,13 @@
             if (!modalEl) return;
 
             if (window.bootstrap && typeof bootstrap.Modal === 'function') {
-                try {
-                    const inst = bootstrap.Modal.getInstance(modalEl);
-                    if (inst) inst.hide();
-                } catch (e) {}
+                const inst = bootstrap.Modal.getInstance(modalEl);
+                if (inst) inst.hide();
+            } else {
+                modalEl.classList.remove('show');
+                modalEl.style.display = 'none';
+                document.body.classList.remove('modal-open');
             }
-
-            modalEl.classList.remove('show');
-            modalEl.style.display = 'none';
-            modalEl.setAttribute('aria-hidden', 'true');
-            modalEl.removeAttribute('aria-modal');
-            document.body.classList.remove('modal-open');
-
-            const backdrop = document.getElementById('customBackdropTutor');
-            if (backdrop) backdrop.remove();
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
         };
 
         window.bukaModalDetail = function (id) {
@@ -1111,60 +1027,71 @@
             if (!modalEl) return;
 
             if (window.bootstrap && typeof bootstrap.Modal === 'function') {
-                try {
-                    const inst = bootstrap.Modal.getOrCreateInstance(modalEl);
-                    inst.show();
-                    return;
-                } catch (e) {}
-            }
-
-            modalEl.classList.add('show');
-            modalEl.style.display = 'block';
-            modalEl.removeAttribute('aria-hidden');
-            modalEl.setAttribute('aria-modal', 'true');
-            document.body.classList.add('modal-open');
-
-            let backdrop = document.getElementById('customBackdropDetail');
-            if (!backdrop) {
-                backdrop = document.createElement('div');
-                backdrop.id = 'customBackdropDetail';
-                backdrop.className = 'modal-backdrop fade show';
-                document.body.appendChild(backdrop);
-                backdrop.addEventListener('click', () => window.tutupModalDetail(id));
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            } else {
+                modalEl.classList.add('show');
+                modalEl.style.display = 'block';
+                document.body.classList.add('modal-open');
             }
         };
 
         window.tutupModalDetail = function (id) {
             const modalEl = document.getElementById('modalDetailTutor' + id);
-            if (modalEl) {
-                if (window.bootstrap && typeof bootstrap.Modal === 'function') {
-                    try {
-                        const inst = bootstrap.Modal.getInstance(modalEl);
-                        if (inst) inst.hide();
-                    } catch (e) {}
-                }
+            if (!modalEl) return;
+
+            if (window.bootstrap && typeof bootstrap.Modal === 'function') {
+                const inst = bootstrap.Modal.getInstance(modalEl);
+                if (inst) inst.hide();
+            } else {
                 modalEl.classList.remove('show');
                 modalEl.style.display = 'none';
-                modalEl.setAttribute('aria-hidden', 'true');
-                modalEl.removeAttribute('aria-modal');
+                document.body.classList.remove('modal-open');
+            }
+        };
+
+        // Failsafe listener jika Bootstrap CDN tidak termuat di lingkungan offline
+        document.addEventListener('click', function (e) {
+            if (window.bootstrap && typeof bootstrap.Modal === 'function') return;
+
+            const toggle = e.target.closest('[data-bs-toggle="modal"]');
+            if (toggle) {
+                const target = toggle.getAttribute('data-bs-target') || toggle.getAttribute('href');
+                if (target) {
+                    const modal = document.querySelector(target);
+                    if (modal) {
+                        modal.classList.add('show');
+                        modal.style.display = 'block';
+                        document.body.classList.add('modal-open');
+                    }
+                }
             }
 
-            document.body.classList.remove('modal-open');
-            const backdrop = document.getElementById('customBackdropDetail');
-            if (backdrop) backdrop.remove();
-            document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-        };
+            const dismiss = e.target.closest('[data-bs-dismiss="modal"]');
+            if (dismiss) {
+                const modal = dismiss.closest('.modal');
+                if (modal) {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                }
+            }
+        });
 
         // ESC Key listener untuk menutup modal
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
-                window.tutupModalTambahTutor();
-                document.querySelectorAll('.modal.show').forEach(m => {
-                    m.classList.remove('show');
-                    m.style.display = 'none';
-                });
-                document.body.classList.remove('modal-open');
-                document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+                if (window.bootstrap && typeof bootstrap.Modal === 'function') {
+                    document.querySelectorAll('.modal.show').forEach(m => {
+                        const inst = bootstrap.Modal.getInstance(m);
+                        if (inst) inst.hide();
+                    });
+                } else {
+                    document.querySelectorAll('.modal.show').forEach(m => {
+                        m.classList.remove('show');
+                        m.style.display = 'none';
+                    });
+                    document.body.classList.remove('modal-open');
+                }
             }
         });
 

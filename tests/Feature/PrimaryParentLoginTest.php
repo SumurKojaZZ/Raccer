@@ -14,12 +14,10 @@ beforeEach(function () {
 
 test('primary parent credentials created by admin are valid on shared login service', function () {
     // 1. Simulasikan Admin membuat Akun Keluarga & Siswa dengan Primary Parent
-    $admin = User::factory()->make([
-        'id' => 999,
+    $admin = User::factory()->create([
         'name' => 'Admin Operasional',
         'username' => 'admin_test',
         'email' => 'admin_test@raccer.com',
-        'role' => 'Admin',
     ]);
 
     $createResponse = $this->actingAs($admin)->post('/admin/keluarga', [

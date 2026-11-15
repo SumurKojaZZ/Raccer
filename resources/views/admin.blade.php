@@ -288,14 +288,14 @@
 
         /* Table styling */
         .table-custom th {
-            color: #94a3b8;
-            font-size: 0.75rem;
+            co or: #94a3b8;
+            font-size: 0.75rem; 
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-bottom: 1px dashed #cbd5e1;
             padding-bottom: 0.75rem;
-        }
+        }   
 
         .table-custom td {
             vertical-align: middle;
@@ -355,7 +355,7 @@
                             <i class="bi bi-grid-fill"></i>
                             <span>Beranda</span>
                         </a>
-                        <a href="#modalAkunKeluarga" data-bs-toggle="modal" class="nav-link-custom">
+                        <a href="{{ route('admin.keluarga') }}" class="nav-link-custom">
                             <i class="bi bi-people"></i>
                             <span>Akun Keluarga & Siswa</span>
                         </a>
