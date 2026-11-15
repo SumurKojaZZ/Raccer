@@ -288,14 +288,14 @@
 
         /* Table styling */
         .table-custom th {
-            color: #94a3b8;
-            font-size: 0.75rem;
+            co or: #94a3b8;
+            font-size: 0.75rem; 
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             border-bottom: 1px dashed #cbd5e1;
             padding-bottom: 0.75rem;
-        }
+        }   
 
         .table-custom td {
             vertical-align: middle;
@@ -363,7 +363,8 @@
                             <i class="bi bi-person-badge"></i>
                             <span>Data Tutor</span>
                         </a>
-                        <a href="{{ route('admin.penjadwalan') }}" class="nav-link-custom {{ request()->routeIs('admin.penjadwalan') ? 'active' : '' }}">
+                        <a href="{{ route('admin.penjadwalan') }}"
+                            class="nav-link-custom {{ request()->routeIs('admin.penjadwalan') ? 'active' : '' }}">
                             <i class="bi bi-calendar4-week"></i>
                             <span>Penjadwalan Terpusat</span>
                         </a>
@@ -397,8 +398,7 @@
                             <p class="text-muted mb-2" style="font-size: 0.74rem; line-height: 1.3;">Tim support siap
                                 membantu Anda.</p>
                             <a href="#" class="text-primary fw-semibold text-decoration-none"
-                                style="font-size: 0.76rem;">Hubungi tim support <i
-                                    class="bi bi-arrow-up-right"></i></a>
+                                style="font-size: 0.76rem;">Hubungi tim support <i class="bi bi-arrow-up-right"></i></a>
                         </div>
                     </div>
                 </div>
@@ -412,10 +412,12 @@
                             <div class="fw-bold text-dark text-truncate" style="max-width: 120px; font-size: 0.82rem;">
                                 {{ Auth::user()->name ?? 'Admin Operasional' }}
                             </div>
-                            <small class="text-muted" style="font-size: 0.7rem;">{{ Auth::user()->email ?? 'admin@racer-robotic.id' }}</small>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ Auth::user()->email ??
+                                'admin@racer-robotic.id' }}</small>
                         </div>
                     </div>
-                    <button type="button" class="btn-logout-sidebar" title="Logout" data-bs-toggle="modal" data-bs-target="#modalKonfirmasiLogout">
+                    <button type="button" class="btn-logout-sidebar" title="Logout" data-bs-toggle="modal"
+                        data-bs-target="#modalKonfirmasiLogout">
                         <i class="bi bi-box-arrow-right fs-5"></i>
                     </button>
                 </div>
@@ -432,10 +434,10 @@
                     <button class="btn btn-light d-lg-none border" id="toggleSidebar">
                         <i class="bi bi-list fs-5"></i>
                     </button>
-                    <form action="{{ route('admin') }}" method="GET" class="search-container flex-grow-1" style="max-width: 480px;">
+                    <form action="{{ route('admin') }}" method="GET" class="search-container flex-grow-1"
+                        style="max-width: 480px;">
                         <i class="bi bi-search search-icon"></i>
-                        <input type="text" name="q" class="search-input w-100"
-                            value="{{ $search ?? '' }}"
+                        <input type="text" name="q" class="search-input w-100" value="{{ $search ?? '' }}"
                             placeholder="Cari nama siswa, nama wali, atau tutor...">
                     </form>
                 </div>
@@ -463,7 +465,8 @@
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
                     <div>
                         <h3 class="fw-bold text-dark mb-1" style="letter-spacing: -0.3px;">Selamat Datang,
-                            {{ Auth::user()->name ?? 'Administrator' }}!</h3>
+                            {{ Auth::user()->name ?? 'Administrator' }}!
+                        </h3>
                         <p class="text-muted mb-0" style="font-size: 0.88rem;">Pantau operasional kelas dan paket siswa
                             hari ini.</p>
                     </div>
@@ -477,8 +480,7 @@
                         <!-- Tombol Buka Modal Buat Jadwal -->
                         <button
                             class="btn btn-white bg-white border d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 text-dark"
-                            data-bs-toggle="modal" data-bs-target="#modalBuatJadwal"
-                            style="font-size: 0.88rem;">
+                            data-bs-toggle="modal" data-bs-target="#modalBuatJadwal" style="font-size: 0.88rem;">
                             <i class="bi bi-plus-lg"></i> Buat Jadwal
                         </button>
                     </div>
@@ -508,7 +510,8 @@
                                 <span class="stat-value">{{ $kelasHariIniCount }}</span>
                                 <span class="stat-unit">kelas</span>
                             </div>
-                            <small class="text-muted" style="font-size: 0.76rem;">{{ $kelasSelesai }} selesai · {{ $kelasBerlangsung }} berlangsung · {{ $kelasBerikutnya }}
+                            <small class="text-muted" style="font-size: 0.76rem;">{{ $kelasSelesai }} selesai ·
+                                {{ $kelasBerlangsung }} berlangsung · {{ $kelasBerikutnya }}
                                 berikutnya</small>
                         </div>
                     </div>
@@ -522,7 +525,8 @@
                                 <span class="stat-value">{{ $tutorAktifCount }}</span>
                                 <span class="stat-unit">tutor</span>
                             </div>
-                            <small class="text-muted" style="font-size: 0.76rem;">{{ $tutorMengajarCount }} tutor mengajar hari ini</small>
+                            <small class="text-muted" style="font-size: 0.76rem;">{{ $tutorMengajarCount }} tutor
+                                mengajar hari ini</small>
                         </div>
                     </div>
 
@@ -535,7 +539,8 @@
                                 <span class="stat-value">{{ $paketHampirHabisCount }}</span>
                                 <span class="stat-unit">siswa</span>
                             </div>
-                            <small class="text-warning fw-semibold" style="font-size: 0.76rem; color: #b45309 !important;">
+                            <small class="text-warning fw-semibold"
+                                style="font-size: 0.76rem; color: #b45309 !important;">
                                 {{ $paketHampirHabisCount }} paket perlu perhatian
                             </small>
                         </div>
@@ -553,7 +558,8 @@
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                                 <div class="d-flex align-items-center gap-2">
                                     <h5 class="fw-bold mb-0 text-dark">Jadwal Kelas Hari Ini</h5>
-                                    <span class="badge-soft-primary px-2 py-1" style="font-size: 0.75rem;">{{ $kelasHariIniCount }} kelas</span>
+                                    <span class="badge-soft-primary px-2 py-1"
+                                        style="font-size: 0.75rem;">{{ $kelasHariIniCount }} kelas</span>
                                 </div>
                                 <div class="text-muted d-flex align-items-center gap-1" style="font-size: 0.82rem;">
                                     <i class="bi bi-calendar2-event"></i>
@@ -576,11 +582,13 @@
                                             <tr>
                                                 <td>
                                                     <div class="fw-bold text-dark">{{ $j->waktu_mulai }}</div>
-                                                    <small class="text-muted" style="font-size: 0.75rem;">{{ $j->waktu_selesai }}</small>
+                                                    <small class="text-muted"
+                                                        style="font-size: 0.75rem;">{{ $j->waktu_selesai }}</small>
                                                 </td>
                                                 <td>
                                                     <div class="fw-semibold text-dark">{{ $j->kelas }}</div>
-                                                    <small class="text-muted" style="font-size: 0.75rem;">{{ $j->lokasi }}</small>
+                                                    <small class="text-muted"
+                                                        style="font-size: 0.75rem;">{{ $j->lokasi }}</small>
                                                 </td>
                                                 <td><span class="text-muted">{{ $j->tutor }}</span></td>
                                                 <td class="text-end">
@@ -594,30 +602,40 @@
 
                                                     <!-- Dropdown Ubah Status -->
                                                     <div class="dropdown d-inline">
-                                                        <button class="btn btn-sm btn-link text-muted p-0" data-bs-toggle="dropdown">
+                                                        <button class="btn btn-sm btn-link text-muted p-0"
+                                                            data-bs-toggle="dropdown">
                                                             <i class="bi bi-chevron-right" style="font-size: 0.75rem;"></i>
                                                         </button>
-                                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="font-size: 0.8rem;">
-                                                            <li><h6 class="dropdown-header">Ubah Status</h6></li>
+                                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm"
+                                                            style="font-size: 0.8rem;">
                                                             <li>
-                                                                <form action="{{ route('admin.jadwal.status', $j->id) }}" method="POST">
+                                                                <h6 class="dropdown-header">Ubah Status</h6>
+                                                            </li>
+                                                            <li>
+                                                                <form action="{{ route('admin.jadwal.status', $j->id) }}"
+                                                                    method="POST">
                                                                     @csrf
                                                                     <input type="hidden" name="status" value="Berlangsung">
-                                                                    <button type="submit" class="dropdown-item">Mulai (Berlangsung)</button>
+                                                                    <button type="submit" class="dropdown-item">Mulai
+                                                                        (Berlangsung)</button>
                                                                 </form>
                                                             </li>
                                                             <li>
-                                                                <form action="{{ route('admin.jadwal.status', $j->id) }}" method="POST">
+                                                                <form action="{{ route('admin.jadwal.status', $j->id) }}"
+                                                                    method="POST">
                                                                     @csrf
                                                                     <input type="hidden" name="status" value="Selesai">
-                                                                    <button type="submit" class="dropdown-item">Tandai Selesai</button>
+                                                                    <button type="submit" class="dropdown-item">Tandai
+                                                                        Selesai</button>
                                                                 </form>
                                                             </li>
                                                             <li>
-                                                                <form action="{{ route('admin.jadwal.status', $j->id) }}" method="POST">
+                                                                <form action="{{ route('admin.jadwal.status', $j->id) }}"
+                                                                    method="POST">
                                                                     @csrf
                                                                     <input type="hidden" name="status" value="Terjadwal">
-                                                                    <button type="submit" class="dropdown-item">Reset ke Terjadwal</button>
+                                                                    <button type="submit" class="dropdown-item">Reset ke
+                                                                        Terjadwal</button>
                                                                 </form>
                                                             </li>
                                                         </ul>
@@ -626,7 +644,8 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="text-center text-muted py-4">Belum ada jadwal kelas hari ini.</td>
+                                                <td colspan="4" class="text-center text-muted py-4">Belum ada jadwal kelas
+                                                    hari ini.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -634,7 +653,9 @@
                             </div>
 
                             <div class="text-center pt-3 border-top mt-2">
-                                <a href="{{ route('admin.penjadwalan') }}" class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1" style="font-size: 0.85rem;">
+                                <a href="{{ route('admin.penjadwalan') }}"
+                                    class="text-primary fw-semibold text-decoration-none d-inline-flex align-items-center gap-1"
+                                    style="font-size: 0.85rem;">
                                     Buka penjadwalan terpusat <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
@@ -647,7 +668,8 @@
                                     <h5 class="fw-bold mb-1 text-dark">Paket Siswa Perlu Perhatian</h5>
                                     <small class="text-muted">Hubungi wali untuk perpanjangan paket belajar.</small>
                                 </div>
-                                <a href="#modalAkunKeluarga" data-bs-toggle="modal" class="text-primary fw-semibold text-decoration-none" style="font-size: 0.85rem;">
+                                <a href="#modalAkunKeluarga" data-bs-toggle="modal"
+                                    class="text-primary fw-semibold text-decoration-none" style="font-size: 0.85rem;">
                                     + Tambah Siswa <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
@@ -669,16 +691,19 @@
                                                     <div class="fw-semibold text-dark">
                                                         {{ $p->nama }}
                                                         @if (!empty($p->nama_panggilan))
-                                                            <span class="text-muted fw-normal" style="font-size: 0.78rem;">({{ $p->nama_panggilan }})</span>
+                                                            <span class="text-muted fw-normal"
+                                                                style="font-size: 0.78rem;">({{ $p->nama_panggilan }})</span>
                                                         @endif
                                                     </div>
                                                     <small class="text-muted d-block" style="font-size: 0.75rem;">
                                                         {{ $p->nama_wali }}
                                                         @if (!empty($p->jenjang) || !empty($p->kelas))
-                                                            · {{ $p->jenjang }} {{ !str_starts_with(strtoupper((string) $p->kelas), strtoupper((string) $p->jenjang)) ? 'Kelas ' . $p->kelas : $p->kelas }}
+                                                            · {{ $p->jenjang }}
+                                                            {{ !str_starts_with(strtoupper((string) $p->kelas), strtoupper((string) $p->jenjang)) ? 'Kelas ' . $p->kelas : $p->kelas }}
                                                         @endif
                                                         @if (!empty($p->tanggal_lahir))
-                                                            · Lahir: {{ \Carbon\Carbon::parse($p->tanggal_lahir)->format('d/m/Y') }}
+                                                            · Lahir:
+                                                            {{ \Carbon\Carbon::parse($p->tanggal_lahir)->format('d/m/Y') }}
                                                         @endif
                                                     </small>
                                                 </td>
@@ -686,8 +711,10 @@
                                                     <span class="text-muted">{{ $p->paket_belajar }}</span>
                                                 </td>
                                                 <td style="min-width: 140px;">
-                                                    <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
-                                                        <span class="text-muted">{{ $p->sesi_terpakai }} dari {{ $p->total_sesi }} sesi</span>
+                                                    <div class="d-flex justify-content-between mb-1"
+                                                        style="font-size: 0.75rem;">
+                                                        <span class="text-muted">{{ $p->sesi_terpakai }} dari
+                                                            {{ $p->total_sesi }} sesi</span>
                                                     </div>
                                                     <div class="progress progress-slim">
                                                         <div class="progress-bar {{ $p->sisa_sesi === 0 ? 'bg-danger' : 'bg-primary' }}"
@@ -698,7 +725,8 @@
                                                     @if ($p->sisa_sesi === 0)
                                                         <span class="badge-soft-danger me-2">Paket habis</span>
                                                     @elseif ($p->sisa_sesi <= 2)
-                                                        <span class="badge-soft-warning me-2">Sisa {{ $p->sisa_sesi }} sesi</span>
+                                                        <span class="badge-soft-warning me-2">Sisa {{ $p->sisa_sesi }}
+                                                            sesi</span>
                                                     @else
                                                         <span class="badge-soft-success me-2">Aktif</span>
                                                     @endif
@@ -707,7 +735,8 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="text-center text-muted py-4">Tidak ada data paket siswa.</td>
+                                                <td colspan="4" class="text-center text-muted py-4">Tidak ada data paket
+                                                    siswa.</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
@@ -726,23 +755,30 @@
                             <small class="text-muted d-block mb-3">Kehadiran hari ini</small>
 
                             <div class="d-flex align-items-baseline justify-content-between mb-2">
-                                <div class="stat-value" style="font-size: 1.85rem;">{{ $presensi['hadir'] }} / {{ $presensi['total'] }} <span class="stat-unit">siswa</span></div>
+                                <div class="stat-value" style="font-size: 1.85rem;">{{ $presensi['hadir'] }} /
+                                    {{ $presensi['total'] }} <span class="stat-unit">siswa</span>
+                                </div>
                                 <span class="badge-soft-success">{{ $presensi['persentase'] }}% hadir</span>
                             </div>
 
                             <!-- Progress Bar -->
                             <div class="progress progress-slim mb-3" style="height: 8px;">
-                                <div class="progress-bar bg-primary" style="width: {{ $presensi['persentase'] }}%;"></div>
+                                <div class="progress-bar bg-primary" style="width: {{ $presensi['persentase'] }}%;">
+                                </div>
                             </div>
 
                             <div class="d-flex justify-content-between text-muted mb-3" style="font-size: 0.74rem;">
-                                <span><i class="bi bi-circle-fill text-primary" style="font-size: 0.5rem;"></i> {{ $presensi['hadir'] }} hadir</span>
-                                <span><i class="bi bi-circle-fill text-danger" style="font-size: 0.5rem;"></i> {{ $presensi['absen'] }} absen</span>
-                                <span><i class="bi bi-circle-fill text-secondary" style="font-size: 0.5rem;"></i> {{ $presensi['menunggu'] }} menunggu</span>
+                                <span><i class="bi bi-circle-fill text-primary" style="font-size: 0.5rem;"></i>
+                                    {{ $presensi['hadir'] }} hadir</span>
+                                <span><i class="bi bi-circle-fill text-danger" style="font-size: 0.5rem;"></i>
+                                    {{ $presensi['absen'] }} absen</span>
+                                <span><i class="bi bi-circle-fill text-secondary" style="font-size: 0.5rem;"></i>
+                                    {{ $presensi['menunggu'] }} menunggu</span>
                             </div>
 
                             <!-- Alert Box -->
-                            <div class="alert alert-primary py-2 px-3 d-flex align-items-center gap-2 mb-4" style="background-color: #ebf3ff; border: none; border-radius: 10px; font-size: 0.8rem; color: #1d4ed8;">
+                            <div class="alert alert-primary py-2 px-3 d-flex align-items-center gap-2 mb-4"
+                                style="background-color: #ebf3ff; border: none; border-radius: 10px; font-size: 0.8rem; color: #1d4ed8;">
                                 <i class="bi bi-info-circle"></i>
                                 <span>Notifikasi: Presensi kelas otomatis terupdate</span>
                             </div>
@@ -750,7 +786,8 @@
                             <!-- Sub-section: Menunggu Persetujuan -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="fw-bold text-dark" style="font-size: 0.86rem;">Menunggu persetujuan</span>
-                                <span class="badge-soft-warning px-2 py-1" style="font-size: 0.72rem;">{{ $rescheduleList->count() }} reschedule</span>
+                                <span class="badge-soft-warning px-2 py-1"
+                                    style="font-size: 0.72rem;">{{ $rescheduleList->count() }} reschedule</span>
                             </div>
 
                             <!-- List Item Reschedule -->
@@ -759,13 +796,18 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="avatar-circle">{{ $res->inisial ?? 'RS' }}</div>
                                         <div style="line-height: 1.2;">
-                                            <div class="fw-semibold text-dark" style="font-size: 0.84rem;">{{ $res->nama_siswa }}</div>
-                                            <small class="text-muted" style="font-size: 0.72rem;">{{ $res->jadwal_lama }} &rarr; {{ $res->jadwal_baru }} · {{ $res->kelas }}</small>
+                                            <div class="fw-semibold text-dark" style="font-size: 0.84rem;">
+                                                {{ $res->nama_siswa }}
+                                            </div>
+                                            <small class="text-muted" style="font-size: 0.72rem;">{{ $res->jadwal_lama }}
+                                                &rarr; {{ $res->jadwal_baru }} · {{ $res->kelas }}</small>
                                         </div>
                                     </div>
-                                    <form action="{{ route('admin.reschedule.approve', $res->id) }}" method="POST" class="m-0">
+                                    <form action="{{ route('admin.reschedule.approve', $res->id) }}" method="POST"
+                                        class="m-0">
                                         @csrf
-                                        <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.72rem;" title="Setujui">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary py-0 px-2"
+                                            style="font-size: 0.72rem;" title="Setujui">
                                             Setujui
                                         </button>
                                     </form>
@@ -781,7 +823,8 @@
                         <div class="dash-card p-4" id="tabelPengumuman">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h5 class="fw-bold mb-0 text-dark">Pengumuman Lembaga</h5>
-                                <a href="#" class="text-primary fw-semibold text-decoration-none" style="font-size: 0.82rem;">
+                                <a href="#" class="text-primary fw-semibold text-decoration-none"
+                                    style="font-size: 0.82rem;">
                                     Semua <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
@@ -794,7 +837,8 @@
                                                 <i class="bi bi-pin-angle-fill me-1"></i>{{ $item->kategori }}
                                             </span>
                                         @else
-                                            <span class="badge bg-secondary px-2 py-1" style="font-size: 0.68rem;">{{ $item->kategori }}</span>
+                                            <span class="badge bg-secondary px-2 py-1"
+                                                style="font-size: 0.68rem;">{{ $item->kategori }}</span>
                                         @endif
                                         <small class="text-muted" style="font-size: 0.72rem;">{{ $item->tanggal }}</small>
                                     </div>
@@ -817,7 +861,8 @@
     </div>
 
     <!-- ================= MODAL: BUAT JADWAL ================= -->
-    <div class="modal fade" id="modalBuatJadwal" tabindex="-1" aria-labelledby="modalBuatJadwalLabel" aria-hidden="true">
+    <div class="modal fade" id="modalBuatJadwal" tabindex="-1" aria-labelledby="modalBuatJadwalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow rounded-4">
                 <div class="modal-header border-0 pb-0">
@@ -829,14 +874,18 @@
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label fw-semibold" style="font-size: 0.85rem;">Program Kelas</label>
-                            <input type="text" name="program" class="form-control rounded-3" placeholder="Contoh: Junior Robotics" required>
+                            <input type="text" name="program" class="form-control rounded-3"
+                                placeholder="Contoh: Junior Robotics" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold" style="font-size: 0.85rem;">Lokasi / Ruangan</label>
-                            <input type="text" name="lokasi" class="form-control rounded-3" placeholder="Contoh: Lab Robotika 1, Lab Maker, atau Tautan Google Meet" required>
+                            <input type="text" name="lokasi" class="form-control rounded-3"
+                                placeholder="Contoh: Lab Robotika 1, Lab Maker, atau Tautan Google Meet" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tutor Pengampu <span class="badge bg-success-subtle text-success fw-normal ms-1" style="font-size: 0.72rem;">Aktif</span></label>
+                            <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tutor Pengampu <span
+                                    class="badge bg-success-subtle text-success fw-normal ms-1"
+                                    style="font-size: 0.72rem;">Aktif</span></label>
                             <select name="tutor_pengampu" class="form-select rounded-3" required>
                                 <option value="" disabled selected>Pilih Tutor Pengampu...</option>
                                 @if(isset($activeTutors) && count($activeTutors) > 0)
@@ -854,21 +903,25 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tanggal Kelas</label>
-                            <input type="date" name="tanggal" class="form-control rounded-3" value="{{ date('Y-m-d') }}" required>
+                            <input type="date" name="tanggal" class="form-control rounded-3" value="{{ date('Y-m-d') }}"
+                                required>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Jam Mulai</label>
-                                <input type="time" name="jam_mulai" class="form-control rounded-3" value="09:00" required>
+                                <input type="time" name="jam_mulai" class="form-control rounded-3" value="09:00"
+                                    required>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Jam Selesai</label>
-                                <input type="time" name="jam_selesai" class="form-control rounded-3" value="10:30" required>
+                                <input type="time" name="jam_selesai" class="form-control rounded-3" value="10:30"
+                                    required>
                             </div>
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Moda Pembelajaran</label>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Moda
+                                    Pembelajaran</label>
                                 <select name="moda" class="form-select rounded-3">
                                     <option value="Offline" selected>Offline (Tatap Muka)</option>
                                     <option value="Online">Online (Daring / Meet)</option>
@@ -886,8 +939,10 @@
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
-                        <button type="button" class="btn btn-light rounded-3 px-3" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary rounded-3 px-4" style="background-color: var(--primary-blue);">Simpan Jadwal</button>
+                        <button type="button" class="btn btn-light rounded-3 px-3"
+                            data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4"
+                            style="background-color: var(--primary-blue);">Simpan Jadwal</button>
                     </div>
                 </form>
             </div>
@@ -895,11 +950,13 @@
     </div>
 
     <!-- ================= MODAL: AKUN KELUARGA & SISWA ================= -->
-    <div class="modal fade" id="modalAkunKeluarga" tabindex="-1" aria-labelledby="modalAkunKeluargaLabel" aria-hidden="true">
+    <div class="modal fade" id="modalAkunKeluarga" tabindex="-1" aria-labelledby="modalAkunKeluargaLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow rounded-4">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold text-dark" id="modalAkunKeluargaLabel">Tambah Akun Keluarga & Siswa</h5>
+                    <h5 class="modal-title fw-bold text-dark" id="modalAkunKeluargaLabel">Tambah Akun Keluarga & Siswa
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="{{ route('admin.keluarga.store') }}" method="POST">
@@ -908,19 +965,24 @@
                         <div class="row g-3">
                             <!-- Data Siswa -->
                             <div class="col-12">
-                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Siswa (Anak)</small>
+                                <small class="text-uppercase text-primary fw-bold"
+                                    style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Siswa (Anak)</small>
                             </div>
                             <div class="col-12 col-md-5">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Lengkap Siswa</label>
-                                <input type="text" name="nama" id="inputNamaLengkapSiswa" class="form-control rounded-3" placeholder="Contoh: Andi Santoso" required>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Lengkap
+                                    Siswa</label>
+                                <input type="text" name="nama" id="inputNamaLengkapSiswa" class="form-control rounded-3"
+                                    placeholder="Contoh: Andi Santoso" required>
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Panggilan</label>
-                                <input type="text" name="nama_panggilan" id="inputNamaPanggilanSiswa" class="form-control rounded-3" placeholder="Contoh: Andi" required>
+                                <input type="text" name="nama_panggilan" id="inputNamaPanggilanSiswa"
+                                    class="form-control rounded-3" placeholder="Contoh: Andi" required>
                             </div>
                             <div class="col-12 col-md-3">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tanggal Lahir</label>
-                                <input type="date" name="tanggal_lahir" class="form-control rounded-3" value="2017-05-12" required>
+                                <input type="date" name="tanggal_lahir" class="form-control rounded-3"
+                                    value="2017-05-12" required>
                             </div>
 
                             <div class="col-6 col-md-4">
@@ -932,37 +994,55 @@
                             </div>
                             <div class="col-6 col-md-4">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kelas</label>
-                                <input type="text" name="kelas" class="form-control rounded-3" value="3" placeholder="Contoh: 3 / TK B" required>
+                                <input type="text" name="kelas" class="form-control rounded-3" value="3"
+                                    placeholder="Contoh: 3 / TK B" required>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">NISN <span class="text-muted fw-normal">(Opsional)</span></label>
-                                <input type="text" name="nisn" class="form-control rounded-3" placeholder="Nomor Induk Siswa Nasional">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">NISN <span
+                                        class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="nisn" class="form-control rounded-3"
+                                    placeholder="Nomor Induk Siswa Nasional">
                             </div>
 
                             <!-- Paket Belajar -->
                             <div class="col-12 pt-2 border-top">
-                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar</small>
+                                <small class="text-uppercase text-primary fw-bold"
+                                    style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar</small>
                             </div>
                             <div class="col-12">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Paket Belajar</label>
-                                <select name="paket_belajar" id="selectPaketBelajar" class="form-select rounded-3" required>
+                                <select name="paket_belajar" id="selectPaketBelajar" class="form-select rounded-3"
+                                    required>
                                     <optgroup label="Paket Regular — Per Bulan (4x Pertemuan)">
-                                        <option value="Regular Gold (1 Orang) · Bulanan (4x Pertemuan)" data-sesi="4" selected>Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)</option>
-                                        <option value="Regular Silver (2 Orang) · Bulanan (4x Pertemuan)" data-sesi="4">Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)</option>
-                                        <option value="Regular Bronze (3 Orang) · Bulanan (4x Pertemuan)" data-sesi="4">Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Regular Gold (1 Orang) · Bulanan (4x Pertemuan)" data-sesi="4"
+                                            selected>Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Regular Silver (2 Orang) · Bulanan (4x Pertemuan)" data-sesi="4">
+                                            Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)</option>
+                                        <option value="Regular Bronze (3 Orang) · Bulanan (4x Pertemuan)" data-sesi="4">
+                                            Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)</option>
                                     </optgroup>
                                     <optgroup label="Paket Regular — 1 Semester (12x Pertemuan)">
-                                        <option value="Regular Gold (1 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)</option>
-                                        <option value="Regular Silver (2 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)</option>
-                                        <option value="Regular Bronze (3 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)</option>
+                                        <option value="Regular Gold (1 Orang) · 1 Semester (12x Pertemuan)"
+                                            data-sesi="12">Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)
+                                        </option>
+                                        <option value="Regular Silver (2 Orang) · 1 Semester (12x Pertemuan)"
+                                            data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)
+                                        </option>
+                                        <option value="Regular Bronze (3 Orang) · 1 Semester (12x Pertemuan)"
+                                            data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)
+                                        </option>
                                     </optgroup>
                                     <optgroup label="Paket Private">
-                                        <option value="Private · Bulanan (4x Pertemuan)" data-sesi="4">Paket Private · Per Bulan (4x Pertemuan)</option>
-                                        <option value="Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Private · 1 Semester (12x Pertemuan)</option>
+                                        <option value="Private · Bulanan (4x Pertemuan)" data-sesi="4">Paket Private ·
+                                            Per Bulan (4x Pertemuan)</option>
+                                        <option value="Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket
+                                            Private · 1 Semester (12x Pertemuan)</option>
                                     </optgroup>
                                     <optgroup label="Paket Online">
-                                        <option value="Online · Bulanan (4x Pertemuan)" data-sesi="4">Paket Online · Per Bulan (4x Pertemuan)</option>
-                                        <option value="Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12x Pertemuan)</option>
+                                        <option value="Online · Bulanan (4x Pertemuan)" data-sesi="4">Paket Online · Per
+                                            Bulan (4x Pertemuan)</option>
+                                        <option value="Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online
+                                            · 1 Semester (12x Pertemuan)</option>
                                     </optgroup>
                                 </select>
                                 <input type="hidden" name="total_sesi" id="inputTotalSesi" value="4">
@@ -970,11 +1050,15 @@
 
                             <!-- Data Akun Keluarga & Primary Parent (Wali) -->
                             <div class="col-12 pt-2 border-top">
-                                <small class="text-uppercase text-primary fw-bold" style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Primary Parent</small>
+                                <small class="text-uppercase text-primary fw-bold"
+                                    style="font-size: 0.72rem; letter-spacing: 0.6px;">Data Akun Keluarga & Primary
+                                    Parent</small>
                             </div>
                             <div class="col-12 col-md-5">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Primary Parent (Wali) <span class="text-danger">*</span></label>
-                                <input type="text" name="nama_wali" id="inputNamaWali" class="form-control rounded-3" placeholder="Contoh: Ibu Ratna" required>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Primary Parent
+                                    (Wali) <span class="text-danger">*</span></label>
+                                <input type="text" name="nama_wali" id="inputNamaWali" class="form-control rounded-3"
+                                    placeholder="Contoh: Ibu Ratna" required>
                             </div>
                             <div class="col-12 col-md-3">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Hubungan</label>
@@ -985,45 +1069,60 @@
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga <span class="text-muted fw-normal">(Opsional)</span></label>
-                                <input type="text" name="nama_keluarga" id="inputNamaKeluarga" class="form-control rounded-3" placeholder="Contoh: Keluarga Andi (Otomatis)">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Keluarga <span
+                                        class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="nama_keluarga" id="inputNamaKeluarga"
+                                    class="form-control rounded-3" placeholder="Contoh: Keluarga Andi (Otomatis)">
                             </div>
 
                             <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">No. WhatsApp Wali <span class="text-danger">*</span></label>
-                                <input type="text" name="nomor_whatsapp" class="form-control rounded-3" value="081234567890" placeholder="08... / +62..." required>
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">No. WhatsApp Wali
+                                    <span class="text-danger">*</span></label>
+                                <input type="text" name="nomor_whatsapp" class="form-control rounded-3"
+                                    value="081234567890" placeholder="08... / +62..." required>
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Username Login <span class="text-muted fw-normal">(Opsional)</span></label>
-                                <input type="text" name="username_wali" id="inputUsernameWali" class="form-control rounded-3" placeholder="ibu.andi (Otomatis)">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Username Login <span
+                                        class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="username_wali" id="inputUsernameWali"
+                                    class="form-control rounded-3" placeholder="ibu.andi (Otomatis)">
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Password Awal</label>
-                                <input type="text" name="password_wali" class="form-control rounded-3" value="RacerWali2026!">
+                                <input type="text" name="password_wali" class="form-control rounded-3"
+                                    value="RacerWali2026!">
                             </div>
 
                             <div class="col-12">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Alamat Domisili</label>
-                                <input type="text" name="alamat_domisili" class="form-control rounded-3" value="Jl. Contoh No. 1, RT 02/RW 05" placeholder="Jalan, nomor rumah, RT/RW">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Alamat
+                                    Domisili</label>
+                                <input type="text" name="alamat_domisili" class="form-control rounded-3"
+                                    value="Jl. Contoh No. 1, RT 02/RW 05" placeholder="Jalan, nomor rumah, RT/RW">
                             </div>
 
                             <div class="col-12 col-md-4">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kelurahan</label>
-                                <input type="text" name="kelurahan" class="form-control rounded-3" value="Menteng" placeholder="Kelurahan">
+                                <input type="text" name="kelurahan" class="form-control rounded-3" value="Menteng"
+                                    placeholder="Kelurahan">
                             </div>
                             <div class="col-12 col-md-4">
                                 <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kecamatan</label>
-                                <input type="text" name="kecamatan" class="form-control rounded-3" value="Menteng" placeholder="Kecamatan">
+                                <input type="text" name="kecamatan" class="form-control rounded-3" value="Menteng"
+                                    placeholder="Kecamatan">
                             </div>
                             <div class="col-12 col-md-4">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kota / Kabupaten</label>
-                                <input type="text" name="kota_kabupaten" class="form-control rounded-3" value="Jakarta Pusat" placeholder="Kota / Kabupaten">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Kota /
+                                    Kabupaten</label>
+                                <input type="text" name="kota_kabupaten" class="form-control rounded-3"
+                                    value="Jakarta Pusat" placeholder="Kota / Kabupaten">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
-                        <button type="button" class="btn btn-light rounded-3 px-3" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-primary rounded-3 px-4" style="background-color: var(--primary-blue);">Simpan Data</button>
+                        <button type="button" class="btn btn-light rounded-3 px-3"
+                            data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4"
+                            style="background-color: var(--primary-blue);">Simpan Data</button>
                     </div>
                 </form>
             </div>
@@ -1031,12 +1130,14 @@
     </div>
 
     <!-- Modal Konfirmasi Logout -->
-    <div class="modal fade" id="modalKonfirmasiLogout" tabindex="-1" aria-labelledby="modalKonfirmasiLogoutLabel" aria-hidden="true">
+    <div class="modal fade" id="modalKonfirmasiLogout" tabindex="-1" aria-labelledby="modalKonfirmasiLogoutLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
             <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
                 <div class="modal-body p-2">
                     <div class="mb-3 d-flex justify-content-center">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; background-color: #fee2e2; color: #dc2626;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                            style="width: 70px; height: 70px; background-color: #fee2e2; color: #dc2626;">
                             <i class="bi bi-box-arrow-right fs-1"></i>
                         </div>
                     </div>
@@ -1045,12 +1146,15 @@
                         Apakah Anda yakin ingin keluar dari akun ini? Sesi Anda akan diakhiri.
                     </p>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-light border bg-white px-3 py-2 rounded-3 text-secondary fw-semibold w-50" data-bs-dismiss="modal">
+                        <button type="button"
+                            class="btn btn-light border bg-white px-3 py-2 rounded-3 text-secondary fw-semibold w-50"
+                            data-bs-dismiss="modal">
                             Batal
                         </button>
                         <form method="POST" action="{{ route('logout') }}" class="m-0 w-50">
                             @csrf
-                            <button type="submit" class="btn btn-confirm-logout px-3 py-2 rounded-3 fw-semibold w-100 shadow-sm">
+                            <button type="submit"
+                                class="btn btn-confirm-logout px-3 py-2 rounded-3 fw-semibold w-100 shadow-sm">
                                 Ya, Keluar
                             </button>
                         </form>
@@ -1061,20 +1165,24 @@
     </div>
 
     <!-- Modal Peringatan Sesi Berakhir (AFK) -->
-    <div class="modal fade" id="modalSesiAfk" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalSesiAfkLabel" aria-hidden="true">
+    <div class="modal fade" id="modalSesiAfk" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="modalSesiAfkLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
             <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
                 <div class="modal-body p-2">
                     <div class="mb-3 d-flex justify-content-center">
-                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 75px; height: 75px; background-color: #fff3cd; color: #ffc107;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                            style="width: 75px; height: 75px; background-color: #fff3cd; color: #ffc107;">
                             <i class="bi bi-clock-history fs-1 text-warning"></i>
                         </div>
                     </div>
                     <h5 class="fw-bold text-dark mb-2" id="modalSesiAfkLabel">Sesi Telah Berakhir</h5>
                     <p class="text-muted mb-4" style="font-size: 0.92rem; line-height: 1.5;">
-                        Anda tidak melakukan aktivitas selama <span class="fw-semibold text-danger">15 menit</span>. Demi keamanan akun, sesi Anda telah dinonaktifkan secara otomatis.
+                        Anda tidak melakukan aktivitas selama <span class="fw-semibold text-danger">15 menit</span>.
+                        Demi keamanan akun, sesi Anda telah dinonaktifkan secara otomatis.
                     </p>
-                    <a href="{{ route('login') }}" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm" style="background-color: var(--primary-blue, #0d6efd);">
+                    <a href="{{ route('login') }}" class="btn btn-primary w-100 py-2 rounded-3 fw-semibold shadow-sm"
+                        style="background-color: var(--primary-blue, #0d6efd);">
                         <i class="bi bi-box-arrow-in-right me-1"></i> Masuk Kembali
                     </a>
                 </div>
@@ -1236,7 +1344,7 @@
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Accept': 'application/json'
                 }
-            }).catch(() => {});
+            }).catch(() => { });
         }
 
         // Pantau seluruh interaksi pengguna di halaman admin
