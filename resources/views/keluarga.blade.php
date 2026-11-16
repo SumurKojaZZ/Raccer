@@ -904,6 +904,15 @@
                             </div>
                         </div>
 
+                        @if (session('selected_siswa_nama') || (session('open_modal_aktivasi') && session('success')))
+                            <div class="alert alert-success d-flex align-items-center gap-2 p-3 rounded-3 mb-3 border-0" style="background-color: #ecfdf5; font-size: 0.84rem;">
+                                <i class="bi bi-check-circle-fill text-success fs-5 flex-shrink-0"></i>
+                                <div>
+                                    Akun keluarga & siswa <strong>{{ session('selected_siswa_nama') }}</strong> berhasil dibuat! Silakan tentukan paket belajar dan status pembayarannya di bawah ini untuk aktivasi.
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- 1. Pilih Siswa Aktif -->
                         <div class="mb-3">
                             <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
@@ -911,15 +920,21 @@
                             </label>
                             <select name="id_siswa" id="aktivasiIdSiswa" class="form-select rounded-3 @error('id_siswa') is-invalid @enderror" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;" onchange="checkConflictActivePackage()">
                                 @foreach ($allSiswaOptions as $opt)
-                                    <option value="{{ $opt->id_siswa ?? $opt->id }}"
-                                        data-nama="{{ $opt->nama }}"
+                                    @php
+                                        $optId = $opt->id_siswa ?? $opt->id;
+                                        $optNama = $opt->nama ?: ($opt->nama_lengkap ?: 'Siswa #' . $optId);
+                                        $targetSelected = old('id_siswa', session('selected_siswa_id', request('siswa_id', $allSiswaOptions->first()->id_siswa ?? 1)));
+                                        $isSelected = ($targetSelected == $optId);
+                                    @endphp
+                                    <option value="{{ $optId }}"
+                                        data-nama="{{ $optNama }}"
                                         data-wali="{{ $opt->nama_wali }}"
                                         data-program="{{ $opt->program }}"
-                                        data-status-paket="{{ $opt->status_paket ?? 'Aktif' }}"
+                                        data-status-paket="{{ $opt->status_paket ?? 'Menunggu Aktivasi' }}"
                                         data-paket="{{ $opt->jenis_paket }}"
                                         data-pembayaran="{{ $opt->status_pembayaran }}"
-                                        {{ (old('id_siswa', 1) == ($opt->id_siswa ?? $opt->id)) ? 'selected' : '' }}>
-                                        {{ $opt->nama }} (Wali: {{ preg_replace('/^Wali:\s*/i', '', $opt->nama_wali) }})
+                                        {{ $isSelected ? 'selected' : '' }}>
+                                        {{ $optNama }} (Wali: {{ preg_replace('/^Wali:\s*/i', '', $opt->nama_wali) }})
                                     </option>
                                 @endforeach
                             </select>
@@ -1335,9 +1350,16 @@
             }
         }
 
-        // Buka otomatis modal jika ada flash pesan error konflik aktivasi
-        @if (session('open_modal_aktivasi') || session('error_aktivasi') || $errors->has('paket_aktif'))
+        // Buka otomatis modal jika ada flash pesan error konflik aktivasi atau permintaan aktivasi
+        @if (session('open_modal_aktivasi') || request('open') === 'aktivasi' || session('error_aktivasi') || $errors->has('paket_aktif'))
         document.addEventListener('DOMContentLoaded', function () {
+            const targetId = '{{ session("selected_siswa_id") ?: request("siswa_id") }}';
+            const selectSiswa = document.getElementById('aktivasiIdSiswa');
+            if (selectSiswa && targetId) {
+                selectSiswa.value = targetId;
+            }
+            if (typeof onAktivasiPaketChange === 'function') onAktivasiPaketChange();
+            if (typeof checkConflictActivePackage === 'function') checkConflictActivePackage();
             const modalEl = document.getElementById('modalAktivasiPaket');
             if (modalEl) {
                 const modal = bootstrap.Modal.getOrCreateInstance(modalEl);

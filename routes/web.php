@@ -77,10 +77,12 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     Route::post('/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('admin.jadwal.store');
     Route::get('/admin/keluarga', [AdminController::class, 'keluarga'])->name('admin.keluarga');
     Route::post('/admin/keluarga/aktivasi-paket', [AdminController::class, 'aktivasiPaket'])->name('admin.keluarga.aktivasi-paket');
+    Route::post('/admin/paket-siswa/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('admin.paket-siswa.aktivasi');
     Route::post('/admin/keluarga/{id}/toggle-pembayaran', [AdminController::class, 'togglePembayaran'])->name('admin.keluarga.toggle-pembayaran');
     Route::post('/admin/keluarga', [AdminController::class, 'storeKeluarga'])->name('admin.keluarga.store');
     Route::post('/admin/reschedule/{id}/approve', [AdminController::class, 'approveReschedule'])->name('admin.reschedule.approve');
     Route::post('/admin/jadwal/{id}/status', [AdminController::class, 'updateStatusJadwal'])->name('admin.jadwal.status');
+    Route::get('/admin/aturan-paket', [AdminController::class, 'indexAturanPaket'])->name('admin.aturan-paket');
 });
 
 // ── API Admin Endpoint ──────────────────────────────────
@@ -89,6 +91,18 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/api/jadwal', [AdminController::class, 'indexJadwal'])->name('api.jadwal.index');
     Route::post('/api/admin/jadwal', [AdminController::class, 'storeJadwal'])->name('api.admin.jadwal.store');
     Route::post('/api/jadwal', [AdminController::class, 'storeJadwal'])->name('api.jadwal.store');
+
+    // API Paket Siswa & Pembayaran
+    Route::get('/api/admin/paket-siswa', [AdminController::class, 'indexPaketSiswa'])->name('api.admin.paket-siswa.index');
+    Route::get('/api/paket-siswa', [AdminController::class, 'indexPaketSiswa'])->name('api.paket-siswa.index');
+    Route::post('/api/admin/paket-siswa', [AdminController::class, 'aktivasiPaket'])->name('api.admin.paket-siswa.store');
+    Route::post('/api/admin/paket-siswa/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('api.admin.paket-siswa.aktivasi');
+    Route::post('/api/paket-siswa', [AdminController::class, 'aktivasiPaket'])->name('api.paket-siswa.store');
+    Route::post('/api/admin/paket-siswa/{id}/toggle-pembayaran', [AdminController::class, 'togglePembayaran'])->name('api.admin.paket-siswa.toggle-pembayaran');
+
+    // API Aturan Paket Belajar (Semester=12 sesi, Bulanan maks=4 sesi)
+    Route::get('/api/admin/aturan-paket', [AdminController::class, 'indexAturanPaket'])->name('api.admin.aturan-paket.index');
+    Route::get('/api/aturan-paket', [AdminController::class, 'indexAturanPaket'])->name('api.aturan-paket.index');
 });
 
 // ── Tutor Protected Routes (Khusus Portal Tutor) ───────

@@ -448,8 +448,16 @@
 
                 <!-- Flash Alert Messages -->
                 @if (session('success'))
-                    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4" role="alert">
-                        <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+                    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                            <span>{{ session('success') }}</span>
+                        </div>
+                        @if (session('selected_siswa_id'))
+                            <a href="{{ route('admin.keluarga', ['open' => 'aktivasi', 'siswa_id' => session('selected_siswa_id')]) }}" class="btn btn-sm btn-success text-white fw-semibold rounded-pill px-3 py-1 shadow-sm">
+                                <i class="bi bi-lightning-charge me-1"></i> Aktivasi Paket Sekarang
+                            </a>
+                        @endif
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 @endif
@@ -470,13 +478,19 @@
                         <p class="text-muted mb-0" style="font-size: 0.88rem;">Pantau operasional kelas dan paket siswa
                             hari ini.</p>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap">
                         <!-- Tombol Buka Modal Akun Keluarga -->
                         <button class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3"
                             data-bs-toggle="modal" data-bs-target="#modalAkunKeluarga"
                             style="background-color: var(--primary-blue); font-size: 0.88rem;">
                             <i class="bi bi-plus-lg"></i> Akun Keluarga
                         </button>
+                        <!-- Tombol Akses Cepat Aktivasi Paket -->
+                        <a href="{{ route('admin.keluarga', ['open' => 'aktivasi']) }}"
+                            class="btn btn-white bg-white border d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 text-primary"
+                            style="font-size: 0.88rem; border-color: var(--primary-blue) !important;">
+                            <i class="bi bi-lightning-charge"></i> Aktivasi Paket
+                        </a>
                         <!-- Tombol Buka Modal Buat Jadwal -->
                         <button
                             class="btn btn-white bg-white border d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 text-dark"

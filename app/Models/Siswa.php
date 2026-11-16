@@ -202,4 +202,22 @@ class Siswa extends Model
 
         return min(100, round(($this->sesi_terpakai / $this->total_sesi) * 100, 1));
     }
+
+    /**
+     * Relasi ke riwayat paket siswa.
+     */
+    public function paketSiswa()
+    {
+        return $this->hasMany(PaketSiswa::class, 'id_siswa', 'id_siswa');
+    }
+
+    /**
+     * Paket siswa yang sedang aktif.
+     */
+    public function activePaket()
+    {
+        return $this->hasOne(PaketSiswa::class, 'id_siswa', 'id_siswa')
+            ->where('status_paket', 'Aktif')
+            ->latest('id_paket_siswa');
+    }
 }

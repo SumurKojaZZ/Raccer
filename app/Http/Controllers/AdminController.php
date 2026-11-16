@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AturanPaketBelajar;
 use App\Models\Jadwal;
+use App\Models\PaketSiswa;
 use App\Models\Pengumuman;
 use App\Models\Reschedule;
 use App\Models\Siswa;
 use App\Models\Tutor;
+use App\Rules\ValidasiSesiPaket;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -420,7 +423,7 @@ class AdminController extends Controller
             });
         }
 
-        $siswaList = $query->orderBy('id_siswa', 'asc')->get();
+        $siswaList = $query->orderBy('id_siswa', 'desc')->get();
 
         if ($siswaList->isEmpty() && $search === '' && $statusPaket === 'Semua' && $statusPembayaran === 'Semua' && $programFilter === 'Semua') {
             $siswaList = $defaultSiswa;
@@ -444,8 +447,8 @@ class AdminController extends Controller
         $paketHampirHabisCount = 8;
         $aktivasiWhatsappPercent = 96;
 
-        // Daftar opsi siswa untuk modal aktivasi paket
-        $allSiswaOptions = Siswa::orderBy('nama', 'asc')->get();
+        // Daftar opsi siswa untuk modal aktivasi paket (urutkan ID terbaru agar akun yang baru dibuat berada paling atas)
+        $allSiswaOptions = Siswa::orderBy('id_siswa', 'desc')->get();
         if ($allSiswaOptions->isEmpty()) {
             $allSiswaOptions = $defaultSiswa;
         }
@@ -467,13 +470,13 @@ class AdminController extends Controller
     /**
      * Aktivasi Paket Belajar Siswa dan Catat Status Pembayaran (Belum Bayar / Lunas).
      */
-    public function aktivasiPaket(Request $request): RedirectResponse
+    public function aktivasiPaket(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'id_siswa' => ['required'],
             'program' => ['required', 'string', 'max:150'],
             'jenis_paket' => ['required', 'string', 'max:255'],
-            'total_sesi' => ['required', 'integer', 'min:1', 'max:100'],
+            'total_sesi' => ['required', 'integer', 'min:1', 'max:100', new ValidasiSesiPaket()],
             'status_pembayaran' => ['required', 'in:Belum Bayar,Lunas'],
             'metode_pembayaran' => ['nullable', 'string', 'max:100'],
             'catatan' => ['nullable', 'string', 'max:255'],
@@ -500,10 +503,29 @@ class AdminController extends Controller
         $kategoriJenis = (stripos($rawJenisPaket, 'semester') !== false || stripos($rawJenisPaket, '12') !== false) ? 'Semester' : 'Bulanan';
         $namaPaket = (str_contains($rawJenisPaket, '•') || str_contains($rawJenisPaket, '·')) ? $rawJenisPaket : "{$rawJenisPaket} • {$program} ({$totalSesi} Sesi)";
 
+        // Server Validator Tambahan (Sesuai Aturan Paket Belajar: Semester = 12 sesi, Bulanan maks = 4 sesi)
+        if ($kategoriJenis === 'Semester' && $totalSesi !== 12) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'total_sesi' => ["Paket Semester wajib memiliki tepat 12 sesi pembelajaran (input saat ini: {$totalSesi} sesi)."],
+            ]);
+        }
+
+        if ($kategoriJenis === 'Bulanan' && $totalSesi > 4) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'total_sesi' => ["Paket Bulanan maksimal 4 sesi pembelajaran per paket (input saat ini: {$totalSesi} sesi)."],
+            ]);
+        }
+
         $siswa = Siswa::find($idSiswa);
 
         // Cek konflik: jika siswa sudah memiliki paket berstatus Aktif pada program yang sama (Sesuai Wireframe Image 2)
         if ($siswa && $siswa->status_paket === 'Aktif' && strcasecmp(trim($siswa->program ?? ''), trim($program)) === 0 && !$request->has('force')) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Siswa {$siswa->nama} masih memiliki paket berstatus Aktif pada program {$program}. Selesaikan atau nonaktifkan paket sebelumnya terlebih dahulu.",
+                ], 422);
+            }
             return redirect()->route('admin.keluarga')
                 ->withInput()
                 ->with('error_aktivasi', "Siswa {$siswa->nama} masih memiliki paket berstatus Aktif pada program {$program}. Selesaikan atau nonaktifkan paket sebelumnya terlebih dahulu.")
@@ -521,9 +543,10 @@ class AdminController extends Controller
                 'status_pembayaran' => $statusPembayaran,
             ]);
             $targetNama = $siswa->nama;
+            $finalIdSiswa = $siswa->id_siswa;
         } else {
             $targetNama = is_numeric($idSiswa) ? "Siswa #{$idSiswa}" : $idSiswa;
-            Siswa::create([
+            $newSiswa = Siswa::create([
                 'id_keluarga' => 1,
                 'nama' => $targetNama,
                 'nama_lengkap' => $targetNama,
@@ -537,17 +560,104 @@ class AdminController extends Controller
                 'status_paket' => 'Aktif',
                 'status_pembayaran' => $statusPembayaran,
             ]);
+            $finalIdSiswa = $newSiswa->id_siswa;
+        }
+
+        // Catat ke tabel khusus paket_siswa
+        $paketSiswaRecord = null;
+        try {
+            if (Schema::hasTable('paket_siswa')) {
+                $paketSiswaRecord = PaketSiswa::create([
+                    'id_siswa' => $finalIdSiswa,
+                    'program' => $program,
+                    'jenis_paket' => $kategoriJenis,
+                    'paket_belajar' => $namaPaket,
+                    'total_sesi' => $totalSesi,
+                    'sesi_terpakai' => 0,
+                    'status_paket' => 'Aktif',
+                    'status_pembayaran' => $statusPembayaran,
+                    'metode_pembayaran' => $validated['metode_pembayaran'] ?? null,
+                    'catatan' => $validated['catatan'] ?? null,
+                    'tanggal_aktivasi' => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // Lanjut jika tabel paket_siswa belum termigrasi
         }
 
         $badgeMsg = ($statusPembayaran === 'Lunas') ? 'Lunas (Akses Aktif)' : 'Belum Bayar (Menunggu Konfirmasi)';
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => "Paket {$jenisPaket} ({$program}) berhasil diaktivasi untuk {$targetNama}! Status Pembayaran: {$badgeMsg}.",
+                'data' => [
+                    'id_siswa' => $finalIdSiswa,
+                    'nama_siswa' => $targetNama,
+                    'program' => $program,
+                    'jenis_paket' => $kategoriJenis,
+                    'paket_belajar' => $namaPaket,
+                    'total_sesi' => $totalSesi,
+                    'status_paket' => 'Aktif',
+                    'status_pembayaran' => $statusPembayaran,
+                    'paket_siswa' => $paketSiswaRecord,
+                ],
+            ], 201);
+        }
 
         return redirect()->route('admin.keluarga')->with('success', "Paket {$jenisPaket} ({$program}) berhasil diaktivasi untuk {$targetNama}! Status Pembayaran: {$badgeMsg}.");
     }
 
     /**
+     * Endpoint API: Daftar Riwayat Paket Siswa.
+     */
+    public function indexPaketSiswa(Request $request): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $query = PaketSiswa::query();
+
+        if ($request->filled('id_siswa')) {
+            $query->where('id_siswa', $request->input('id_siswa'));
+        }
+
+        if ($request->filled('status_pembayaran')) {
+            $query->where('status_pembayaran', $request->input('status_pembayaran'));
+        }
+
+        if ($request->filled('status_paket')) {
+            $query->where('status_paket', $request->input('status_paket'));
+        }
+
+        $data = $query->orderBy('id_paket_siswa', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar paket siswa berhasil diambil.',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Endpoint API: Daftar Aturan Paket Belajar (Semester=12 sesi, Bulanan maks=4 sesi).
+     */
+    public function indexAturanPaket(Request $request): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $data = AturanPaketBelajar::where('status_aktif', true)->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar aturan paket belajar berhasil diambil.',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
      * Ubah Cepat Status Pembayaran Siswa (Toggle Belum Bayar <-> Lunas).
      */
-    public function togglePembayaran(Request $request, int $id): RedirectResponse
+    public function togglePembayaran(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $this->ensureTablesExist();
 
@@ -557,7 +667,35 @@ class AdminController extends Controller
             $newStatus = ($current === 'Lunas') ? 'Belum Bayar' : 'Lunas';
             $siswa->update(['status_pembayaran' => $newStatus]);
 
+            // Sinkronkan status pembayaran di tabel paket_siswa
+            try {
+                if (Schema::hasTable('paket_siswa')) {
+                    PaketSiswa::where('id_siswa', $siswa->id_siswa)
+                        ->latest('id_paket_siswa')
+                        ->update(['status_pembayaran' => $newStatus]);
+                }
+            } catch (\Throwable $e) {}
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Status pembayaran untuk {$siswa->nama} berhasil diubah menjadi: {$newStatus}!",
+                    'data' => [
+                        'id_siswa' => $siswa->id_siswa,
+                        'nama' => $siswa->nama,
+                        'status_pembayaran' => $newStatus,
+                    ],
+                ]);
+            }
+
             return redirect()->route('admin.keluarga')->with('success', "Status pembayaran untuk {$siswa->nama} berhasil diubah menjadi: {$newStatus}!");
+        }
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data siswa tidak ditemukan.',
+            ], 404);
         }
 
         return redirect()->route('admin.keluarga')->with('error', 'Data siswa tidak ditemukan.');
@@ -604,6 +742,18 @@ class AdminController extends Controller
         $totalSesi = isset($validated['total_sesi']) ? (int) $validated['total_sesi'] : (
             (stripos($paketBelajar, 'semester') !== false || stripos($paketBelajar, '12') !== false) ? 12 : 4
         );
+        $kategoriJenis = (stripos($paketBelajar, 'semester') !== false || stripos($paketBelajar, '12') !== false) ? 'Semester' : 'Bulanan';
+
+        $programKelas = 'Junior Robotics';
+        if (stripos($paketBelajar, 'python') !== false) {
+            $programKelas = 'Python for Kids';
+        } elseif (stripos($paketBelajar, 'scratch') !== false) {
+            $programKelas = 'Robotic Scratch';
+        } elseif (stripos($paketBelajar, 'arduino') !== false) {
+            $programKelas = 'Arduino Explorer';
+        } elseif (stripos($paketBelajar, 'junior') !== false) {
+            $programKelas = 'Junior Robotics';
+        }
 
         $namaSiswa = trim((string) ($validated['nama'] ?? $validated['nama_lengkap']));
         $firstWordSiswa = explode(' ', $namaSiswa)[0] ?: $namaSiswa;
@@ -696,7 +846,7 @@ class AdminController extends Controller
         }
 
         // Eksekusi penyimpanan dalam Database Transaction agar tidak ada data keluarga setengah jadi yang tersimpan
-        DB::transaction(function () use (
+        $newSiswa = DB::transaction(function () use (
             $namaKeluarga,
             $alamatDomisili,
             $kelurahan,
@@ -715,7 +865,9 @@ class AdminController extends Controller
             $tanggalLahir,
             $displayWali,
             $paketBelajar,
-            $totalSesi
+            $totalSesi,
+            $programKelas,
+            $kategoriJenis
         ) {
             // 1. Simpan ke tabel akun_keluarga
             $idKeluarga = 1;
@@ -774,7 +926,7 @@ class AdminController extends Controller
             }
 
             // 4. Simpan ke tabel siswa
-            Siswa::create([
+            $createdSiswa = Siswa::create([
                 'id_keluarga' => $idKeluarga,
                 'id_pengguna' => $idPenggunaSiswa ?? 1,
                 'nisn' => $nisn,
@@ -787,18 +939,47 @@ class AdminController extends Controller
                 'dibuat_pada' => now(),
                 'nama' => $namaSiswa,
                 'nama_wali' => $displayWali,
+                'program' => $programKelas,
+                'jenis_paket' => $kategoriJenis,
                 'paket_belajar' => $paketBelajar,
                 'total_sesi' => $totalSesi,
                 'sesi_terpakai' => 0,
-                'status_paket' => 'Aktif',
+                'status_paket' => 'Menunggu Aktivasi',
+                'status_pembayaran' => 'Belum Bayar',
             ]);
+
+            // 5. Simpan record di paket_siswa jika tabel tersedia
+            try {
+                if (Schema::hasTable('paket_siswa')) {
+                    DB::table('paket_siswa')->insert([
+                        'id_siswa' => $createdSiswa->id_siswa,
+                        'program' => $programKelas,
+                        'jenis_paket' => $kategoriJenis,
+                        'paket_belajar' => $paketBelajar,
+                        'total_sesi' => $totalSesi,
+                        'sesi_terpakai' => 0,
+                        'status_paket' => 'Menunggu Aktivasi',
+                        'status_pembayaran' => 'Belum Bayar',
+                        'catatan' => 'Pendaftaran akun keluarga baru',
+                        'tanggal_aktivasi' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            } catch (\Throwable $e) {}
+
+            return $createdSiswa;
         });
 
-        if ($request->headers->get('referer') && str_contains($request->headers->get('referer'), 'keluarga')) {
-            return redirect()->route('admin.keluarga')->with('success', 'Akun keluarga & siswa berhasil dibuat!');
-        }
+        $redirect = ($request->headers->get('referer') && str_contains($request->headers->get('referer'), 'keluarga'))
+            ? redirect()->route('admin.keluarga')
+            : redirect()->route('admin');
 
-        return redirect()->route('admin')->with('success', 'Akun keluarga & siswa berhasil dibuat!');
+        return $redirect
+            ->with('success', 'Akun keluarga & siswa berhasil dibuat!')
+            ->with('open_modal_aktivasi', true)
+            ->with('selected_siswa_id', $newSiswa->id_siswa ?? $newSiswa->id)
+            ->with('selected_siswa_nama', $namaSiswa);
     }
 
     /**
@@ -1246,6 +1427,106 @@ class AdminController extends Controller
                         ]);
                 } catch (\Throwable $e) {
                 }
+            }
+
+            // 2.5 Tabel Paket Siswa (Riwayat Aktivasi Paket & Pembayaran)
+            if (!Schema::hasTable('paket_siswa')) {
+                Schema::create('paket_siswa', function (Blueprint $table) {
+                    $table->increments('id_paket_siswa');
+                    $table->unsignedInteger('id_siswa')->index();
+                    $table->string('program', 150)->default('Junior Robotics');
+                    $table->string('jenis_paket', 100)->default('Semester');
+                    $table->string('paket_belajar', 255)->default('Semester • Junior Robotics (12 Sesi)');
+                    $table->integer('total_sesi')->default(12);
+                    $table->integer('sesi_terpakai')->default(0);
+                    $table->string('status_paket', 50)->default('Aktif');
+                    $table->string('status_pembayaran', 50)->default('Belum Bayar');
+                    $table->string('metode_pembayaran', 100)->nullable();
+                    $table->string('catatan', 255)->nullable();
+                    $table->dateTime('tanggal_aktivasi')->useCurrent();
+                    $table->timestamps();
+                });
+
+                // Seed data awal paket siswa dari siswa yang ada
+                try {
+                    $alya = DB::table('siswa')->where('nama', 'like', '%Alya%')->first();
+                    if ($alya) {
+                        DB::table('paket_siswa')->insert([
+                            'id_siswa' => $alya->id_siswa,
+                            'program' => 'Junior Robotics',
+                            'jenis_paket' => 'Semester',
+                            'paket_belajar' => 'Semester • Junior Robotics (12 Sesi)',
+                            'total_sesi' => 12,
+                            'sesi_terpakai' => 0,
+                            'status_paket' => 'Aktif',
+                            'status_pembayaran' => 'Belum Bayar',
+                            'metode_pembayaran' => 'Transfer Bank',
+                            'catatan' => 'Pendaftaran Semester Baru',
+                            'tanggal_aktivasi' => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
+                    $bima = DB::table('siswa')->where('nama', 'like', '%Bima%')->first();
+                    if ($bima) {
+                        DB::table('paket_siswa')->insert([
+                            'id_siswa' => $bima->id_siswa,
+                            'program' => 'Python for Kids',
+                            'jenis_paket' => 'Bulanan',
+                            'paket_belajar' => 'Bulanan • Python for Kids (4 Sesi)',
+                            'total_sesi' => 4,
+                            'sesi_terpakai' => 0,
+                            'status_paket' => 'Aktif',
+                            'status_pembayaran' => 'Lunas',
+                            'metode_pembayaran' => 'Virtual Account',
+                            'catatan' => 'Lunas via Virtual Account Mandiri',
+                            'tanggal_aktivasi' => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            // Tabel Aturan Paket Belajar (Semester=12 sesi, Bulanan maks=4 sesi)
+            if (!Schema::hasTable('aturan_paket_belajar')) {
+                Schema::create('aturan_paket_belajar', function (Blueprint $table) {
+                    $table->increments('id_aturan_paket');
+                    $table->string('jenis_paket', 50)->unique('uq_aturan_jenis_paket');
+                    $table->string('nama_aturan', 150);
+                    $table->integer('min_sesi')->default(1);
+                    $table->integer('maks_sesi')->default(12);
+                    $table->integer('sesi_default')->default(12);
+                    $table->string('deskripsi', 255)->nullable();
+                    $table->boolean('status_aktif')->default(true);
+                    $table->timestamps();
+                });
+
+                DB::table('aturan_paket_belajar')->insert([
+                    [
+                        'jenis_paket' => 'Semester',
+                        'nama_aturan' => 'Aturan Paket Semester',
+                        'min_sesi' => 12,
+                        'maks_sesi' => 12,
+                        'sesi_default' => 12,
+                        'deskripsi' => 'Paket Semester wajib memiliki tepat 12 sesi pembelajaran.',
+                        'status_aktif' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                    [
+                        'jenis_paket' => 'Bulanan',
+                        'nama_aturan' => 'Aturan Paket Bulanan',
+                        'min_sesi' => 1,
+                        'maks_sesi' => 4,
+                        'sesi_default' => 4,
+                        'deskripsi' => 'Paket Bulanan memiliki kuota maksimal 4 sesi pembelajaran per paket.',
+                        'status_aktif' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ],
+                ]);
             }
 
             // 3. Tabel Reschedule
