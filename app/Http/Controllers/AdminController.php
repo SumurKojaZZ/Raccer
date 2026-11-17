@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AkunKeluarga;
 use App\Models\AturanPaketBelajar;
 use App\Models\Jadwal;
+use App\Models\OrangTua;
 use App\Models\PaketSiswa;
+use App\Models\PesertaJadwal;
 use App\Models\Pengumuman;
 use App\Models\Reschedule;
 use App\Models\Siswa;
@@ -609,6 +612,227 @@ class AdminController extends Controller
     }
 
     /**
+     * Endpoint Penambahan Paket Perpanjangan (Renewal) dengan Isolasi Riwayat Paket Sebelumnya.
+     * Backlog B-03 (Backend: Muhammad Fadhil Swarigading).
+     *
+     * Keputusan Bisnis Klien (Sprint 2, Format 4 No. 3):
+     * Admin dapat menginput paket perpanjangan kapan saja; paket baru disimpan terpisah
+     * dari riwayat paket lama dan menjadi paket aktif untuk periode berikutnya.
+     */
+    public function renewalPaket(Request $request, ?int $id = null): JsonResponse|RedirectResponse
+    {
+        $idSiswa = $id ?? $request->input('id_siswa');
+
+        $validated = $request->validate([
+            'id_siswa' => [$id ? 'nullable' : 'required'],
+            'program' => ['required', 'string', 'max:150'],
+            'jenis_paket' => ['required', 'string', 'max:255'],
+            'total_sesi' => ['required', 'integer', 'min:1', 'max:100', new ValidasiSesiPaket()],
+            'status_pembayaran' => ['required', 'in:Belum Bayar,Lunas'],
+            'metode_pembayaran' => ['nullable', 'string', 'max:100'],
+            'catatan' => ['nullable', 'string', 'max:255'],
+        ], [
+            'id_siswa.required' => 'Pilih siswa yang akan diperpanjang paket belajarnya.',
+            'program.required' => 'Pilih program kelas perpanjangan.',
+            'jenis_paket.required' => 'Pilih jenis paket perpanjangan.',
+            'total_sesi.required' => 'Jumlah total sesi kelas perpanjangan wajib diisi.',
+            'total_sesi.min' => 'Jumlah sesi minimal 1 sesi.',
+            'status_pembayaran.required' => 'Pilih status pembayaran (Belum Bayar atau Lunas).',
+            'status_pembayaran.in' => 'Status pembayaran harus berupa Belum Bayar atau Lunas.',
+        ]);
+
+        $this->ensureTablesExist();
+
+        $program = $validated['program'];
+        $rawJenisPaket = $validated['jenis_paket'];
+        $totalSesi = (int) $validated['total_sesi'];
+        $statusPembayaran = $validated['status_pembayaran'];
+
+        $kategoriJenis = (stripos($rawJenisPaket, 'semester') !== false || stripos($rawJenisPaket, '12') !== false) ? 'Semester' : 'Bulanan';
+        $namaPaket = (str_contains($rawJenisPaket, '•') || str_contains($rawJenisPaket, '·')) ? $rawJenisPaket : "{$rawJenisPaket} • {$program} ({$totalSesi} Sesi)";
+
+        // Validasi Aturan Kuota (Semester = 12 sesi, Bulanan maks = 4 sesi)
+        if ($kategoriJenis === 'Semester' && $totalSesi !== 12) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'total_sesi' => ["Paket Semester perpanjangan wajib memiliki tepat 12 sesi pembelajaran (input saat ini: {$totalSesi} sesi)."],
+            ]);
+        }
+
+        if ($kategoriJenis === 'Bulanan' && $totalSesi > 4) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'total_sesi' => ["Paket Bulanan perpanjangan maksimal 4 sesi pembelajaran per paket (input saat ini: {$totalSesi} sesi)."],
+            ]);
+        }
+
+        $siswa = Siswa::find($idSiswa);
+        if (!$siswa && is_numeric($idSiswa)) {
+            // Cek jika ID yang dikirim merupakan ID paket siswa
+            $pkt = PaketSiswa::find($idSiswa);
+            if ($pkt) {
+                $siswa = Siswa::find($pkt->id_siswa);
+            }
+        }
+
+        if (!$siswa) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data siswa tidak ditemukan untuk perpanjangan paket.',
+                ], 404);
+            }
+            return redirect()->route('admin.keluarga')
+                ->withInput()
+                ->with('error_aktivasi', 'Data siswa tidak ditemukan untuk perpanjangan paket.');
+        }
+
+        // 1. ISOLASI RIWAYAT: Arsipkan seluruh paket aktif sebelumnya milik siswa
+        $previousActivePackages = collect();
+        if (Schema::hasTable('paket_siswa')) {
+            $previousActivePackages = PaketSiswa::where('id_siswa', $siswa->id_siswa)
+                ->where('status_paket', 'Aktif')
+                ->get();
+
+            foreach ($previousActivePackages as $prevPkg) {
+                $newStatus = ($prevPkg->sesi_terpakai >= $prevPkg->total_sesi) ? 'Selesai' : 'Diperpanjang';
+                $arsipNote = trim(($prevPkg->catatan ? $prevPkg->catatan . ' | ' : '') . 'Diarsipkan saat renewal pada ' . now()->format('d M Y H:i'));
+
+                $prevPkg->update([
+                    'status_paket' => $newStatus,
+                    'catatan' => $arsipNote,
+                ]);
+            }
+        }
+
+        // Jika siswa memiliki paket aktif di tabel siswa tapi belum tercatat di paket_siswa, buat arsipnya
+        if ($previousActivePackages->isEmpty() && $siswa->status_paket === 'Aktif' && $siswa->total_sesi > 0) {
+            try {
+                if (Schema::hasTable('paket_siswa')) {
+                    $prevStatus = ($siswa->sesi_terpakai >= $siswa->total_sesi) ? 'Selesai' : 'Diperpanjang';
+                    $archivedLegacy = PaketSiswa::create([
+                        'id_siswa' => $siswa->id_siswa,
+                        'program' => $siswa->program ?? 'Junior Robotics',
+                        'jenis_paket' => $siswa->jenis_paket ?? 'Semester',
+                        'paket_belajar' => $siswa->paket_belajar ?? 'Semester • Junior Robotics (12 Sesi)',
+                        'total_sesi' => $siswa->total_sesi,
+                        'sesi_terpakai' => $siswa->sesi_terpakai,
+                        'status_paket' => $prevStatus,
+                        'status_pembayaran' => $siswa->status_pembayaran ?? 'Lunas',
+                        'catatan' => 'Arsip paket periode sebelumnya (Otomatis saat Renewal)',
+                        'tanggal_aktivasi' => $siswa->created_at ?? now()->subMonths(1),
+                    ]);
+                    $previousActivePackages->push($archivedLegacy);
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        // 2. PENAMBAHAN PAKET BARU HASIL PERPANJANGAN (RENEWAL)
+        $newPaketRecord = null;
+        try {
+            if (Schema::hasTable('paket_siswa')) {
+                $newPaketRecord = PaketSiswa::create([
+                    'id_siswa' => $siswa->id_siswa,
+                    'program' => $program,
+                    'jenis_paket' => $kategoriJenis,
+                    'paket_belajar' => $namaPaket,
+                    'total_sesi' => $totalSesi,
+                    'sesi_terpakai' => 0, // Reset kuota terpakai menjadi 0 untuk paket baru
+                    'status_paket' => 'Aktif',
+                    'status_pembayaran' => $statusPembayaran,
+                    'metode_pembayaran' => $validated['metode_pembayaran'] ?? null,
+                    'catatan' => $validated['catatan'] ?? 'Paket Perpanjangan (Renewal)',
+                    'tanggal_aktivasi' => now(),
+                ]);
+            }
+        } catch (\Throwable $e) {}
+
+        // 3. UPDATE DATA INDUK SISWA (Paket Aktif Baru)
+        $siswa->update([
+            'program' => $program,
+            'jenis_paket' => $kategoriJenis,
+            'paket_belajar' => $namaPaket,
+            'total_sesi' => $totalSesi,
+            'sesi_terpakai' => 0,
+            'status_paket' => 'Aktif',
+            'status_pembayaran' => $statusPembayaran,
+        ]);
+
+        $badgeMsg = ($statusPembayaran === 'Lunas') ? 'Lunas (Akses Aktif)' : 'Belum Bayar (Menunggu Konfirmasi)';
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            // Ambil daftar riwayat paket lengkap yang terisolasi
+            $riwayatPaket = PaketSiswa::where('id_siswa', $siswa->id_siswa)
+                ->where('id_paket_siswa', '!=', $newPaketRecord?->id_paket_siswa ?? 0)
+                ->orderBy('id_paket_siswa', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Paket perpanjangan (renewal) {$kategoriJenis} ({$program}) berhasil ditambahkan untuk {$siswa->nama}! Riwayat paket sebelumnya telah diisolasi. Status Pembayaran: {$badgeMsg}.",
+                'data' => [
+                    'id_siswa' => $siswa->id_siswa,
+                    'nama_siswa' => $siswa->nama,
+                    'paket_aktif' => [
+                        'id_paket_siswa' => $newPaketRecord?->id_paket_siswa,
+                        'program' => $program,
+                        'jenis_paket' => $kategoriJenis,
+                        'paket_belajar' => $namaPaket,
+                        'total_sesi' => $totalSesi,
+                        'sesi_terpakai' => 0,
+                        'sisa_sesi' => $totalSesi,
+                        'status_paket' => 'Aktif',
+                        'status_pembayaran' => $statusPembayaran,
+                        'catatan' => $newPaketRecord?->catatan,
+                        'tanggal_aktivasi' => $newPaketRecord?->tanggal_aktivasi,
+                    ],
+                    'riwayat_paket_sebelumnya' => $riwayatPaket,
+                    'total_riwayat_paket' => $riwayatPaket->count(),
+                ],
+            ], 201);
+        }
+
+        return redirect()->route('admin.keluarga')->with(
+            'success',
+            "Paket perpanjangan (renewal) {$kategoriJenis} ({$program}) berhasil ditambahkan untuk {$siswa->nama}! Riwayat paket sebelumnya telah diarsipkan secara terpisah. Status Pembayaran: {$badgeMsg}."
+        );
+    }
+
+    /**
+     * Endpoint API: Riwayat Paket Lengkap Siswa dengan Isolasi Paket Aktif & Paket Sebelumnya.
+     * Backlog B-03 (Backend: Muhammad Fadhil Swarigading).
+     */
+    public function riwayatPaketSiswa(Request $request, int $id): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $siswa = Siswa::find($id);
+        if (!$siswa) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data siswa tidak ditemukan.',
+            ], 404);
+        }
+
+        $semuaPaket = PaketSiswa::where('id_siswa', $id)
+            ->orderBy('id_paket_siswa', 'desc')
+            ->get();
+
+        $paketAktif = $semuaPaket->firstWhere('status_paket', 'Aktif');
+        $riwayatPaket = $semuaPaket->where('status_paket', '!=', 'Aktif')->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Riwayat paket belajar untuk siswa {$siswa->nama} berhasil diambil.",
+            'data' => [
+                'id_siswa' => $siswa->id_siswa,
+                'nama_siswa' => $siswa->nama,
+                'paket_aktif' => $paketAktif,
+                'riwayat_paket_sebelumnya' => $riwayatPaket,
+                'total_paket_tercatat' => $semuaPaket->count(),
+            ],
+        ], 200);
+    }
+
+    /**
      * Endpoint API: Daftar Riwayat Paket Siswa.
      */
     public function indexPaketSiswa(Request $request): JsonResponse
@@ -704,7 +928,10 @@ class AdminController extends Controller
     /**
      * Tambah Akun Keluarga & Siswa Baru.
      */
-    public function storeKeluarga(Request $request): RedirectResponse
+    /**
+     * Simpan data Akun Keluarga baru beserta akun siswa dan paket awal (Backlog B-13a & B-13b - Muhammad Fadhil Swarigading)
+     */
+    public function storeKeluarga(Request $request): JsonResponse|RedirectResponse
     {
         $validated = $request->validate([
             'nama' => ['required_without:nama_lengkap', 'nullable', 'string', 'max:150'],
@@ -725,6 +952,17 @@ class AdminController extends Controller
             ],
             'username_wali' => ['nullable', 'string', 'max:50'],
             'password_wali' => ['nullable', 'string', 'min:6'],
+            // Secondary Parent (Wali Pendamping Opsional - Backlog B-13b)
+            'nama_secondary_parent' => ['nullable', 'string', 'max:150'],
+            'hubungan_secondary_parent' => ['nullable', 'string', 'max:50'],
+            'nomor_whatsapp_secondary_parent' => [
+                'nullable',
+                'string',
+                'max:25',
+                'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/'
+            ],
+            'username_secondary_parent' => ['nullable', 'string', 'max:50'],
+            'password_secondary_parent' => ['nullable', 'string', 'min:6'],
             'alamat_domisili' => ['nullable', 'string'],
             'kelurahan' => ['nullable', 'string', 'max:100'],
             'kecamatan' => ['nullable', 'string', 'max:100'],
@@ -734,6 +972,7 @@ class AdminController extends Controller
         ], [
             'nama_wali.required' => 'Nama Primary Parent (Wali) wajib diisi.',
             'nomor_whatsapp.regex' => 'Nomor WhatsApp tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
+            'nomor_whatsapp_secondary_parent.regex' => 'Nomor WhatsApp Secondary Parent tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
         ]);
 
         $this->ensureTablesExist();
@@ -785,6 +1024,46 @@ class AdminController extends Controller
         $waliUsername = $customUsername ?: ($prefixHubungan . '.' . $siswaSlug);
         $passwordWali = $validated['password_wali'] ?? 'RacerWali2026!';
 
+        // Pengolahan data Secondary Parent (Opsional)
+        $hasSecondaryInput = !empty($validated['nama_secondary_parent']);
+        $secCleanName = null;
+        $secHubungan = null;
+        $secWhatsapp = null;
+        $secUsername = null;
+        $secPassword = null;
+
+        if ($hasSecondaryInput) {
+            $secRaw = trim((string) $validated['nama_secondary_parent']);
+            $secCleanName = trim((string) preg_replace('/^(Wali\s*:\s*|Bpk\.?\s*|Ibu\s*|Pak\s*)/i', '', $secRaw)) ?: $secRaw;
+            $secHubungan = trim((string) ($validated['hubungan_secondary_parent'] ?? ''));
+            if ($secHubungan === '') {
+                $secHubungan = ($prefixHubungan === 'ayah') ? 'Ibu' : 'Ayah';
+            }
+            $secPrefix = in_array(strtolower($secHubungan), ['ayah', 'wali'], true) ? strtolower($secHubungan) : 'ibu';
+            if ($secPrefix === $prefixHubungan) {
+                $secPrefix = ($prefixHubungan === 'ayah') ? 'ibu' : 'ayah';
+            }
+
+            $secCustomUser = !empty($validated['username_secondary_parent']) 
+                ? strtolower(ltrim(trim($validated['username_secondary_parent']), '@')) 
+                : null;
+            $secUsername = $secCustomUser ?: ($secPrefix . '.' . $siswaSlug);
+            $secPassword = $validated['password_secondary_parent'] ?? 'RacerWali2026!';
+            $secWhatsapp = substr(preg_replace('/[^0-9+]/', '', (string) ($validated['nomor_whatsapp_secondary_parent'] ?? '081298765432')), 0, 16);
+
+            // Cek keunikan username secondary parent di tabel pengguna
+            if (Schema::hasTable('pengguna') && DB::table('pengguna')->where('username', $secUsername)->exists()) {
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'username_secondary_parent' => ["Username '{$secUsername}' untuk Secondary Parent sudah dipakai akun lain."],
+                    ]);
+                }
+                return back()->withInput()->withErrors([
+                    'username_secondary_parent' => "Username '{$secUsername}' untuk Secondary Parent sudah dipakai akun lain.",
+                ]);
+            }
+        }
+
         $namaKeluarga = trim((string) ($validated['nama_keluarga'] ?? ''));
         if ($namaKeluarga === '') {
             $namaKeluarga = 'Keluarga ' . $targetSiswaName;
@@ -823,7 +1102,7 @@ class AdminController extends Controller
             }
 
             if ($existingSiswa->id_keluarga && Schema::hasTable('orang_tua')) {
-                DB::table('orang_tua')->where('id_keluarga', $existingSiswa->id_keluarga)->update([
+                DB::table('orang_tua')->where('id_keluarga', $existingSiswa->id_keluarga)->where('jenis_wali', 'Primary_Parent')->update([
                     'nama_lengkap' => $cleanWali,
                     'hubungan' => $hubungan,
                     'nomor_whatsapp' => $nomorWhatsapp,
@@ -839,6 +1118,12 @@ class AdminController extends Controller
 
         // Tolak penyimpanan bila username Primary Parent sudah dipakai
         if (Schema::hasTable('pengguna') && DB::table('pengguna')->where('username', $waliUsername)->exists()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'username_wali' => ["Username '{$waliUsername}' untuk Primary Parent sudah dipakai."],
+                    'nama_wali' => ["Kredensial Primary Parent sudah terdaftar dengan username '{$waliUsername}'."],
+                ]);
+            }
             return back()->withInput()->withErrors([
                 'username_wali' => "Username '{$waliUsername}' untuk Primary Parent sudah dipakai.",
                 'nama_wali' => "Kredensial Primary Parent sudah terdaftar dengan username '{$waliUsername}'.",
@@ -867,7 +1152,13 @@ class AdminController extends Controller
             $paketBelajar,
             $totalSesi,
             $programKelas,
-            $kategoriJenis
+            $kategoriJenis,
+            $hasSecondaryInput,
+            $secCleanName,
+            $secHubungan,
+            $secWhatsapp,
+            $secUsername,
+            $secPassword
         ) {
             // 1. Simpan ke tabel akun_keluarga
             $idKeluarga = 1;
@@ -904,6 +1195,29 @@ class AdminController extends Controller
                         'hubungan' => $hubungan,
                         'nomor_whatsapp' => $nomorWhatsapp,
                     ]);
+                }
+
+                // 2.5 Simpan Secondary Parent jika form Secondary Parent diisi (Opsional)
+                if ($hasSecondaryInput) {
+                    $idPenggunaSec = DB::table('pengguna')->insertGetId([
+                        'username' => $secUsername,
+                        'password_hash' => Hash::make($secPassword),
+                        'role' => 'Orang_Tua',
+                        'status_aktif' => 1,
+                        'jumlah_gagal_login' => 0,
+                        'dibuat_pada' => now(),
+                    ]);
+
+                    if (Schema::hasTable('orang_tua')) {
+                        DB::table('orang_tua')->insert([
+                            'id_keluarga' => $idKeluarga,
+                            'id_pengguna' => $idPenggunaSec,
+                            'jenis_wali' => 'Secondary_Parent',
+                            'nama_lengkap' => $secCleanName,
+                            'hubungan' => $secHubungan,
+                            'nomor_whatsapp' => $secWhatsapp,
+                        ]);
+                    }
                 }
 
                 // 3. Simpan akun pengguna untuk Siswa
@@ -971,6 +1285,20 @@ class AdminController extends Controller
             return $createdSiswa;
         });
 
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Akun keluarga & siswa berhasil dibuat' . ($hasSecondaryInput ? ' beserta akun Secondary Parent.' : '.'),
+                'data' => [
+                    'id_siswa' => $newSiswa->id_siswa,
+                    'id_keluarga' => $newSiswa->id_keluarga,
+                    'nama_siswa' => $namaSiswa,
+                    'primary_parent' => $cleanWali,
+                    'secondary_parent' => $hasSecondaryInput ? $secCleanName : null,
+                ],
+            ], 201);
+        }
+
         $redirect = ($request->headers->get('referer') && str_contains($request->headers->get('referer'), 'keluarga'))
             ? redirect()->route('admin.keluarga')
             : redirect()->route('admin');
@@ -980,6 +1308,225 @@ class AdminController extends Controller
             ->with('open_modal_aktivasi', true)
             ->with('selected_siswa_id', $newSiswa->id_siswa ?? $newSiswa->id)
             ->with('selected_siswa_nama', $namaSiswa);
+    }
+
+    /**
+     * Endpoint untuk menambahkan akun Secondary Parent (Wali Pendamping) opsional pada Akun Keluarga.
+     * Backlog B-13b / T-01 (Muhammad Fadhil Swarigading)
+     * POST /api/admin/keluarga/{id}/secondary-parent
+     * POST /admin/keluarga/{id}/secondary-parent
+     */
+    public function storeSecondaryParent(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $this->ensureTablesExist();
+
+        // 1. Validasi keberadaan akun keluarga
+        $keluarga = null;
+        if (Schema::hasTable('akun_keluarga')) {
+            $keluarga = AkunKeluarga::find($id);
+            if (!$keluarga) {
+                $kRow = DB::table('akun_keluarga')->where('id_keluarga', $id)->first();
+                if ($kRow) {
+                    $keluarga = (object) (array) $kRow;
+                }
+            }
+        }
+
+        if (!$keluarga) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Akun Keluarga dengan ID {$id} tidak ditemukan.",
+                ], 404);
+            }
+            return back()->with('error', "Akun Keluarga dengan ID {$id} tidak ditemukan.");
+        }
+
+        // 2. Validasi aturan bisnis: MAKSIMAL 1 SECONDARY PARENT PER KELUARGA
+        $existingSecondary = null;
+        if (Schema::hasTable('orang_tua')) {
+            $existingSecondary = OrangTua::where('id_keluarga', $id)
+                ->where('jenis_wali', 'Secondary_Parent')
+                ->first();
+        }
+
+        if ($existingSecondary) {
+            $msg = "Akun Keluarga ini sudah memiliki Secondary Parent ({$existingSecondary->nama_lengkap}). Maksimal 1 Secondary Parent per keluarga.";
+            if ($request->expectsJson() || $request->is('api/*')) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'secondary_parent' => [$msg],
+                ]);
+            }
+            return back()->withInput()->withErrors(['secondary_parent' => $msg]);
+        }
+
+        // 3. Validasi input
+        $validated = $request->validate([
+            'nama_lengkap' => ['required', 'string', 'max:150'],
+            'hubungan' => ['required', 'string', 'max:50'],
+            'nomor_whatsapp' => [
+                'required',
+                'string',
+                'max:25',
+                'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/'
+            ],
+            'username' => ['nullable', 'string', 'max:50'],
+            'password' => ['nullable', 'string', 'min:6'],
+        ], [
+            'nama_lengkap.required' => 'Nama lengkap Secondary Parent wajib diisi.',
+            'hubungan.required' => 'Hubungan Secondary Parent dengan anak wajib diisi (contoh: Ayah/Ibu/Wali).',
+            'nomor_whatsapp.required' => 'Nomor WhatsApp Secondary Parent wajib diisi.',
+            'nomor_whatsapp.regex' => 'Nomor WhatsApp Secondary Parent tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
+        ]);
+
+        $rawName = trim((string) $validated['nama_lengkap']);
+        $cleanName = trim((string) preg_replace('/^(Wali\s*:\s*|Bpk\.?\s*|Ibu\s*|Pak\s*)/i', '', $rawName)) ?: $rawName;
+        $hubungan = trim((string) $validated['hubungan']);
+        $nomorWhatsapp = substr(preg_replace('/[^0-9+]/', '', $validated['nomor_whatsapp']), 0, 16);
+
+        // 4. Generate & Validasi keunikan username di tabel pengguna
+        $customUsername = !empty($validated['username']) ? strtolower(ltrim(trim($validated['username']), '@')) : null;
+        if ($customUsername) {
+            $usernameSec = $customUsername;
+        } else {
+            $hubunganLower = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $hubungan)) ?: 'wali';
+            $firstWord = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', explode(' ', $cleanName)[0])) ?: 'wali';
+            $usernameSec = $hubunganLower . '.' . $firstWord;
+        }
+
+        if (Schema::hasTable('pengguna') && DB::table('pengguna')->where('username', $usernameSec)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'username' => ["Username '{$usernameSec}' untuk Secondary Parent sudah dipakai akun lain."],
+            ]);
+        }
+
+        $passwordSec = $validated['password'] ?? 'RacerWali2026!';
+
+        // 5. Simpan transaksi pengguna dan orang_tua
+        $result = DB::transaction(function () use ($id, $usernameSec, $passwordSec, $cleanName, $hubungan, $nomorWhatsapp) {
+            $idPengguna = DB::table('pengguna')->insertGetId([
+                'username' => $usernameSec,
+                'password_hash' => Hash::make($passwordSec),
+                'role' => 'Orang_Tua',
+                'status_aktif' => 1,
+                'jumlah_gagal_login' => 0,
+                'dibuat_pada' => now(),
+            ]);
+
+            $secParent = OrangTua::create([
+                'id_keluarga' => $id,
+                'id_pengguna' => $idPengguna,
+                'jenis_wali' => 'Secondary_Parent',
+                'nama_lengkap' => $cleanName,
+                'hubungan' => $hubungan,
+                'nomor_whatsapp' => $nomorWhatsapp,
+            ]);
+
+            return [
+                'orang_tua' => $secParent,
+                'id_pengguna' => $idPengguna,
+                'username' => $usernameSec,
+            ];
+        });
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Akun Secondary Parent (Wali Pendamping) berhasil ditambahkan.',
+                'data' => [
+                    'id_orang_tua' => $result['orang_tua']->id_orang_tua,
+                    'id_keluarga' => (int) $id,
+                    'id_pengguna' => $result['id_pengguna'],
+                    'nama_lengkap' => $cleanName,
+                    'hubungan' => $hubungan,
+                    'nomor_whatsapp' => $nomorWhatsapp,
+                    'jenis_wali' => 'Secondary_Parent',
+                    'username' => $usernameSec,
+                ],
+            ], 201);
+        }
+
+        return back()->with('success', 'Akun Secondary Parent (Wali Pendamping) berhasil ditambahkan!');
+    }
+
+    /**
+     * Endpoint untuk mendapatkan data seluruh orang tua (Primary & Secondary) suatu keluarga.
+     * Backlog B-13b (Muhammad Fadhil Swarigading)
+     * GET /api/admin/keluarga/{id}/orang-tua
+     */
+    public function getOrangTuaKeluarga(Request $request, int $id): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $keluarga = AkunKeluarga::with(['orangTua', 'siswa'])->find($id);
+        if (!$keluarga) {
+            return response()->json([
+                'success' => false,
+                'message' => "Akun Keluarga dengan ID {$id} tidak ditemukan.",
+            ], 404);
+        }
+
+        $primary = $keluarga->orangTua->firstWhere('jenis_wali', 'Primary_Parent');
+        $secondary = $keluarga->orangTua->firstWhere('jenis_wali', 'Secondary_Parent');
+
+        return response()->json([
+            'success' => true,
+            'id_keluarga' => $keluarga->id_keluarga,
+            'nama_keluarga' => $keluarga->nama_keluarga,
+            'alamat_domisili' => $keluarga->alamat_domisili,
+            'primary_parent' => $primary,
+            'secondary_parent' => $secondary,
+            'has_secondary_parent' => (bool) $secondary,
+            'can_add_secondary' => !$secondary,
+            'total_orang_tua' => $keluarga->orangTua->count(),
+            'siswa' => $keluarga->siswa->map(fn($s) => [
+                'id_siswa' => $s->id_siswa,
+                'nama' => $s->nama_lengkap ?: $s->nama,
+            ]),
+        ]);
+    }
+
+    /**
+     * Endpoint untuk menghapus Secondary Parent dari Akun Keluarga.
+     * Backlog B-13b (Muhammad Fadhil Swarigading)
+     * DELETE /api/admin/keluarga/{id}/secondary-parent
+     * DELETE /admin/keluarga/{id}/secondary-parent
+     */
+    public function destroySecondaryParent(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $this->ensureTablesExist();
+
+        $secondary = OrangTua::where('id_keluarga', $id)
+            ->where('jenis_wali', 'Secondary_Parent')
+            ->first();
+
+        if (!$secondary) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Secondary Parent tidak ditemukan pada keluarga ID {$id}.",
+                ], 404);
+            }
+            return back()->with('error', "Secondary Parent tidak ditemukan pada keluarga ini.");
+        }
+
+        $idPengguna = $secondary->id_pengguna;
+
+        DB::transaction(function () use ($secondary, $idPengguna) {
+            $secondary->delete();
+            if ($idPengguna && Schema::hasTable('pengguna')) {
+                DB::table('pengguna')->where('id_pengguna', $idPengguna)->delete();
+            }
+        });
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Akun Secondary Parent berhasil dihapus.',
+            ]);
+        }
+
+        return back()->with('success', 'Akun Secondary Parent berhasil dihapus!');
     }
 
     /**
@@ -1012,6 +1559,315 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin')->with('error', 'Jadwal tidak ditemukan.');
+    }
+
+    /**
+     * Endpoint untuk memilih peserta sesuai jenis program dan paket aktif (Backlog B-11 - Muhammad Fadhil Swarigading)
+     * GET /api/admin/siswa/pilih-peserta
+     */
+    public function pilihPeserta(Request $request): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $idJadwal = $request->input('id_jadwal');
+        $jadwal = null;
+        if ($idJadwal) {
+            $jadwal = Jadwal::find($idJadwal);
+        }
+
+        $program = $request->input('program');
+        if (empty($program) && $jadwal && !empty($jadwal->program)) {
+            $program = $jadwal->program;
+        }
+
+        $search = trim($request->input('q', $request->input('search', '')));
+        $hanyaSisaSesi = $request->boolean('hanya_sisa_sesi', true);
+        $statusPaketFilter = $request->input('status_paket', 'Aktif');
+
+        // Siswa yang sudah terdaftar di jadwal ini (jika id_jadwal diberikan)
+        $terdaftarIds = [];
+        if ($idJadwal) {
+            $terdaftarIds = PesertaJadwal::where('id_jadwal', $idJadwal)->pluck('id_siswa')->toArray();
+        }
+
+        $query = Siswa::query()->with(['activePaket']);
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('nama', 'like', "%{$search}%")
+                  ->orWhere('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nisn', 'like', "%{$search}%")
+                  ->orWhere('nama_wali', 'like', "%{$search}%");
+            });
+        }
+
+        $siswaList = $query->orderBy('nama_lengkap', 'asc')->get();
+
+        $result = $siswaList->filter(function ($siswa) use ($program, $hanyaSisaSesi, $statusPaketFilter) {
+            // Ambil paket aktif siswa dari relasi atau dari kolom siswa sendiri
+            $activePkg = $siswa->activePaket;
+
+            $siswaProgram = $activePkg?->program ?: $siswa->program;
+            $siswaStatusPaket = $activePkg?->status_paket ?: $siswa->status_paket;
+            $totalSesi = $activePkg ? (int) $activePkg->total_sesi : (int) $siswa->total_sesi;
+            $sesiTerpakai = $activePkg ? (int) $activePkg->sesi_terpakai : (int) $siswa->sesi_terpakai;
+            $sisaSesi = max(0, $totalSesi - $sesiTerpakai);
+
+            // Filter status paket (default: Aktif)
+            if ($statusPaketFilter && strcasecmp((string)$siswaStatusPaket, (string)$statusPaketFilter) !== 0) {
+                return false;
+            }
+
+            // Filter program jika dispesifikasikan
+            if (!empty($program)) {
+                $matchProgram = (strcasecmp(trim((string)$siswaProgram), trim((string)$program)) === 0)
+                    || (strcasecmp(trim((string)$siswa->program), trim((string)$program)) === 0)
+                    || (stripos((string)($siswa->paket_belajar ?? ''), (string)$program) !== false);
+                if (!$matchProgram) {
+                    return false;
+                }
+            }
+
+            // Filter sisa sesi aktif > 0
+            if ($hanyaSisaSesi && $sisaSesi <= 0) {
+                return false;
+            }
+
+            return true;
+        })->map(function ($siswa) use ($terdaftarIds) {
+            $activePkg = $siswa->activePaket;
+            $totalSesi = $activePkg ? (int) $activePkg->total_sesi : (int) $siswa->total_sesi;
+            $sesiTerpakai = $activePkg ? (int) $activePkg->sesi_terpakai : (int) $siswa->sesi_terpakai;
+            $sisaSesi = max(0, $totalSesi - $sesiTerpakai);
+
+            return [
+                'id_siswa' => (int) $siswa->id_siswa,
+                'nama' => $siswa->nama_lengkap ?: $siswa->nama,
+                'nama_lengkap' => $siswa->nama_lengkap ?: $siswa->nama,
+                'nama_panggilan' => $siswa->nama_panggilan,
+                'nisn' => $siswa->nisn,
+                'program' => $activePkg?->program ?: $siswa->program,
+                'jenis_paket' => $activePkg?->jenis_paket ?: $siswa->jenis_paket,
+                'paket_belajar' => $activePkg?->paket_belajar ?: $siswa->paket_belajar,
+                'total_sesi' => $totalSesi,
+                'sesi_terpakai' => $sesiTerpakai,
+                'sisa_sesi' => $sisaSesi,
+                'status_paket' => $activePkg?->status_paket ?: $siswa->status_paket,
+                'status_pembayaran' => $activePkg?->status_pembayaran ?: $siswa->status_pembayaran,
+                'id_paket_siswa' => $activePkg?->id_paket_siswa,
+                'sudah_terdaftar' => in_array((int)$siswa->id_siswa, $terdaftarIds, true),
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar peserta sesuai program dan paket aktif berhasil dimuat.',
+            'filter' => [
+                'program' => $program,
+                'id_jadwal' => $idJadwal ? (int) $idJadwal : null,
+                'status_paket' => $statusPaketFilter,
+                'hanya_sisa_sesi' => $hanyaSesi ?? $hanyaSisaSesi,
+            ],
+            'total' => $result->count(),
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Endpoint untuk mendaftarkan peserta ke jadwal kelas tertentu (Backlog B-11 - Muhammad Fadhil Swarigading)
+     * POST /api/admin/jadwal/{id}/peserta
+     */
+    public function storePesertaJadwal(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        $this->ensureTablesExist();
+
+        $jadwal = Jadwal::find($id);
+        if (!$jadwal) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Jadwal dengan ID {$id} tidak ditemukan.",
+                ], 404);
+            }
+            return back()->with('error', "Jadwal dengan ID {$id} tidak ditemukan.");
+        }
+
+        // Validasi input: mendukung single id_siswa atau array id_siswa[]
+        $validated = $request->validate([
+            'id_siswa' => ['required'],
+            'id_paket_siswa' => ['nullable', 'integer'],
+            'status_kehadiran' => ['nullable', 'string', 'max:50'],
+            'catatan' => ['nullable', 'string', 'max:255'],
+        ], [
+            'id_siswa.required' => 'Pilih setidaknya satu siswa untuk ditambahkan ke jadwal kelas.',
+        ]);
+
+        $rawSiswa = $validated['id_siswa'];
+        $siswaIds = is_array($rawSiswa) ? $rawSiswa : [$rawSiswa];
+        $statusKehadiran = $validated['status_kehadiran'] ?? 'Terdaftar';
+        $catatan = $validated['catatan'] ?? null;
+        $idPaketReq = $validated['id_paket_siswa'] ?? null;
+
+        $createdPeserta = [];
+
+        foreach ($siswaIds as $sid) {
+            $siswa = Siswa::with('activePaket')->find($sid);
+            if (!$siswa) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'id_siswa' => ["Siswa dengan ID {$sid} tidak ditemukan."],
+                ]);
+            }
+
+            // 1. Validasi kecocokan program jika jadwal memiliki program tertentu
+            $activePkg = $siswa->activePaket;
+            $siswaProgram = $activePkg?->program ?: $siswa->program;
+
+            if (!empty($jadwal->program) && !empty($siswaProgram)) {
+                $isMatch = (strcasecmp(trim((string)$siswaProgram), trim((string)$jadwal->program)) === 0)
+                    || (strcasecmp(trim((string)$siswa->program), trim((string)$jadwal->program)) === 0)
+                    || (stripos((string)($siswa->paket_belajar ?? ''), (string)$jadwal->program) !== false);
+
+                if (!$isMatch) {
+                    $namaTampil = $siswa->nama_lengkap ?: $siswa->nama;
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'id_siswa' => [
+                            "Program siswa {$namaTampil} ({$siswaProgram}) tidak sesuai dengan program jadwal kelas ({$jadwal->program})."
+                        ],
+                    ]);
+                }
+            }
+
+            // 2. Validasi status paket aktif dan kuota sisa sesi > 0
+            $statusPaket = $activePkg?->status_paket ?: $siswa->status_paket;
+            $totalSesi = $activePkg ? (int) $activePkg->total_sesi : (int) $siswa->total_sesi;
+            $sesiTerpakai = $activePkg ? (int) $activePkg->sesi_terpakai : (int) $siswa->sesi_terpakai;
+            $sisaSesi = max(0, $totalSesi - $sesiTerpakai);
+
+            if (strcasecmp((string)$statusPaket, 'Aktif') !== 0 || $sisaSesi <= 0) {
+                $namaTampil = $siswa->nama_lengkap ?: $siswa->nama;
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'id_siswa' => [
+                        "Siswa {$namaTampil} tidak memiliki paket aktif atau sisa kuota sesi telah habis (Sisa sesi: {$sisaSesi})."
+                    ],
+                ]);
+            }
+
+            // 3. Validasi pencegahan duplikasi pendaftaran siswa di jadwal yang sama
+            $exists = PesertaJadwal::where('id_jadwal', $jadwal->id)
+                ->where('id_siswa', $siswa->id_siswa)
+                ->exists();
+
+            if ($exists) {
+                $namaTampil = $siswa->nama_lengkap ?: $siswa->nama;
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'id_siswa' => [
+                        "Siswa {$namaTampil} sudah terdaftar pada jadwal kelas ini."
+                    ],
+                ]);
+            }
+
+            // Simpan peserta jadwal
+            $idPaketToAssign = $idPaketReq ?: ($activePkg?->id_paket_siswa);
+
+            $peserta = PesertaJadwal::create([
+                'id_jadwal' => $jadwal->id,
+                'id_siswa' => $siswa->id_siswa,
+                'id_paket_siswa' => $idPaketToAssign,
+                'status_kehadiran' => $statusKehadiran,
+                'catatan' => $catatan,
+            ]);
+
+            $peserta->load(['siswa', 'paketSiswa']);
+            $createdPeserta[] = $peserta;
+        }
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => count($createdPeserta) . ' peserta berhasil ditambahkan ke jadwal kelas.',
+                'jadwal' => [
+                    'id' => $jadwal->id,
+                    'program' => $jadwal->program,
+                    'kelas' => $jadwal->kelas,
+                    'tanggal' => $jadwal->tanggal,
+                ],
+                'data' => count($createdPeserta) === 1 ? $createdPeserta[0] : $createdPeserta,
+            ], 201);
+        }
+
+        return back()->with('success', count($createdPeserta) . ' peserta berhasil didaftarkan ke kelas!');
+    }
+
+    /**
+     * Endpoint untuk mendapatkan daftar peserta pada suatu jadwal (Backlog B-11 - Muhammad Fadhil Swarigading)
+     * GET /api/admin/jadwal/{id}/peserta
+     */
+    public function getPesertaJadwal(Request $request, int $id): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $jadwal = Jadwal::find($id);
+        if (!$jadwal) {
+            return response()->json([
+                'success' => false,
+                'message' => "Jadwal dengan ID {$id} tidak ditemukan.",
+            ], 404);
+        }
+
+        $pesertaList = PesertaJadwal::with(['siswa', 'paketSiswa'])
+            ->where('id_jadwal', $id)
+            ->orderBy('id_peserta_jadwal', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'jadwal' => [
+                'id' => $jadwal->id,
+                'program' => $jadwal->program,
+                'kelas' => $jadwal->kelas,
+                'lokasi' => $jadwal->lokasi,
+                'tutor' => $jadwal->tutor,
+                'tanggal' => $jadwal->tanggal,
+                'jam_mulai' => $jadwal->jam_mulai,
+                'jam_selesai' => $jadwal->jam_selesai,
+            ],
+            'total_peserta' => $pesertaList->count(),
+            'data' => $pesertaList,
+        ]);
+    }
+
+    /**
+     * Endpoint untuk menghapus peserta dari suatu jadwal kelas (Backlog B-11 - Muhammad Fadhil Swarigading)
+     * DELETE /api/admin/jadwal/{id}/peserta/{id_siswa}
+     */
+    public function destroyPesertaJadwal(Request $request, int $id, int $id_siswa): JsonResponse|RedirectResponse
+    {
+        $this->ensureTablesExist();
+
+        $peserta = PesertaJadwal::where('id_jadwal', $id)
+            ->where('id_siswa', $id_siswa)
+            ->first();
+
+        if (!$peserta) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Peserta tidak ditemukan pada jadwal ini.',
+                ], 404);
+            }
+            return back()->with('error', 'Peserta tidak ditemukan pada jadwal ini.');
+        }
+
+        $peserta->delete();
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Peserta berhasil dihapus dari jadwal kelas.',
+            ]);
+        }
+
+        return back()->with('success', 'Peserta berhasil dihapus dari jadwal kelas.');
     }
 
     /**
@@ -1265,9 +2121,51 @@ class AdminController extends Controller
     /**
      * Helper untuk membuat tabel otomatis dan mengisi data awal jika kosong.
      */
-    protected function ensureTablesExist(): void
+    public function ensureTablesExist(): void
     {
         try {
+            // 0.1 Tabel Pengguna
+            if (!Schema::hasTable('pengguna')) {
+                Schema::create('pengguna', function (Blueprint $table) {
+                    $table->increments('id_pengguna');
+                    $table->string('username', 100)->unique('uq_pengguna_username');
+                    $table->string('password_hash', 255);
+                    $table->string('role', 50)->default('Orang_Tua');
+                    $table->boolean('status_aktif')->default(true);
+                    $table->unsignedInteger('jumlah_gagal_login')->default(0);
+                    $table->dateTime('terkunci_sampai')->nullable();
+                    $table->dateTime('dibuat_pada')->useCurrent();
+                });
+            }
+
+            // 0.2 Tabel Akun Keluarga
+            if (!Schema::hasTable('akun_keluarga')) {
+                Schema::create('akun_keluarga', function (Blueprint $table) {
+                    $table->increments('id_keluarga');
+                    $table->string('nama_keluarga', 150);
+                    $table->text('alamat_domisili')->nullable();
+                    $table->string('kelurahan', 100)->nullable();
+                    $table->string('kecamatan', 100)->nullable();
+                    $table->string('kota_kabupaten', 100)->nullable();
+                    $table->dateTime('dibuat_pada')->useCurrent();
+                });
+            }
+
+            // 0.3 Tabel Orang Tua (Mendukung Primary & Secondary Parent Maksimal 1 Per Keluarga)
+            if (!Schema::hasTable('orang_tua')) {
+                Schema::create('orang_tua', function (Blueprint $table) {
+                    $table->increments('id_orang_tua');
+                    $table->unsignedInteger('id_keluarga')->index();
+                    $table->unsignedInteger('id_pengguna')->unique('uq_orang_tua_pengguna');
+                    $table->string('jenis_wali', 50)->default('Primary_Parent');
+                    $table->string('nama_lengkap', 150);
+                    $table->string('hubungan', 50);
+                    $table->string('nomor_whatsapp', 25);
+
+                    $table->unique(['id_keluarga', 'jenis_wali'], 'uq_keluarga_jenis_wali');
+                });
+            }
+
             // 1. Tabel Jadwal
             if (!Schema::hasTable('jadwal')) {
                 Schema::create('jadwal', function (Blueprint $table) {
@@ -1527,6 +2425,21 @@ class AdminController extends Controller
                         'updated_at' => now(),
                     ],
                 ]);
+            }
+
+            // 2.7 Tabel Peserta Jadwal (Backlog B-11 - Muhammad Fadhil Swarigading)
+            if (!Schema::hasTable('peserta_jadwal')) {
+                Schema::create('peserta_jadwal', function (Blueprint $table) {
+                    $table->increments('id_peserta_jadwal');
+                    $table->unsignedBigInteger('id_jadwal')->index();
+                    $table->unsignedInteger('id_siswa')->index();
+                    $table->unsignedInteger('id_paket_siswa')->nullable()->index();
+                    $table->string('status_kehadiran', 50)->default('Terdaftar');
+                    $table->string('catatan', 255)->nullable();
+                    $table->timestamps();
+
+                    $table->unique(['id_jadwal', 'id_siswa'], 'uq_jadwal_siswa');
+                });
             }
 
             // 3. Tabel Reschedule

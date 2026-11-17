@@ -365,11 +365,12 @@
                     <button class="btn btn-light d-lg-none border" id="toggleSidebar">
                         <i class="bi bi-list fs-5"></i>
                     </button>
-                    <form action="{{ route('admin.penjadwalan') }}" method="GET" class="search-container w-100">
+                    <form action="{{ route('admin.penjadwalan') }}" method="GET" class="search-container flex-grow-1" style="max-width: 480px;">
                         <i class="bi bi-search search-icon"></i>
                         <input type="text" name="q" class="search-input w-100"
                             value="{{ $search ?? '' }}"
                             placeholder="Cari program, tutor, atau lokasi kelas...">
+                        <span class="search-shortcut">&#8984; K</span>
                         @if(!empty($status)) <input type="hidden" name="status" value="{{ $status }}"> @endif
                         @if(!empty($moda)) <input type="hidden" name="moda" value="{{ $moda }}"> @endif
                         @if(!empty($tanggal)) <input type="hidden" name="tanggal" value="{{ $tanggal }}"> @endif
@@ -377,11 +378,29 @@
                 </div>
 
                 <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 shadow-sm"
+                    <button class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 shadow-sm me-2"
                         data-bs-toggle="modal" data-bs-target="#modalBuatJadwal"
                         style="background-color: var(--primary-blue); font-size: 0.88rem;">
                         <i class="bi bi-plus-lg"></i> Buat Jadwal
                     </button>
+
+                    <span class="badge border bg-light text-secondary rounded-pill px-3 py-2 fw-semibold" style="font-size: 0.78rem;">
+                        <i class="bi bi-calendar-event me-1 text-primary"></i> T.A 2026/2027
+                    </span>
+
+                    <button class="btn btn-white bg-white border rounded-circle p-2 position-relative" style="width: 40px; height: 40px;" title="Notifikasi">
+                        <i class="bi bi-bell text-secondary"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    </button>
+
+                    <div class="d-flex align-items-center gap-2 ps-2 border-start">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin Operasional') }}&background=fee2e2&color=dc2626&bold=true"
+                            alt="Avatar" class="rounded-circle" width="36" height="36">
+                        <div class="d-none d-md-block text-start">
+                            <div class="fw-bold text-dark" style="font-size: 0.8rem; line-height: 1.1;">{{ Auth::user()->name ?? 'Admin' }}</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">Super Admin</small>
+                        </div>
+                    </div>
                 </div>
             </header>
 
@@ -586,6 +605,11 @@
                                             @endif
                                         </td>
                                         <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1 me-1" 
+                                                    onclick="openPesertaModal({{ $jdw->id }}, '{{ addslashes($jdw->kelas ?? $jdw->program) }}', '{{ addslashes($jdw->program ?? '') }}')" 
+                                                    title="Kelola Peserta Kelas" style="font-size: 0.78rem;">
+                                                <i class="bi bi-people-fill me-1"></i> Peserta
+                                            </button>
                                             @if($jdw->status !== 'Selesai')
                                                 <form action="{{ route('admin.jadwal.status', $jdw->id) }}" method="POST" class="d-inline">
                                                     @csrf
@@ -594,8 +618,6 @@
                                                         <i class="bi bi-check-lg"></i> Selesai
                                                     </button>
                                                 </form>
-                                            @else
-                                                <span class="text-muted" style="font-size: 0.78rem;">-</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -695,6 +717,79 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: KELOLA PESERTA JADWAL (Backlog B-11) ================= -->
+    <div class="modal fade" id="modalPesertaJadwal" tabindex="-1" aria-labelledby="modalPesertaJadwalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark" id="modalPesertaJadwalLabel">
+                            <i class="bi bi-people-fill text-primary me-2"></i>Peserta Sesi Kelas
+                        </h5>
+                        <p class="text-muted mb-0" id="pesertaJadwalSubtitle" style="font-size: 0.84rem;">
+                            Memuat informasi sesi kelas...
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Form Tambah Peserta -->
+                    <div class="card border-0 bg-light rounded-3 p-3 mb-4">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;">
+                            <i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Peserta Sesuai Program & Kuota Aktif
+                        </h6>
+                        <form id="formTambahPeserta" onsubmit="submitTambahPeserta(event)">
+                            <input type="hidden" id="currentJadwalId">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label text-muted fw-semibold mb-1" style="font-size: 0.78rem;">Pilih Siswa (Hanya Siswa dengan Program Sesuai & Sisa Sesi > 0)</label>
+                                    <select id="selectPilihPeserta" class="form-select rounded-3" required style="font-size: 0.85rem;">
+                                        <option value="">-- Memuat siswa yang memenuhi syarat... --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" id="btnSubmitPeserta" class="btn btn-primary w-100 rounded-3 fw-semibold py-2" style="background-color: var(--primary-blue); font-size: 0.85rem;">
+                                        <i class="bi bi-plus-circle me-1"></i> Daftarkan Peserta
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="alertPesertaMsg" class="mt-2" style="display: none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Daftar Peserta Terdaftar -->
+                    <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
+                        <i class="bi bi-card-checklist text-primary me-1"></i> Daftar Peserta Terdaftar (<span id="totalPesertaCount">0</span>)
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.84rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nama Siswa</th>
+                                    <th>Program / Paket</th>
+                                    <th>Sisa Kuota</th>
+                                    <th>Status Kehadiran</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyPesertaJadwal">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                        Memuat daftar peserta...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 px-3" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Konfirmasi Logout -->
     <div class="modal fade" id="modalKonfirmasiLogout" tabindex="-1" aria-labelledby="modalKonfirmasiLogoutLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
@@ -742,6 +837,182 @@
                 window.location.reload();
             }
         });
+
+        // ================= KELOLA PESERTA JADWAL (Backlog B-11) =================
+        let activeJadwalId = null;
+        let activeProgram = null;
+
+        async function openPesertaModal(jadwalId, namaKelas, program) {
+            activeJadwalId = jadwalId;
+            activeProgram = program;
+
+            document.getElementById('currentJadwalId').value = jadwalId;
+            document.getElementById('pesertaJadwalSubtitle').textContent = `${namaKelas} • Program: ${program || 'Semua Program'}`;
+            document.getElementById('alertPesertaMsg').style.display = 'none';
+
+            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPesertaJadwal'));
+            modal.show();
+
+            await Promise.all([
+                loadPesertaList(jadwalId),
+                loadEligibleStudents(jadwalId, program)
+            ]);
+        }
+
+        async function loadPesertaList(jadwalId) {
+            const tbody = document.getElementById('tbodyPesertaJadwal');
+            const totalCount = document.getElementById('totalPesertaCount');
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat peserta...</td></tr>`;
+
+            try {
+                const res = await fetch(`/api/admin/jadwal/${jadwalId}/peserta`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success && data.data) {
+                    totalCount.textContent = data.data.length;
+                    if (data.data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>Belum ada peserta yang didaftarkan ke jadwal ini.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = data.data.map(p => {
+                        const siswa = p.siswa || {};
+                        const paket = p.paket_siswa || {};
+                        const sisa = paket.total_sesi ? (paket.total_sesi - paket.sesi_terpakai) : (siswa.total_sesi - siswa.sesi_terpakai);
+                        return `
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">${siswa.nama_lengkap || siswa.nama || 'Siswa'}</div>
+                                    <small class="text-muted">NISN: ${siswa.nisn || '-'}</small>
+                                </td>
+                                <td>
+                                    <div>${paket.program || siswa.program || '-'}</div>
+                                    <small class="text-muted">${paket.paket_belajar || siswa.paket_belajar || '-'}</small>
+                                </td>
+                                <td>
+                                    <span class="badge ${sisa > 2 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
+                                        ${sisa} Sesi Tersisa
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary">${p.status_kehadiran || 'Terdaftar'}</span>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" onclick="hapusPeserta(${jadwalId}, ${p.id_siswa})" title="Hapus dari jadwal">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">Gagal memuat peserta jadwal.</td></tr>`;
+            }
+        }
+
+        async function loadEligibleStudents(jadwalId, program) {
+            const select = document.getElementById('selectPilihPeserta');
+            select.innerHTML = `<option value="">-- Memuat siswa yang memenuhi syarat... --</option>`;
+
+            try {
+                const queryUrl = `/api/admin/siswa/pilih-peserta?program=${encodeURIComponent(program || '')}&id_jadwal=${jadwalId}&hanya_sisa_sesi=1`;
+                const res = await fetch(queryUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                const json = await res.json();
+
+                if (json.success && Array.isArray(json.data)) {
+                    const available = json.data.filter(s => !s.sudah_terdaftar);
+                    if (available.length === 0) {
+                        select.innerHTML = `<option value="">-- Tidak ada siswa yang sesuai program / kuota habis --</option>`;
+                        return;
+                    }
+
+                    select.innerHTML = `<option value="">-- Pilih Siswa (${available.length} siswa memenuhi syarat) --</option>` +
+                        available.map(s => `
+                            <option value="${s.id_siswa}">
+                                ${s.nama} (${s.program} • Sisa ${s.sisa_sesi} sesi)
+                            </option>
+                        `).join('');
+                }
+            } catch (e) {
+                select.innerHTML = `<option value="">Gagal memuat data siswa</option>`;
+            }
+        }
+
+        async function submitTambahPeserta(event) {
+            event.preventDefault();
+            const jadwalId = document.getElementById('currentJadwalId').value;
+            const siswaId = document.getElementById('selectPilihPeserta').value;
+            const alertBox = document.getElementById('alertPesertaMsg');
+            const btnSubmit = document.getElementById('btnSubmitPeserta');
+
+            if (!siswaId) {
+                alertBox.className = 'mt-2 alert alert-warning p-2 rounded-3 text-small';
+                alertBox.textContent = 'Silakan pilih siswa terlebih dahulu.';
+                alertBox.style.display = 'block';
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            alertBox.style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/admin/jadwal/${jadwalId}/peserta`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ id_siswa: siswaId })
+                });
+                const data = await res.json();
+                btnSubmit.disabled = false;
+
+                if (res.ok && data.success) {
+                    alertBox.className = 'mt-2 alert alert-success p-2 rounded-3 text-small';
+                    alertBox.textContent = data.message || 'Peserta berhasil ditambahkan.';
+                    alertBox.style.display = 'block';
+                    await loadPesertaList(jadwalId);
+                    await loadEligibleStudents(jadwalId, activeProgram);
+                } else {
+                    alertBox.className = 'mt-2 alert alert-danger p-2 rounded-3 text-small';
+                    alertBox.textContent = (data.errors && data.errors.id_siswa ? data.errors.id_siswa[0] : (data.message || 'Gagal menambahkan peserta.'));
+                    alertBox.style.display = 'block';
+                }
+            } catch (e) {
+                btnSubmit.disabled = false;
+                alertBox.className = 'mt-2 alert alert-danger p-2 rounded-3 text-small';
+                alertBox.textContent = 'Terjadi kesalahan sistem saat menghubungi server.';
+                alertBox.style.display = 'block';
+            }
+        }
+
+        async function hapusPeserta(jadwalId, siswaId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus peserta ini dari sesi kelas?')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/jadwal/${jadwalId}/peserta/${siswaId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadPesertaList(jadwalId);
+                    await loadEligibleStudents(jadwalId, activeProgram);
+                } else {
+                    alert(data.message || 'Gagal menghapus peserta.');
+                }
+            } catch (e) {
+                alert('Gagal menghubungi server.');
+            }
+        }
     </script>
 </body>
 

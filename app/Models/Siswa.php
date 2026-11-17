@@ -220,4 +220,38 @@ class Siswa extends Model
             ->where('status_paket', 'Aktif')
             ->latest('id_paket_siswa');
     }
+
+    /**
+     * Relasi ke entitas PesertaJadwal.
+     */
+    public function pesertaJadwal()
+    {
+        return $this->hasMany(PesertaJadwal::class, 'id_siswa', 'id_siswa');
+    }
+
+    /**
+     * Relasi many-to-many ke Jadwal melalui peserta_jadwal.
+     */
+    public function jadwalKelas()
+    {
+        return $this->belongsToMany(Jadwal::class, 'peserta_jadwal', 'id_siswa', 'id_jadwal')
+            ->withPivot(['id_peserta_jadwal', 'id_paket_siswa', 'status_kehadiran', 'catatan'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Relasi ke Akun Keluarga.
+     */
+    public function keluarga()
+    {
+        return $this->belongsTo(AkunKeluarga::class, 'id_keluarga', 'id_keluarga');
+    }
+
+    /**
+     * Relasi ke Orang Tua di bawah keluarga yang sama.
+     */
+    public function orangTua()
+    {
+        return $this->hasMany(OrangTua::class, 'id_keluarga', 'id_keluarga');
+    }
 }

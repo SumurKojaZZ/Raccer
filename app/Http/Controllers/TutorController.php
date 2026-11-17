@@ -115,7 +115,7 @@ class TutorController extends Controller
             // 2. Simpan profil pengajar ke tabel tutor
             if (Schema::hasTable('tutor')) {
                 $maxId = DB::table('tutor')->max('id_tutor') ?? 0;
-                $kodeTutor = 'TTR-' . str_pad((string)($maxId + 1), 3, '0', STR_PAD_LEFT);
+                $kodeTutor = 'TTR-' . str_pad((string) ($maxId + 1), 3, '0', STR_PAD_LEFT);
 
                 $firstWord = explode(' ', trim($validated['nama_lengkap']))[0];
                 $panggilan = 'Kak ' . $firstWord;

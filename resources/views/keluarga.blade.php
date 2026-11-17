@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akun Keluarga & Siswa - RACER ROBOTIC Administrasi Akademik</title>
-    <!-- Google Font: Plus Jakarta Sans -->
+    <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
@@ -21,18 +21,15 @@
             --sidebar-width: 260px;
             --primary-blue: #1d68f0;
             --primary-hover: #1555c7;
-            --bg-canvas: #f8fafc;
-            --card-border: #e2e8f0;
-            --text-dark: #0f172a;
-            --text-muted: #64748b;
+            --bg-canvas: #f4f7fc;
+            --card-border: #e8eef7;
         }
 
         body {
             background-color: var(--bg-canvas);
             font-family: var(--bs-body-font-family);
-            color: var(--text-dark);
+            color: #1e293b;
             overflow-x: hidden;
-            font-size: 0.9rem;
         }
 
         /* Sidebar Styling */
@@ -40,7 +37,7 @@
             width: var(--sidebar-width);
             min-height: 100vh;
             background: #ffffff;
-            border-right: 1px solid var(--card-border);
+            border-right: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
             position: fixed;
@@ -52,235 +49,232 @@
             overflow-y: auto;
         }
 
-        .logo-box {
-            width: 36px;
-            height: 36px;
-            background: var(--primary-blue);
-            border-radius: 8px;
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 991.98px) {
+            .sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
+                transition: margin 0.3s ease;
+            }
+
+            .sidebar.show {
+                margin-left: 0;
+            }
+
+            .main-wrapper {
+                margin-left: 0;
+            }
+        }
+
+        /* Brand Header */
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+            background: #1d68f0;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
-            font-size: 1.25rem;
+            font-size: 1.4rem;
         }
 
         .nav-link-custom {
             display: flex;
             align-items: center;
-            gap: 0.85rem;
-            padding: 0.65rem 1rem;
-            color: #475569;
-            font-size: 0.88rem;
+            gap: 0.75rem;
+            padding: 0.65rem 0.9rem;
+            color: #64748b;
             font-weight: 500;
-            border-radius: 8px;
+            font-size: 0.88rem;
+            border-radius: 10px;
             text-decoration: none;
-            transition: all 0.15s ease-in-out;
+            transition: all 0.2s ease;
             margin-bottom: 0.25rem;
+            position: relative;
         }
 
         .nav-link-custom:hover {
-            background-color: #f1f5f9;
             color: var(--primary-blue);
+            background-color: #f1f5fd;
         }
 
         .nav-link-custom.active {
-            background-color: #eff6ff;
             color: var(--primary-blue);
+            background-color: #ebf3ff;
             font-weight: 600;
-            position: relative;
         }
 
         .nav-link-custom.active::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 15%;
-            bottom: 15%;
+            left: -1rem;
+            top: 4px;
+            bottom: 4px;
             width: 4px;
             background-color: var(--primary-blue);
             border-radius: 0 4px 4px 0;
         }
 
-        /* Top Navbar */
-        .top-navbar {
-            height: 70px;
-            background: #ffffff;
-            border-bottom: 1px solid var(--card-border);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            display: flex;
+        .nav-link-custom i {
+            font-size: 1.15rem;
+        }
+
+        /* Tombol Logout Sidebar dengan Efek Hover */
+        .btn-logout-sidebar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: inline-flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 2rem;
-            margin-left: var(--sidebar-width);
+            justify-content: center;
+            color: #64748b;
+            background-color: transparent;
+            border: 1px solid transparent;
+            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
         }
 
-        .search-box {
+        .btn-logout-sidebar:hover {
+            color: #dc2626 !important;
+            background-color: #fee2e2;
+            border-color: #fecaca;
+            transform: scale(1.08) translateX(2px);
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+        }
+
+        .btn-logout-sidebar:active {
+            transform: scale(0.96);
+        }
+
+        /* Hover pada Tombol Konfirmasi Logout di Dalam Modal */
+        .btn-confirm-logout {
+            background-color: #dc2626 !important;
+            border-color: #dc2626 !important;
+            color: #ffffff !important;
+            transition: all 0.2s ease;
+        }
+
+        .btn-confirm-logout:hover {
+            background-color: #b91c1c !important;
+            border-color: #b91c1c !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35) !important;
+        }
+
+        /* Support Box */
+        .support-card {
+            background-color: #f0f6ff;
+            border-radius: 14px;
+            padding: 1rem;
+            border: 1px dashed #bfdbfe;
+        }
+
+        /* Top Bar */
+        .top-navbar {
+            background: transparent;
+            padding: 1.25rem 2rem 0.5rem 2rem;
+        }
+
+        .search-container {
             position: relative;
-            width: 380px;
-        }
-
-        .search-box input {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 0.5rem 2.5rem 0.5rem 2.2rem;
-            font-size: 0.84rem;
+            max-width: 480px;
             width: 100%;
         }
 
-        .search-box input:focus {
-            background-color: #ffffff;
-            border-color: var(--primary-blue);
+        .search-input {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.65rem 3.5rem 0.65rem 2.6rem;
+            font-size: 0.88rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .search-input:focus {
+            border-color: #93c5fd;
             box-shadow: 0 0 0 3px rgba(29, 104, 240, 0.1);
             outline: none;
         }
 
-        .search-box .bi-search {
+        .search-icon {
             position: absolute;
-            left: 0.85rem;
+            left: 0.9rem;
             top: 50%;
             transform: translateY(-50%);
             color: #94a3b8;
-            font-size: 0.88rem;
+            font-size: 0.95rem;
         }
 
-        .search-box .shortcut-tag {
+        .search-shortcut {
             position: absolute;
             right: 0.75rem;
             top: 50%;
             transform: translateY(-50%);
-            background: #ffffff;
+            background: #f1f5f9;
             border: 1px solid #e2e8f0;
-            padding: 0.1rem 0.4rem;
-            font-size: 0.7rem;
-            border-radius: 4px;
-            color: #94a3b8;
-            font-weight: 600;
+            border-radius: 6px;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.72rem;
+            color: #64748b;
+            font-family: monospace;
         }
 
-        /* Main Content */
-        .main-content {
-            margin-left: var(--sidebar-width);
-            padding: 2rem;
-        }
-
-        /* Cards */
-        .card-custom {
+        /* Dashboard Cards */
+        .dash-card {
             background: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 12px;
+            border-radius: 16px;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-        }
-
-        .stat-card {
-            background: #ffffff;
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            padding: 1.35rem;
             height: 100%;
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .stat-card:hover {
+        .dash-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        .stat-title {
-            color: var(--text-muted);
-            font-size: 0.82rem;
-            font-weight: 500;
-            margin-bottom: 0.35rem;
-        }
-
         .stat-value {
-            font-size: 1.75rem;
+            font-size: 2.15rem;
             font-weight: 700;
-            color: var(--text-dark);
             line-height: 1.2;
+            color: #0f172a;
         }
 
         .stat-unit {
-            font-size: 0.82rem;
-            color: var(--text-muted);
+            font-size: 0.85rem;
             font-weight: 500;
-            margin-left: 0.25rem;
-        }
-
-        .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.35rem;
+            color: #64748b;
+            margin-left: 0.35rem;
         }
 
         /* Filter Controls */
         .filter-select {
             background-color: #ffffff;
             border: 1px solid var(--card-border);
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 0.55rem 1rem;
-            font-size: 0.85rem;
+            font-size: 0.88rem;
             color: #334155;
             font-weight: 500;
             min-width: 170px;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
             cursor: pointer;
+            transition: all 0.2s;
         }
 
         .filter-select:focus {
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 3px rgba(29, 104, 240, 0.1);
+            border-color: #93c5fd;
             outline: none;
-        }
-
-        /* Buttons */
-        .btn-primary-custom {
-            background-color: var(--primary-blue);
-            border-color: var(--primary-blue);
-            color: #ffffff;
-            font-weight: 600;
-            padding: 0.55rem 1.25rem;
-            border-radius: 8px;
-            font-size: 0.86rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-        }
-
-        .btn-primary-custom:hover {
-            background-color: var(--primary-hover);
-            border-color: var(--primary-hover);
-            color: #ffffff;
-        }
-
-        .btn-outline-custom {
-            background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            color: #334155;
-            font-weight: 600;
-            padding: 0.55rem 1.25rem;
-            border-radius: 8px;
-            font-size: 0.86rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-        }
-
-        .btn-outline-custom:hover {
-            background-color: #f8fafc;
-            border-color: #94a3b8;
-            color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(29, 104, 240, 0.1);
         }
 
         /* Table Styling */
@@ -323,7 +317,7 @@
             gap: 0.3rem;
         }
 
-        /* Badge Status Pembayaran - Khas Tugas Frontend Fahriel Aziz Satrio */
+        /* Badge Status Pembayaran */
         .badge-pembayaran {
             font-weight: 600;
             font-size: 0.78rem;
@@ -373,7 +367,7 @@
             border-radius: 9999px;
         }
 
-        /* Status Selection Radio Cards in Modal */
+        /* Modal styling */
         .card-jenis-paket {
             border: 1.5px solid #e2e8f0;
             border-radius: 12px;
@@ -421,7 +415,6 @@
             background-color: #fffbeb;
         }
 
-        /* Modal Subheader Sesuai Wireframe Tambah / Edit Keluarga */
         .modal-section-title {
             color: #1d68f0;
             font-size: 0.72rem;
@@ -444,279 +437,302 @@
 
 <body>
 
-    <!-- ================= SIDEBAR ================= -->
-    <aside class="sidebar">
-        <!-- Logo & Brand -->
-        <div class="d-flex align-items-center gap-2 mb-4 px-2">
-            <div class="logo-box">
-                <i class="bi bi-robot"></i>
-            </div>
+    <div class="d-flex">
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="sidebar d-flex flex-column justify-content-between">
             <div>
-                <span class="fw-bold d-block text-dark" style="font-size: 0.95rem; letter-spacing: -0.2px;">RACER ROBOTIC</span>
-                <small class="text-muted" style="font-size: 0.72rem;">Administrasi Akademik</small>
-            </div>
-        </div>
-
-        <small class="text-uppercase text-muted fw-bold px-2 mb-2" style="font-size: 0.68rem; letter-spacing: 0.8px;">Menu Utama</small>
-        <nav class="nav flex-column mb-auto">
-            <a href="{{ route('admin') }}" class="nav-link-custom">
-                <i class="bi bi-grid"></i>
-                <span>Beranda</span>
-            </a>
-            <!-- Menu Akun Keluarga & Siswa (AKTIF) -->
-            <a href="{{ route('admin.keluarga') }}" class="nav-link-custom active">
-                <i class="bi bi-people"></i>
-                <span>Akun Keluarga & Siswa</span>
-            </a>
-            <a href="{{ route('admin.tutor') }}" class="nav-link-custom">
-                <i class="bi bi-person-badge"></i>
-                <span>Data Tutor</span>
-            </a>
-            <a href="{{ route('admin.penjadwalan') }}" class="nav-link-custom">
-                <i class="bi bi-calendar3"></i>
-                <span>Penjadwalan Terpusat</span>
-            </a>
-            <a href="{{ route('admin') }}#presensi" class="nav-link-custom">
-                <i class="bi bi-check2-square"></i>
-                <span>Presensi & Reschedule</span>
-            </a>
-            <a href="{{ route('admin') }}#pengumuman" class="nav-link-custom">
-                <i class="bi bi-megaphone"></i>
-                <span>Pengumuman Lembaga</span>
-            </a>
-            <a href="#" class="nav-link-custom">
-                <i class="bi bi-graph-up-arrow"></i>
-                <span>Laporan Bulanan</span>
-            </a>
-        </nav>
-
-        <!-- Bantuan Operasional Card -->
-        <div class="card border-0 rounded-3 p-3 mb-3" style="background-color: #f1f5f9;">
-            <div class="d-flex gap-2 mb-2">
-                <i class="bi bi-question-circle text-primary"></i>
-                <div>
-                    <h6 class="fw-bold mb-0" style="font-size: 0.78rem;">Butuh bantuan operasional?</h6>
-                    <small class="text-muted" style="font-size: 0.72rem;">Tim support siap membantu Anda.</small>
-                </div>
-            </div>
-            <a href="https://wa.me/6281234567890" target="_blank" class="fw-semibold text-primary text-decoration-none" style="font-size: 0.74rem;">
-                Hubungi tim support &nearr;
-            </a>
-        </div>
-
-        <!-- Admin Profile & Logout -->
-        <div class="border-top pt-3 d-flex align-items-center justify-content-between px-2">
-            <div class="d-flex align-items-center gap-2">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"
-                    alt="Admin" class="rounded-circle" style="width: 34px; height: 34px; object-fit: cover;">
-                <div style="line-height: 1.2;">
-                    <span class="fw-semibold text-dark d-block" style="font-size: 0.8rem;">Admin Operasional</span>
-                    <small class="text-muted" style="font-size: 0.7rem;">admin@racer-robotic.id</small>
-                </div>
-            </div>
-            <a href="{{ route('logout') }}" class="text-muted text-decoration-none" title="Keluar">
-                <i class="bi bi-box-arrow-right fs-5"></i>
-            </a>
-        </div>
-    </aside>
-
-    <!-- ================= TOP NAVBAR ================= -->
-    <header class="top-navbar">
-        <form method="GET" action="{{ route('admin.keluarga') }}" class="search-box">
-            <i class="bi bi-search"></i>
-            <input type="text" name="q" value="{{ $search ?? '' }}"
-                placeholder="Cari nama siswa, nama wali, atau tutor...">
-            <span class="shortcut-tag">&#8984; K</span>
-        </form>
-
-        <div class="d-flex align-items-center gap-3">
-            <span class="badge border bg-light text-secondary rounded-pill px-3 py-2 fw-semibold" style="font-size: 0.78rem;">
-                <i class="bi bi-calendar-event me-1 text-primary"></i> T.A 2026/2027
-            </span>
-
-            <button class="btn btn-light rounded-circle p-2 border position-relative" style="width: 36px; height: 36px;" title="Notifikasi">
-                <i class="bi bi-bell text-secondary"></i>
-                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
-            </button>
-
-            <div class="d-flex align-items-center gap-2 ps-2 border-start">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"
-                    alt="Admin" class="rounded-circle" style="width: 32px; height: 32px; object-fit: cover;">
-                <span class="fw-semibold text-dark d-none d-md-inline" style="font-size: 0.84rem;">Admin</span>
-                <i class="bi bi-chevron-down text-muted" style="font-size: 0.75rem;"></i>
-            </div>
-        </div>
-    </header>
-
-    <!-- ================= MAIN CONTENT ================= -->
-    <main class="main-content">
-
-        <!-- Flash Message Alert -->
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show rounded-3 py-2 px-3 mb-4 d-flex align-items-center gap-2" role="alert">
-                <i class="bi bi-check-circle-fill text-success fs-5"></i>
-                <div style="font-size: 0.88rem;">{{ session('success') }}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        @if ($errors->any())
-            <div class="alert alert-danger alert-dismissible fade show rounded-3 py-2 px-3 mb-4" role="alert">
-                <div class="fw-bold mb-1" style="font-size: 0.88rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> Terdapat kesalahan input:</div>
-                <ul class="mb-0 ps-3" style="font-size: 0.84rem;">
-                    @foreach ($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        <!-- Header Title & Subtitle -->
-        <div class="mb-4">
-            <h3 class="fw-bold text-dark mb-1" style="font-size: 1.55rem; letter-spacing: -0.3px;">Akun Keluarga & Siswa</h3>
-            <p class="text-muted mb-0" style="font-size: 0.88rem;">
-                Manajemen data wali murid, relasi anak/siswa terdaftar, dan pemantauan kuota paket belajar.
-            </p>
-        </div>
-
-        <!-- 4 Statistics Cards -->
-        <div class="row g-3 mb-4">
-            <!-- 1. Total Akun Keluarga -->
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
+                <!-- Brand Header -->
+                <div class="d-flex align-items-center gap-2 mb-4 px-1">
+                    <div class="brand-logo">
+                        <i class="bi bi-robot"></i>
+                    </div>
                     <div>
-                        <div class="stat-title">Total Akun Keluarga</div>
-                        <div class="d-flex align-items-baseline">
-                            <span class="stat-value">{{ $totalKeluargaCount }}</span>
-                            <span class="stat-unit">Keluarga</span>
+                        <h6 class="fw-bold mb-0 text-dark" style="letter-spacing: -0.2px;">RACER ROBOTIC</h6>
+                        <small class="text-muted" style="font-size: 0.74rem;">Administrasi Akademik</small>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="mb-3">
+                    <small class="text-uppercase text-muted fw-bold px-2 mb-2 d-block"
+                        style="font-size: 0.68rem; letter-spacing: 0.8px;">Menu Utama</small>
+                    <nav class="nav flex-column">
+                        <a href="{{ route('admin') }}" class="nav-link-custom">
+                            <i class="bi bi-grid-fill"></i>
+                            <span>Beranda</span>
+                        </a>
+                        <!-- Menu Akun Keluarga & Siswa (AKTIF) -->
+                        <a href="{{ route('admin.keluarga') }}" class="nav-link-custom active">
+                            <i class="bi bi-people"></i>
+                            <span>Akun Keluarga & Siswa</span>
+                        </a>
+                        <a href="{{ route('admin.tutor') }}" class="nav-link-custom">
+                            <i class="bi bi-person-badge"></i>
+                            <span>Data Tutor</span>
+                        </a>
+                        <a href="{{ route('admin.penjadwalan') }}" class="nav-link-custom {{ request()->routeIs('admin.penjadwalan') ? 'active' : '' }}">
+                            <i class="bi bi-calendar4-week"></i>
+                            <span>Penjadwalan Terpusat</span>
+                        </a>
+                        <a href="{{ route('admin') }}#tabelPresensi" class="nav-link-custom">
+                            <i class="bi bi-clipboard2-check"></i>
+                            <span>Presensi & Reschedule</span>
+                        </a>
+                        <a href="{{ route('admin') }}#tabelPengumuman" class="nav-link-custom">
+                            <i class="bi bi-megaphone"></i>
+                            <span>Pengumuman Lembaga</span>
+                        </a>
+                        <a href="#" class="nav-link-custom">
+                            <i class="bi bi-graph-up"></i>
+                            <span>Laporan Bulanan</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Bottom Support & User Profile -->
+            <div>
+                <!-- Support Banner -->
+                <div class="support-card mb-3">
+                    <div class="d-flex gap-2">
+                        <div class="text-primary mt-1">
+                            <i class="bi bi-question-circle-fill fs-5"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-dark" style="font-size: 0.85rem;">Butuh bantuan operasional?</h6>
+                            <p class="text-muted mb-2" style="font-size: 0.74rem; line-height: 1.3;">Tim support siap membantu Anda.</p>
+                            <a href="https://wa.me/6281234567890" target="_blank" class="text-primary fw-semibold text-decoration-none" style="font-size: 0.76rem;">
+                                Hubungi tim support <i class="bi bi-arrow-up-right"></i>
+                            </a>
                         </div>
                     </div>
-                    <div class="stat-icon" style="background-color: #f1f5f9; color: #475569;">
-                        <i class="bi bi-people"></i>
-                    </div>
                 </div>
-            </div>
 
-            <!-- 2. Total Siswa Terdaftar -->
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div>
-                        <div class="stat-title">Total Siswa Terdaftar</div>
-                        <div class="d-flex align-items-baseline">
-                            <span class="stat-value">{{ $totalSiswaCount }}</span>
-                            <span class="stat-unit">Siswa</span>
+                <!-- User profile info -->
+                <div class="pt-3 border-top d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin Operasional') }}&background=fee2e2&color=dc2626&bold=true"
+                            alt="Avatar" class="rounded-circle" width="36" height="36">
+                        <div style="line-height: 1.2;">
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 120px; font-size: 0.82rem;">
+                                {{ Auth::user()->name ?? 'Admin Operasional' }}
+                            </div>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ Auth::user()->email ?? 'admin@racer-robotic.id' }}</small>
                         </div>
                     </div>
-                    <div class="stat-icon" style="background-color: #eff6ff; color: var(--primary-blue);">
-                        <i class="bi bi-mortarboard"></i>
-                    </div>
+                    <button type="button" class="btn-logout-sidebar" title="Logout" data-bs-toggle="modal" data-bs-target="#modalKonfirmasiLogout">
+                        <i class="bi bi-box-arrow-right fs-5"></i>
+                    </button>
                 </div>
             </div>
+        </aside>
 
-            <!-- 3. Paket Hampir Habis -->
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div>
-                        <div class="stat-title">Paket Hampir Habis</div>
-                        <div class="d-flex align-items-baseline">
-                            <span class="stat-value" style="color: #d97706 !important;">{{ $paketHampirHabisCount }}</span>
-                            <span class="stat-unit">Siswa</span>
+        <!-- ================= MAIN CONTENT WRAPPER ================= -->
+        <main class="main-wrapper flex-grow-1">
+
+            <!-- Top Header Search & Controls -->
+            <header class="top-navbar d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <!-- Mobile toggle & Search bar -->
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <button class="btn btn-light d-lg-none border" id="toggleSidebar">
+                        <i class="bi bi-list fs-5"></i>
+                    </button>
+                    <form action="{{ route('admin.keluarga') }}" method="GET" class="search-container flex-grow-1" style="max-width: 480px;">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" name="q" class="search-input w-100"
+                            value="{{ $search ?? '' }}"
+                            placeholder="Cari nama siswa, nama wali, atau tutor...">
+                        <span class="search-shortcut">&#8984; K</span>
+                        @if(!empty($statusPaket) && $statusPaket !== 'Semua') <input type="hidden" name="status_paket" value="{{ $statusPaket }}"> @endif
+                        @if(!empty($statusPembayaran) && $statusPembayaran !== 'Semua') <input type="hidden" name="status_pembayaran" value="{{ $statusPembayaran }}"> @endif
+                        @if(!empty($programFilter) && $programFilter !== 'Semua') <input type="hidden" name="program" value="{{ $programFilter }}"> @endif
+                    </form>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge border bg-light text-secondary rounded-pill px-3 py-2 fw-semibold" style="font-size: 0.78rem;">
+                        <i class="bi bi-calendar-event me-1 text-primary"></i> T.A 2026/2027
+                    </span>
+
+                    <button class="btn btn-white bg-white border rounded-circle p-2 position-relative" style="width: 40px; height: 40px;" title="Notifikasi">
+                        <i class="bi bi-bell text-secondary"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    </button>
+
+                    <div class="d-flex align-items-center gap-2 ps-2 border-start">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin Operasional') }}&background=fee2e2&color=dc2626&bold=true"
+                            alt="Avatar" class="rounded-circle" width="36" height="36">
+                        <div class="d-none d-md-block text-start">
+                            <div class="fw-bold text-dark" style="font-size: 0.8rem; line-height: 1.1;">{{ Auth::user()->name ?? 'Admin' }}</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">Super Admin</small>
                         </div>
                     </div>
-                    <div class="stat-icon" style="background-color: #fef3c7; color: #d97706;">
-                        <i class="bi bi-clock-history"></i>
-                    </div>
                 </div>
-            </div>
+            </header>
 
-            <!-- 4. Aktivasi WhatsApp -->
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div>
-                        <div class="stat-title">Aktivasi WhatsApp</div>
-                        <div class="d-flex align-items-baseline">
-                            <span class="stat-value" style="color: #10b981 !important;">{{ $aktivasiWhatsappPercent }}%</span>
-                            <span class="stat-unit">Terhubung</span>
-                        </div>
-                    </div>
-                    <div class="stat-icon" style="background-color: #ecfdf5; color: #10b981;">
-                        <i class="bi bi-whatsapp"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+            <!-- Page Body Content -->
+            <div class="p-4 pt-2">
 
-        <!-- Filter Controls & Action Buttons Row -->
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
-            <!-- Filter Dropdowns -->
-            <form method="GET" action="{{ route('admin.keluarga') }}" id="filterForm" class="d-flex flex-wrap align-items-center gap-2">
-                @if ($search)
-                    <input type="hidden" name="q" value="{{ $search }}">
+                <!-- Flash Alert Messages -->
+                @if (session('success'))
+                    <div class="alert alert-success alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+                        <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 @endif
 
-                <!-- Status Paket -->
-                <select name="status_paket" class="filter-select" onchange="document.getElementById('filterForm').submit()">
-                    <option value="Semua" {{ ($statusPaket ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Status Paket: Semua</option>
-                    <option value="Aktif" {{ ($statusPaket ?? '') === 'Aktif' ? 'selected' : '' }}>Status Paket: Aktif</option>
-                    <option value="Paket habis" {{ ($statusPaket ?? '') === 'Paket habis' ? 'selected' : '' }}>Status Paket: Selesai / Habis</option>
-                </select>
-
-                <!-- Status Pembayaran (Core Filter) -->
-                <select name="status_pembayaran" class="filter-select" onchange="document.getElementById('filterForm').submit()">
-                    <option value="Semua" {{ ($statusPembayaran ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Status Pembayaran: Semua</option>
-                    <option value="Belum Bayar" {{ ($statusPembayaran ?? '') === 'Belum Bayar' ? 'selected' : '' }}>Status: Belum Bayar</option>
-                    <option value="Lunas" {{ ($statusPembayaran ?? '') === 'Lunas' ? 'selected' : '' }}>Status: Lunas</option>
-                </select>
-
-                <!-- Program -->
-                <select name="program" class="filter-select" onchange="document.getElementById('filterForm').submit()">
-                    <option value="Semua" {{ ($programFilter ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Program: Semua</option>
-                    <option value="Junior Robotics" {{ ($programFilter ?? '') === 'Junior Robotics' ? 'selected' : '' }}>Junior Robotics</option>
-                    <option value="Python for Kids" {{ ($programFilter ?? '') === 'Python for Kids' ? 'selected' : '' }}>Python for Kids</option>
-                    <option value="Robotic Scratch" {{ ($programFilter ?? '') === 'Robotic Scratch' ? 'selected' : '' }}>Robotic Scratch</option>
-                    <option value="Arduino Explorer" {{ ($programFilter ?? '') === 'Arduino Explorer' ? 'selected' : '' }}>Arduino Explorer</option>
-                    <option value="AI Builder" {{ ($programFilter ?? '') === 'AI Builder' ? 'selected' : '' }}>AI Builder</option>
-                </select>
-
-                @if ($search || $statusPaket !== 'Semua' || $statusPembayaran !== 'Semua' || $programFilter !== 'Semua')
-                    <a href="{{ route('admin.keluarga') }}" class="btn btn-light border btn-sm rounded-3 px-3 py-2 text-muted fw-semibold" title="Reset Filter">
-                        <i class="bi bi-x-circle me-1"></i> Reset
-                    </a>
-                @endif
-            </form>
-
-            <!-- 2 Action Buttons: + Aktivasi Paket & + Akun Keluarga -->
-            <div class="d-flex align-items-center gap-2">
-                <!-- Tombol 1: + Aktivasi Paket (Outline Button) -->
-                <button type="button" class="btn btn-outline-custom" data-bs-toggle="modal" data-bs-target="#modalAktivasiPaket">
-                    <i class="bi bi-plus-lg text-primary"></i> Aktivasi Paket
-                </button>
-
-                <!-- Tombol 2: Edit Keluarga (Solid Primary Button Sesuai Permintaan) -->
-                <button type="button" class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#modalAkunKeluarga" onclick="openTambahKeluargaModal()">
-                    <i class="bi bi-pencil-square"></i> Edit Keluarga
-                </button>
-            </div>
-        </div>
-
-        <!-- Table Card: Daftar Keluarga & Siswa -->
-        <div class="card-custom">
-            <div class="p-4 border-bottom d-flex align-items-center justify-content-between">
-                <div>
-                    <div class="d-flex align-items-center gap-2 mb-1">
-                        <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">Daftar keluarga & siswa</h5>
-                        <span class="badge border bg-light text-secondary rounded-pill px-2 py-1 fw-semibold" style="font-size: 0.72rem;">
-                            {{ $totalKeluargaCount }} keluarga
-                        </span>
+                @if (session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                    <small class="text-muted" style="font-size: 0.82rem;">Kelola data siswa dan paket belajar dalam satu tempat.</small>
-                </div>
-            </div>
+                @endif
 
-            <!-- Table Responsive -->
-            <div class="table-responsive">
-                <table class="table table-custom">
+                @if ($errors->any())
+                    <div class="alert alert-danger alert-dismissible fade show rounded-3 mb-4 shadow-sm" role="alert">
+                        <div class="fw-bold mb-1" style="font-size: 0.88rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> Terdapat kesalahan input:</div>
+                        <ul class="mb-0 ps-3" style="font-size: 0.84rem;">
+                            @foreach ($errors->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                <!-- Page Header: Judul & Subtitle Sesuai Standar Dashboard -->
+                <div class="mb-4">
+                    <h3 class="fw-bold text-dark mb-1" style="letter-spacing: -0.3px;">Akun Keluarga & Siswa</h3>
+                    <p class="text-muted mb-0" style="font-size: 0.88rem;">
+                        Manajemen data wali murid, pendaftaran akun siswa baru, dan status aktivasi paket belajar.
+                    </p>
+                </div>
+
+                <!-- 4 Top Metric Cards Sesuai Standar Dash-Card -->
+                <div class="row g-3 mb-4">
+                    <!-- 1. Total Akun Keluarga -->
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="dash-card">
+                            <span class="text-muted fw-medium d-block mb-2" style="font-size: 0.85rem;">Total Akun Keluarga</span>
+                            <div class="d-flex align-items-baseline">
+                                <span class="stat-value">{{ $totalKeluargaCount }}</span>
+                                <span class="stat-unit">Keluarga</span>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.76rem;">Terdaftar di database aktif</small>
+                        </div>
+                    </div>
+
+                    <!-- 2. Total Siswa Terdaftar -->
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="dash-card">
+                            <span class="text-muted fw-medium d-block mb-2" style="font-size: 0.85rem;">Total Siswa Terdaftar</span>
+                            <div class="d-flex align-items-baseline">
+                                <span class="stat-value">{{ $totalSiswaCount }}</span>
+                                <span class="stat-unit">Siswa</span>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.76rem;">Siswa aktif belajar</small>
+                        </div>
+                    </div>
+
+                    <!-- 3. Paket Hampir Habis -->
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="dash-card">
+                            <span class="text-muted fw-medium d-block mb-2" style="font-size: 0.85rem;">Paket Hampir Habis</span>
+                            <div class="d-flex align-items-baseline">
+                                <span class="stat-value text-warning" style="color: #d97706 !important;">{{ $paketHampirHabisCount }}</span>
+                                <span class="stat-unit">Siswa</span>
+                            </div>
+                            <small class="text-warning fw-semibold" style="font-size: 0.76rem; color: #b45309 !important;">
+                                {{ $paketHampirHabisCount }} paket perlu renewal
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- 4. Aktivasi WhatsApp -->
+                    <div class="col-12 col-sm-6 col-xl-3">
+                        <div class="dash-card">
+                            <span class="text-muted fw-medium d-block mb-2" style="font-size: 0.85rem;">Aktivasi WhatsApp</span>
+                            <div class="d-flex align-items-baseline">
+                                <span class="stat-value" style="color: #10b981 !important;">{{ $aktivasiWhatsappPercent }}%</span>
+                                <span class="stat-unit">Terhubung</span>
+                            </div>
+                            <small class="text-success fw-semibold" style="font-size: 0.76rem; color: #059669 !important;">
+                                Notifikasi otomatis aktif
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Controls & Action Buttons Row -->
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+                    <!-- Filter Dropdowns -->
+                    <form method="GET" action="{{ route('admin.keluarga') }}" id="filterForm" class="d-flex flex-wrap align-items-center gap-2">
+                        @if ($search)
+                            <input type="hidden" name="q" value="{{ $search }}">
+                        @endif
+
+                        <!-- Status Paket -->
+                        <select name="status_paket" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+                            <option value="Semua" {{ ($statusPaket ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Status Paket: Semua</option>
+                            <option value="Aktif" {{ ($statusPaket ?? '') === 'Aktif' ? 'selected' : '' }}>Status Paket: Aktif</option>
+                            <option value="Paket habis" {{ ($statusPaket ?? '') === 'Paket habis' ? 'selected' : '' }}>Status Paket: Selesai / Habis</option>
+                        </select>
+
+                        <!-- Status Pembayaran (Core Filter) -->
+                        <select name="status_pembayaran" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+                            <option value="Semua" {{ ($statusPembayaran ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Status Pembayaran: Semua</option>
+                            <option value="Belum Bayar" {{ ($statusPembayaran ?? '') === 'Belum Bayar' ? 'selected' : '' }}>Status: Belum Bayar</option>
+                            <option value="Lunas" {{ ($statusPembayaran ?? '') === 'Lunas' ? 'selected' : '' }}>Status: Lunas</option>
+                        </select>
+
+                        <!-- Program -->
+                        <select name="program" class="filter-select" onchange="document.getElementById('filterForm').submit()">
+                            <option value="Semua" {{ ($programFilter ?? 'Semua') === 'Semua' ? 'selected' : '' }}>Program: Semua</option>
+                            <option value="Junior Robotics" {{ ($programFilter ?? '') === 'Junior Robotics' ? 'selected' : '' }}>Junior Robotics</option>
+                            <option value="Python for Kids" {{ ($programFilter ?? '') === 'Python for Kids' ? 'selected' : '' }}>Python for Kids</option>
+                            <option value="Robotic Scratch" {{ ($programFilter ?? '') === 'Robotic Scratch' ? 'selected' : '' }}>Robotic Scratch</option>
+                            <option value="Arduino Explorer" {{ ($programFilter ?? '') === 'Arduino Explorer' ? 'selected' : '' }}>Arduino Explorer</option>
+                            <option value="AI Builder" {{ ($programFilter ?? '') === 'AI Builder' ? 'selected' : '' }}>AI Builder</option>
+                        </select>
+
+                        @if ($search || $statusPaket !== 'Semua' || $statusPembayaran !== 'Semua' || $programFilter !== 'Semua')
+                            <a href="{{ route('admin.keluarga') }}" class="btn btn-light border btn-sm rounded-3 px-3 py-2 text-muted fw-semibold" title="Reset Filter">
+                                <i class="bi bi-x-circle me-1"></i> Reset
+                            </a>
+                        @endif
+                    </form>
+
+                    <!-- 2 Action Buttons: + Aktivasi Paket & + Akun Keluarga -->
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Tombol 1: + Aktivasi Paket (Outline Button) -->
+                        <button type="button" class="btn btn-white bg-white border d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 text-primary" data-bs-toggle="modal" data-bs-target="#modalAktivasiPaket" style="font-size: 0.88rem; border-color: var(--primary-blue) !important;">
+                            <i class="bi bi-plus-lg text-primary"></i> Aktivasi Paket
+                        </button>
+
+                        <!-- Tombol 2: Edit/Tambah Keluarga (Solid Primary Button Sesuai Permintaan) -->
+                        <button type="button" class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3" data-bs-toggle="modal" data-bs-target="#modalAkunKeluarga" onclick="openTambahKeluargaModal()" style="background-color: var(--primary-blue); font-size: 0.88rem;">
+                            <i class="bi bi-plus-lg"></i> Akun Keluarga
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table Card: Daftar Keluarga & Siswa Sesuai Standar Dash-Card -->
+                <div class="dash-card p-0 overflow-hidden mb-4">
+                    <div class="p-4 border-bottom d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h5 class="fw-bold text-dark mb-0" style="font-size: 1.05rem;">Daftar Keluarga & Siswa</h5>
+                                <span class="badge border bg-light text-secondary rounded-pill px-2 py-1 fw-semibold" style="font-size: 0.72rem;">
+                                    {{ $totalKeluargaCount }} keluarga
+                                </span>
+                            </div>
+                            <small class="text-muted" style="font-size: 0.82rem;">Kelola data siswa dan paket belajar dalam satu tempat.</small>
+                        </div>
+                    </div>
+
+                    <!-- Table Responsive -->
+                    <div class="table-responsive">
+<table class="table table-custom">
                     <thead>
                         <tr>
                             <th>SISWA / WALI</th>
@@ -804,6 +820,12 @@
                                             </li>
                                             <li>
                                                 <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                    onclick="openRenewalModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->sesi_terpakai }}')">
+                                                    <i class="bi bi-arrow-repeat text-success"></i> Perpanjang Paket (Renewal)
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
                                                     onclick="openEditKeluargaModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_panggilan ?? '' }}', '{{ $s->jenjang ?? 'SD' }}', '{{ $s->kelas ?? '3' }}', '{{ $s->nisn ?? '' }}', '{{ $s->paket_belajar }}', '{{ $s->nama_wali }}', '{{ $s->nomor_whatsapp ?? '081234567890' }}', '{{ $s->hubungan ?? 'Ibu' }}')">
                                                     <i class="bi bi-pencil-square text-secondary"></i> Edit Data Keluarga
                                                 </a>
@@ -837,9 +859,9 @@
                         @endforelse
                     </tbody>
                 </table>
-            </div>
+                    </div>
 
-            <!-- Table Footer & Pagination -->
+<!-- Table Footer & Pagination -->
             <div class="p-3 border-top d-flex flex-wrap align-items-center justify-content-between gap-3" style="font-size: 0.82rem;">
                 <span class="text-muted">
                     Menampilkan 1-{{ count($siswaList) }} dari {{ $totalSiswaCount }} siswa
@@ -860,18 +882,18 @@
                 </nav>
             </div>
         </div>
+                </div>
 
-        <!-- Footer Info -->
-        <footer class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-            <span>&copy; 2026 RACER ROBOTIC. Bertumbuh bersama teknologi.</span>
-            <span>Semua jadwal dalam Waktu Indonesia Barat (WIB)</span>
-        </footer>
-    </main>
+                <!-- Footer Info -->
+                <footer class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <span>&copy; 2026 RACER ROBOTIC. Bertumbuh bersama teknologi.</span>
+                    <span>Semua jadwal dalam Waktu Indonesia Barat (WIB)</span>
+                </footer>
+            </div>
+        </main>
+    </div>
 
-    <!-- ========================================================================= -->
-    <!-- MODAL 1: FORM AKTIVASI PAKET BELAJAR SISWA (Front-End - Fahriel Aziz Satrio) -->
-    <!-- ========================================================================= -->
-    <div class="modal fade" id="modalAktivasiPaket" tabindex="-1" aria-labelledby="modalAktivasiPaketLabel" aria-hidden="true">
+<div class="modal fade" id="modalAktivasiPaket" tabindex="-1" aria-labelledby="modalAktivasiPaketLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 530px;">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 <!-- Modal Header (Sesuai Wireframe Image 1) -->
@@ -901,6 +923,12 @@
                                 <span id="alertAktivasiErrorText" class="text-danger" style="font-size: 0.8rem; line-height: 1.45;">
                                     {{ session('error_aktivasi') ?: ($errors->first('paket_aktif') ?: 'Siswa Alya Putri masih memiliki paket berstatus Aktif pada program Junior Robotics. Selesaikan atau nonaktifkan paket sebelumnya terlebih dahulu.') }}
                                 </span>
+                                <div class="mt-2 pt-2 border-top border-danger-subtle d-flex align-items-center justify-content-between">
+                                    <span class="text-danger fw-normal" style="font-size: 0.76rem;">Ingin memperpanjang kursus siswa ini?</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1 fw-semibold" style="font-size: 0.76rem; border-radius: 6px;" onclick="switchToRenewalFromAktivasi()">
+                                        <i class="bi bi-arrow-repeat me-1"></i> Buka Perpanjangan (Renewal)
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -1167,6 +1195,43 @@
                                 <input type="text" name="kota_kabupaten" id="inputKota" class="form-control rounded-2" placeholder="Jakarta Pusat" value="Jakarta Pusat" style="font-size: 0.88rem;">
                             </div>
                         </div>
+
+                        <!-- 3.5 DATA SECONDARY PARENT (WALI PENDAMPING - OPSIONAL, MAKS. 1 PER KELUARGA) -->
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div class="modal-section-title mb-0">SECONDARY PARENT (WALI PENDAMPING - OPSIONAL)</div>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.72rem;">Maks. 1 per Keluarga</span>
+                            </div>
+                            <p class="text-muted mb-3" style="font-size: 0.8rem;">
+                                Pasangan atau wali pendamping opsional agar memiliki akses resmi memantau anak di portal Orang Tua. Kosongkan jika tidak ada.
+                            </p>
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Secondary Parent</label>
+                                    <input type="text" name="nama_secondary_parent" id="inputNamaSecondaryParent" class="form-control rounded-2" placeholder="Contoh: Bpk. Arif Wibowo" style="font-size: 0.88rem;">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Hubungan</label>
+                                    <select name="hubungan_secondary_parent" id="inputHubunganSecondaryParent" class="form-select rounded-2" style="font-size: 0.88rem;">
+                                        <option value="Ayah" selected>Ayah</option>
+                                        <option value="Ibu">Ibu</option>
+                                        <option value="Wali">Wali</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">No. WhatsApp Secondary Parent</label>
+                                    <input type="text" name="nomor_whatsapp_secondary_parent" id="inputWhatsappSecondaryParent" class="form-control rounded-2" placeholder="081399998888" style="font-size: 0.88rem;">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Username Login (Opsional)</label>
+                                    <input type="text" name="username_secondary_parent" id="inputUsernameSecondaryParent" class="form-control rounded-2" placeholder="ayah.andi (Otomatis)" style="font-size: 0.88rem;">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Password Awal</label>
+                                    <input type="text" name="password_secondary_parent" id="inputPasswordSecondaryParent" class="form-control rounded-2" placeholder="RacerWali2026!" value="RacerWali2026!" style="font-size: 0.88rem;">
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="modal-footer border-0 p-4 pt-2 d-flex justify-content-end gap-2">
@@ -1182,11 +1247,179 @@
         </div>
     </div>
 
+    <!-- MODAL 3: FORM PERPANJANGAN PAKET (RENEWAL) DENGAN ISOLASI RIWAYAT (Backlog B-03 - Backend: Muhammad Fadhil Swarigading) -->
+    <div class="modal fade" id="modalRenewalPaket" tabindex="-1" aria-labelledby="modalRenewalPaketLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 530px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 mb-2 fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-arrow-repeat me-1"></i> Perpanjangan Paket (Renewal)
+                        </div>
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalRenewalPaketLabel" style="font-size: 1.18rem; letter-spacing: -0.2px;">
+                            Perpanjang Paket Belajar Siswa
+                        </h5>
+                        <p class="text-muted mb-0" style="font-size: 0.83rem;">
+                            Paket baru akan diaktifkan dan riwayat paket lama otomatis diarsipkan secara terpisah.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Form Renewal Paket -->
+                <form method="POST" action="{{ route('admin.keluarga.renewal-paket') }}" id="formRenewalPaket" class="needs-validation" novalidate>
+                    @csrf
+                    <input type="hidden" name="total_sesi" id="renewalTotalSesi" value="12">
+
+                    <div class="modal-body p-4 pt-2">
+                        <!-- Info Isolasi Riwayat -->
+                        <div class="alert alert-info d-flex align-items-start gap-2 p-3 rounded-3 mb-3 border-0" style="background-color: #f0fdf4; border: 1px solid #bbf7d0 !important;">
+                            <i class="bi bi-shield-check text-success fs-5 flex-shrink-0 mt-0"></i>
+                            <div style="font-size: 0.82rem; color: #166534; line-height: 1.45;">
+                                <strong>Isolasi Riwayat Aktif:</strong> Kuota dan sesi terpakai dari paket sebelumnya akan diarsipkan secara aman di database dan tidak akan tertimpa atau hilang.
+                            </div>
+                        </div>
+
+                        <!-- 1. Pilih Siswa Target Renewal -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
+                                Siswa yang Diperpanjang <span class="text-danger">*</span>
+                            </label>
+                            <select name="id_siswa" id="renewalIdSiswa" class="form-select rounded-3" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;" onchange="onRenewalSiswaChange()">
+                                @foreach ($allSiswaOptions as $opt)
+                                    @php
+                                        $optId = $opt->id_siswa ?? $opt->id;
+                                        $optNama = $opt->nama ?: ($opt->nama_lengkap ?: 'Siswa #' . $optId);
+                                    @endphp
+                                    <option value="{{ $optId }}"
+                                        data-nama="{{ $optNama }}"
+                                        data-program="{{ $opt->program ?? '' }}"
+                                        data-jenis="{{ $opt->jenis_paket ?? '' }}"
+                                        data-paket="{{ $opt->paket_belajar ?? '' }}"
+                                        data-total="{{ $opt->total_sesi ?? 12 }}"
+                                        data-terpakai="{{ $opt->sesi_terpakai ?? 0 }}">
+                                        {{ $optNama }} ({{ $opt->program ?? 'Robotics' }} - Sisa: {{ max(0, ($opt->total_sesi ?? 12) - ($opt->sesi_terpakai ?? 0)) }} sesi)
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Ringkasan Paket Sebelumnya yang Akan Diarsipkan -->
+                        <div class="p-3 bg-light rounded-3 mb-3 border" style="font-size: 0.8rem;">
+                            <span class="text-muted d-block mb-1">Paket yang sedang berjalan (Akan Diarsipkan):</span>
+                            <div class="fw-semibold text-dark d-flex align-items-center justify-content-between">
+                                <span id="renewalOldPackageName">Semester • Junior Robotics (12 Sesi)</span>
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill" id="renewalOldSessions">12 / 12 Sesi Terpakai</span>
+                            </div>
+                        </div>
+
+                        <!-- 2. Pilih Program Baru / Lanjutan -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
+                                Program Baru / Lanjutan <span class="text-danger">*</span>
+                            </label>
+                            <select name="program" id="renewalProgram" class="form-select rounded-3" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;">
+                                <option value="Junior Robotics">Junior Robotics (TK & SD Awal)</option>
+                                <option value="Arduino Explorer">Arduino Explorer (SD Lanjutan & SMP)</option>
+                                <option value="Python for Kids">Python for Kids (Coding Logika)</option>
+                                <option value="Robotic Scratch">Robotic Scratch (Dasar Algoritma)</option>
+                                <option value="AI Builder">AI Builder (Machine Learning Anak)</option>
+                                <option value="IoT Smart Home">IoT Smart Home (Robotika Terapan)</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Pilih Jenis Paket Baru -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
+                                Jenis Paket Baru <span class="text-danger">*</span>
+                            </label>
+                            <select name="jenis_paket" id="renewalJenisPaket" class="form-select rounded-3" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;" onchange="onRenewalPaketChange()">
+                                <option value="Semester" data-sesi="12">Paket 1 Semester • 12 Sesi</option>
+                                <option value="Bulanan" data-sesi="4">Paket Per Bulan • 4 Sesi</option>
+                            </select>
+                            <div class="form-text mt-1 text-primary" id="renewalInfoKuotaText" style="font-size: 0.77rem;">
+                                Kuota awal periode baru otomatis 12 sesi (mulai dari 0 sesi terpakai).
+                            </div>
+                        </div>
+
+                        <!-- 4. Status Pembayaran Perpanjangan -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
+                                Status Pembayaran Periode Baru <span class="text-danger">*</span>
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="radio-card p-2 text-center w-100 rounded-3 border d-block" for="renewalRadioBelumBayar" style="cursor: pointer;">
+                                        <input class="form-check-input me-1" type="radio" name="status_pembayaran" id="renewalRadioBelumBayar" value="Belum Bayar" checked>
+                                        <span class="fw-semibold text-warning-emphasis" style="font-size: 0.82rem;">Belum Bayar</span>
+                                    </label>
+                                </div>
+                                <div class="col-6">
+                                    <label class="radio-card p-2 text-center w-100 rounded-3 border d-block" for="renewalRadioLunas" style="cursor: pointer;">
+                                        <input class="form-check-input me-1" type="radio" name="status_pembayaran" id="renewalRadioLunas" value="Lunas">
+                                        <span class="fw-semibold text-success" style="font-size: 0.82rem;">Lunas</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. Catatan Perpanjangan (Opsional) -->
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
+                                Catatan Perpanjangan (Opsional)
+                            </label>
+                            <input type="text" name="catatan" id="renewalCatatan" class="form-control rounded-3" placeholder="Contoh: Perpanjangan Semester 2 / Naik Tingkat" style="font-size: 0.85rem;">
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-3 px-3 py-2 fw-medium text-secondary" data-bs-dismiss="modal" style="font-size: 0.84rem;">
+                            Batal
+                        </button>
+                        <button type="submit" class="btn btn-success rounded-3 px-4 py-2 fw-semibold text-white" style="font-size: 0.84rem;">
+                            <i class="bi bi-arrow-repeat me-1"></i> Simpan Perpanjangan (Renewal)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5.3.3 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Custom Scripts for Modal Interaction & Client-side Validation -->
-    <script>
+
+    <!-- Modal Konfirmasi Logout -->
+    <div class="modal fade" id="modalKonfirmasiLogout" tabindex="-1" aria-labelledby="modalKonfirmasiLogoutLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+            <div class="modal-content rounded-4 border-0 shadow-lg text-center p-4">
+                <div class="mb-3">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-danger-subtle text-danger rounded-circle p-3" style="width: 64px; height: 64px;">
+                        <i class="bi bi-box-arrow-right fs-2"></i>
+                    </div>
+                </div>
+                <h5 class="fw-bold mb-2">Konfirmasi Keluar</h5>
+                <p class="text-muted small mb-4">Apakah Anda yakin ingin keluar dari sistem RACER ROBOTIC? Sesi aktif Anda akan diakhiri.</p>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-medium border" data-bs-dismiss="modal">Batal</button>
+                    <a href="{{ route('logout') }}" class="btn btn-confirm-logout rounded-pill px-4 fw-medium shadow-sm">Ya, Keluar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+        // Toggle mobile sidebar
+        const toggleBtn = document.getElementById("toggleSidebar");
+        if (toggleBtn) {
+            toggleBtn.addEventListener("click", function () {
+                document.querySelector(".sidebar").classList.toggle("show");
+            });
+        }
+
         // Inisialisasi Tooltip Bootstrap
         document.addEventListener('DOMContentLoaded', function () {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -1415,6 +1648,94 @@
                 const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
                 modal.show();
             }
+        }
+
+        // Fungsi Membuka Modal Perpanjangan Paket (Renewal) — Backlog B-03 (Muhammad Fadhil Swarigading)
+        function openRenewalModal(idSiswa, nama, program, jenisPaket, totalSesi, sesiTerpakai) {
+            const selectSiswa = document.getElementById('renewalIdSiswa');
+            const selectProgram = document.getElementById('renewalProgram');
+            const selectPaket = document.getElementById('renewalJenisPaket');
+            const oldPkgName = document.getElementById('renewalOldPackageName');
+            const oldSessions = document.getElementById('renewalOldSessions');
+
+            if (selectSiswa && idSiswa) {
+                selectSiswa.value = idSiswa;
+            }
+            if (selectProgram && program) {
+                for (let i = 0; i < selectProgram.options.length; i++) {
+                    if (selectProgram.options[i].value === program || program.includes(selectProgram.options[i].value)) {
+                        selectProgram.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+            if (oldPkgName) {
+                oldPkgName.textContent = `${jenisPaket || 'Semester'} • ${program || 'Robotics'} (${totalSesi || 12} Sesi)`;
+            }
+            if (oldSessions) {
+                oldSessions.textContent = `${sesiTerpakai || 0} / ${totalSesi || 12} Sesi Terpakai`;
+            }
+
+            onRenewalPaketChange();
+
+            const modalEl = document.getElementById('modalRenewalPaket');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
+
+        function onRenewalPaketChange() {
+            const selectPaket = document.getElementById('renewalJenisPaket');
+            const inputTotalSesi = document.getElementById('renewalTotalSesi');
+            const infoText = document.getElementById('renewalInfoKuotaText');
+            if (!selectPaket) return;
+
+            const opt = selectPaket.options[selectPaket.selectedIndex];
+            const sesi = opt ? (opt.getAttribute('data-sesi') || (opt.value === 'Semester' ? 12 : 4)) : 12;
+
+            if (inputTotalSesi) inputTotalSesi.value = sesi;
+            if (infoText) {
+                infoText.textContent = `Kuota awal periode baru otomatis ${sesi} sesi (mulai dari 0 sesi terpakai).`;
+            }
+        }
+
+        function onRenewalSiswaChange() {
+            const selectSiswa = document.getElementById('renewalIdSiswa');
+            if (!selectSiswa) return;
+            const opt = selectSiswa.options[selectSiswa.selectedIndex];
+            if (!opt) return;
+
+            const program = opt.getAttribute('data-program');
+            const jenis = opt.getAttribute('data-jenis');
+            const paket = opt.getAttribute('data-paket');
+            const total = opt.getAttribute('data-total');
+            const terpakai = opt.getAttribute('data-terpakai');
+
+            const oldPkgName = document.getElementById('renewalOldPackageName');
+            const oldSessions = document.getElementById('renewalOldSessions');
+
+            if (oldPkgName) oldPkgName.textContent = paket || `${jenis || 'Semester'} • ${program || 'Robotics'} (${total || 12} Sesi)`;
+            if (oldSessions) oldSessions.textContent = `${terpakai || 0} / ${total || 12} Sesi Terpakai`;
+        }
+
+        function switchToRenewalFromAktivasi() {
+            const modalAktivasiEl = document.getElementById('modalAktivasiPaket');
+            const modalAktivasi = bootstrap.Modal.getInstance(modalAktivasiEl);
+            if (modalAktivasi) modalAktivasi.hide();
+
+            const selectSiswa = document.getElementById('aktivasiIdSiswa');
+            const idSiswa = selectSiswa ? selectSiswa.value : null;
+
+            setTimeout(() => {
+                const selectRenewalSiswa = document.getElementById('renewalIdSiswa');
+                if (selectRenewalSiswa && idSiswa) {
+                    selectRenewalSiswa.value = idSiswa;
+                    onRenewalSiswaChange();
+                }
+                const modalRenewal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRenewalPaket'));
+                modalRenewal.show();
+            }, 350);
         }
     </script>
 </body>

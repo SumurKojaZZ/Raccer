@@ -469,9 +469,30 @@
                         <input type="text" name="q" class="search-input w-100"
                             value="{{ $search ?? '' }}"
                             placeholder="Cari nama siswa, nama wali, atau tutor...">
+                        <span class="search-shortcut">&#8984; K</span>
                         @if(!empty($fokus)) <input type="hidden" name="fokus" value="{{ $fokus }}"> @endif
                         @if(!empty($status)) <input type="hidden" name="status" value="{{ $status }}"> @endif
                     </form>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge border bg-light text-secondary rounded-pill px-3 py-2 fw-semibold" style="font-size: 0.78rem;">
+                        <i class="bi bi-calendar-event me-1 text-primary"></i> T.A 2026/2027
+                    </span>
+
+                    <button class="btn btn-white bg-white border rounded-circle p-2 position-relative" style="width: 40px; height: 40px;" title="Notifikasi">
+                        <i class="bi bi-bell text-secondary"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                    </button>
+
+                    <div class="d-flex align-items-center gap-2 ps-2 border-start">
+                        <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'Admin Operasional') }}&background=fee2e2&color=dc2626&bold=true"
+                            alt="Avatar" class="rounded-circle" width="36" height="36">
+                        <div class="d-none d-md-block text-start">
+                            <div class="fw-bold text-dark" style="font-size: 0.8rem; line-height: 1.1;">{{ Auth::user()->name ?? 'Admin' }}</div>
+                            <small class="text-muted" style="font-size: 0.68rem;">Super Admin</small>
+                        </div>
+                    </div>
                 </div>
             </header>
 

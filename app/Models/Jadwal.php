@@ -59,5 +59,23 @@ class Jadwal extends Model
             return (string) $this->tanggal;
         }
     }
+
+    /**
+     * Relasi ke entitas PesertaJadwal
+     */
+    public function pesertaJadwal()
+    {
+        return $this->hasMany(PesertaJadwal::class, 'id_jadwal', 'id');
+    }
+
+    /**
+     * Relasi many-to-many ke Siswa
+     */
+    public function siswaPeserta()
+    {
+        return $this->belongsToMany(Siswa::class, 'peserta_jadwal', 'id_jadwal', 'id_siswa')
+            ->withPivot(['id_peserta_jadwal', 'id_paket_siswa', 'status_kehadiran', 'catatan'])
+            ->withTimestamps();
+    }
 }
 

@@ -18,12 +18,13 @@ Route::get('/', function () {
         if (Schema::hasTable('pengumuman')) {
             $pengumumanList = Pengumuman::orderBy('id', 'desc')->take(5)->get();
         }
-    } catch (\Throwable $e) {}
+    } catch (\Throwable $e) {
+    }
 
     // Fallback data pengumuman realistis jika tabel masih kosong
     if ($pengumumanList->isEmpty()) {
         $pengumumanList = collect([
-            (object)[
+            (object) [
                 'id' => 1,
                 'judul' => 'Pembukaan Pendaftaran Kelas Robotika Gelombang Baru',
                 'konten' => 'Pendaftaran program kursus STEM & Robotika untuk tingkat TK, SD, dan SMP telah dibuka. Kuota lab terbatas.',
@@ -31,7 +32,7 @@ Route::get('/', function () {
                 'is_penting' => true,
                 'tanggal' => '04 Nov 2026',
             ],
-            (object)[
+            (object) [
                 'id' => 2,
                 'judul' => 'Pembaruan Modul Controller & AI v2.4',
                 'konten' => 'Modul praktikum mikrokontroler dan logika kontrol berbasis Arduino kini tersedia untuk peserta didik Level 3.',
@@ -39,7 +40,7 @@ Route::get('/', function () {
                 'is_penting' => false,
                 'tanggal' => '02 Nov 2026',
             ],
-            (object)[
+            (object) [
                 'id' => 3,
                 'judul' => 'Jadwal Workshop Praktikum Offline Akhir Pekan',
                 'konten' => 'Sesi belajar tatap muka di Robotics Hub Lab B Jakarta Pusat berlangsung setiap hari Sabtu & Minggu.',
@@ -78,11 +79,24 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     Route::get('/admin/keluarga', [AdminController::class, 'keluarga'])->name('admin.keluarga');
     Route::post('/admin/keluarga/aktivasi-paket', [AdminController::class, 'aktivasiPaket'])->name('admin.keluarga.aktivasi-paket');
     Route::post('/admin/paket-siswa/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('admin.paket-siswa.aktivasi');
+    Route::post('/admin/keluarga/renewal-paket', [AdminController::class, 'renewalPaket'])->name('admin.keluarga.renewal-paket');
+    Route::post('/admin/paket-siswa/renewal', [AdminController::class, 'renewalPaket'])->name('admin.paket-siswa.renewal');
+    Route::post('/admin/paket-siswa/{id}/renewal', [AdminController::class, 'renewalPaket'])->name('admin.paket-siswa.renewal.id');
+    Route::get('/admin/siswa/{id}/riwayat-paket', [AdminController::class, 'riwayatPaketSiswa'])->name('admin.siswa.riwayat-paket');
     Route::post('/admin/keluarga/{id}/toggle-pembayaran', [AdminController::class, 'togglePembayaran'])->name('admin.keluarga.toggle-pembayaran');
     Route::post('/admin/keluarga', [AdminController::class, 'storeKeluarga'])->name('admin.keluarga.store');
     Route::post('/admin/reschedule/{id}/approve', [AdminController::class, 'approveReschedule'])->name('admin.reschedule.approve');
     Route::post('/admin/jadwal/{id}/status', [AdminController::class, 'updateStatusJadwal'])->name('admin.jadwal.status');
     Route::get('/admin/aturan-paket', [AdminController::class, 'indexAturanPaket'])->name('admin.aturan-paket');
+
+    // Peserta Jadwal & Pemilihan Peserta Sesuai Program (B-11 - Muhammad Fadhil Swarigading)
+    Route::get('/admin/siswa/pilih-peserta', [AdminController::class, 'pilihPeserta'])->name('admin.siswa.pilih-peserta');
+    Route::post('/admin/jadwal/{id}/peserta', [AdminController::class, 'storePesertaJadwal'])->name('admin.jadwal.peserta.store');
+    Route::delete('/admin/jadwal/{id}/peserta/{id_siswa}', [AdminController::class, 'destroyPesertaJadwal'])->name('admin.jadwal.peserta.destroy');
+
+    // Secondary Parent Opsional Maksimal 1 per Keluarga (B-13b - Muhammad Fadhil Swarigading)
+    Route::post('/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'storeSecondaryParent'])->name('admin.keluarga.secondary-parent.store');
+    Route::delete('/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('admin.keluarga.secondary-parent.destroy');
 });
 
 // ── API Admin Endpoint ──────────────────────────────────
@@ -100,9 +114,36 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/api/paket-siswa', [AdminController::class, 'aktivasiPaket'])->name('api.paket-siswa.store');
     Route::post('/api/admin/paket-siswa/{id}/toggle-pembayaran', [AdminController::class, 'togglePembayaran'])->name('api.admin.paket-siswa.toggle-pembayaran');
 
+    // API Renewal Paket Siswa & Riwayat Terisolasi (B-03 Backend - Muhammad Fadhil Swarigading)
+    Route::post('/api/admin/paket-siswa/renewal', [AdminController::class, 'renewalPaket'])->name('api.admin.paket-siswa.renewal');
+    Route::post('/api/admin/paket-siswa/{id}/renewal', [AdminController::class, 'renewalPaket'])->name('api.admin.paket-siswa.renewal.id');
+    Route::post('/api/paket-siswa/renewal', [AdminController::class, 'renewalPaket'])->name('api.paket-siswa.renewal');
+    Route::get('/api/admin/siswa/{id}/riwayat-paket', [AdminController::class, 'riwayatPaketSiswa'])->name('api.admin.siswa.riwayat-paket');
+    Route::get('/api/siswa/{id}/riwayat-paket', [AdminController::class, 'riwayatPaketSiswa'])->name('api.siswa.riwayat-paket');
+
     // API Aturan Paket Belajar (Semester=12 sesi, Bulanan maks=4 sesi)
     Route::get('/api/admin/aturan-paket', [AdminController::class, 'indexAturanPaket'])->name('api.admin.aturan-paket.index');
     Route::get('/api/aturan-paket', [AdminController::class, 'indexAturanPaket'])->name('api.aturan-paket.index');
+
+    // API Peserta Jadwal & Filter Program & Paket Aktif (B-11 - Muhammad Fadhil Swarigading)
+    Route::get('/api/admin/siswa/pilih-peserta', [AdminController::class, 'pilihPeserta'])->name('api.admin.siswa.pilih-peserta');
+    Route::get('/api/siswa/pilih-peserta', [AdminController::class, 'pilihPeserta'])->name('api.siswa.pilih-peserta');
+    Route::get('/api/admin/jadwal/{id}/peserta', [AdminController::class, 'getPesertaJadwal'])->name('api.admin.jadwal.peserta.index');
+    Route::get('/api/jadwal/{id}/peserta', [AdminController::class, 'getPesertaJadwal'])->name('api.jadwal.peserta.index');
+    Route::post('/api/admin/jadwal/{id}/peserta', [AdminController::class, 'storePesertaJadwal'])->name('api.admin.jadwal.peserta.store');
+    Route::post('/api/jadwal/{id}/peserta', [AdminController::class, 'storePesertaJadwal'])->name('api.jadwal.peserta.store');
+    Route::delete('/api/admin/jadwal/{id}/peserta/{id_siswa}', [AdminController::class, 'destroyPesertaJadwal'])->name('api.admin.jadwal.peserta.destroy');
+    Route::delete('/api/jadwal/{id}/peserta/{id_siswa}', [AdminController::class, 'destroyPesertaJadwal'])->name('api.jadwal.peserta.destroy');
+
+    // API Secondary Parent Opsional Maksimal 1 per Keluarga (B-13b - Muhammad Fadhil Swarigading)
+    Route::post('/api/admin/keluarga', [AdminController::class, 'storeKeluarga'])->name('api.admin.keluarga.store');
+    Route::post('/api/keluarga', [AdminController::class, 'storeKeluarga'])->name('api.keluarga.store');
+    Route::get('/api/admin/keluarga/{id}/orang-tua', [AdminController::class, 'getOrangTuaKeluarga'])->name('api.admin.keluarga.orang-tua');
+    Route::get('/api/keluarga/{id}/orang-tua', [AdminController::class, 'getOrangTuaKeluarga'])->name('api.keluarga.orang-tua');
+    Route::post('/api/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'storeSecondaryParent'])->name('api.admin.keluarga.secondary-parent.store');
+    Route::post('/api/keluarga/{id}/secondary-parent', [AdminController::class, 'storeSecondaryParent'])->name('api.keluarga.secondary-parent.store');
+    Route::delete('/api/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('api.admin.keluarga.secondary-parent.destroy');
+    Route::delete('/api/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('api.keluarga.secondary-parent.destroy');
 });
 
 // ── Tutor Protected Routes (Khusus Portal Tutor) ───────
