@@ -748,7 +748,13 @@
                             <tr>
                                 <!-- Kolom 1: Siswa / Wali -->
                                 <td>
-                                    <div class="fw-bold text-dark" style="font-size: 0.92rem;">{{ $s->nama }}</div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="fw-bold text-dark" style="font-size: 0.92rem;">{{ $s->nama }}</span>
+                                        <button type="button" class="btn btn-sm btn-outline-info rounded-pill py-0 px-2" style="font-size: 0.7rem; font-weight: 500;" title="Lihat Riwayat Paket Siswa"
+                                            onclick="openRiwayatPaketModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
+                                            <i class="bi bi-clock-history"></i> Riwayat
+                                        </button>
+                                    </div>
                                     <small class="text-muted" style="font-size: 0.78rem;">{{ $s->nama_wali }}</small>
                                 </td>
 
@@ -822,6 +828,18 @@
                                                 <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
                                                     onclick="openRenewalModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->sesi_terpakai }}')">
                                                     <i class="bi bi-arrow-repeat text-success"></i> Perpanjang Paket (Renewal)
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                    onclick="openRiwayatPaketModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
+                                                    <i class="bi bi-clock-history text-info"></i> Riwayat Paket Siswa
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                    onclick="openTambahAnakModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama_wali }}')">
+                                                    <i class="bi bi-person-plus text-primary"></i> Tambah Anak (Siswa) Baru
                                                 </a>
                                             </li>
                                             <li>
@@ -1117,6 +1135,14 @@
                                 <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">NISN (Opsional)</label>
                                 <input type="text" name="nisn" id="inputNisn" class="form-control rounded-2" placeholder="Nomor Induk Siswa Nasional" style="font-size: 0.88rem;">
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Username Login Siswa (Opsional)</label>
+                                <input type="text" name="username_siswa" id="inputUsernameSiswa" class="form-control rounded-2" placeholder="siswa.andi (Otomatis)" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">PIN Siswa (Tepat 6 Digit Angka)</label>
+                                <input type="text" name="pin_siswa" id="inputPinSiswa" class="form-control rounded-2 fw-semibold" placeholder="123456" value="123456" maxlength="6" pattern="[0-9]{6}" style="font-size: 0.88rem; letter-spacing: 2px;">
+                            </div>
                         </div>
 
                         <!-- 2. PILIHAN PAKET BELAJAR (Sesuai Wireframe Image 2) -->
@@ -1247,6 +1273,90 @@
         </div>
     </div>
 
+    <!-- MODAL: TAMBAH AKUN ANAK (SISWA) DENGAN USERNAME & PIN (Backlog B-14 - Backend: Muhammad Fadhil Swarigading) -->
+    <div class="modal fade" id="modalTambahSiswa" tabindex="-1" aria-labelledby="modalTambahSiswaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 600px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1 mb-2 fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-person-plus me-1"></i> Tambah Akun Anak (Siswa)
+                        </div>
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalTambahSiswaLabel" style="font-size: 1.18rem; letter-spacing: -0.2px;">
+                            Pendaftaran Siswa Baru
+                        </h5>
+                        <p class="text-muted mb-0" id="modalTambahSiswaSubtitle" style="font-size: 0.83rem;">
+                            Daftarkan akun anak dengan username unik dan PIN angka 6 digit di bawah Akun Keluarga.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form method="POST" action="{{ route('admin.siswa.store') }}" id="formTambahSiswa" class="needs-validation" novalidate>
+                    @csrf
+                    <input type="hidden" name="id_keluarga" id="tambahSiswaIdKeluarga" value="">
+
+                    <div class="modal-body p-4 pt-2">
+                        <!-- Info Akun Keluarga Terpilih -->
+                        <div class="alert alert-light border d-flex align-items-center gap-2 p-2 px-3 rounded-3 mb-3">
+                            <i class="bi bi-house-door text-primary"></i>
+                            <span class="text-dark fw-semibold" style="font-size: 0.85rem;" id="tambahSiswaNamaKeluarga">Akun Keluarga: -</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Lengkap Siswa <span class="text-danger">*</span></label>
+                                <input type="text" name="nama_lengkap" id="tambahSiswaNamaLengkap" class="form-control rounded-2" placeholder="Contoh: Kenzo Pratama" required style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Panggilan</label>
+                                <input type="text" name="nama_panggilan" id="tambahSiswaNamaPanggilan" class="form-control rounded-2" placeholder="Contoh: Kenzo" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Jenjang <span class="text-danger">*</span></label>
+                                <select name="jenjang" id="tambahSiswaJenjang" class="form-select rounded-2" required style="font-size: 0.88rem;">
+                                    <option value="SD" selected>SD</option>
+                                    <option value="TK">TK</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kelas</label>
+                                <input type="text" name="kelas" id="tambahSiswaKelas" class="form-control rounded-2" placeholder="3" value="3" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Tanggal Lahir</label>
+                                <input type="date" name="tanggal_lahir" id="tambahSiswaTanggalLahir" class="form-control rounded-2" value="2018-01-01" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-12">
+                                <hr class="my-1">
+                                <div class="modal-section-title my-2" style="font-size: 0.78rem;">KREDENSIAL LOGIN SISWA (PORTAL BELAJAR)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Username Unik Siswa <span class="text-danger">*</span></label>
+                                <input type="text" name="username" id="tambahSiswaUsername" class="form-control rounded-2" placeholder="Contoh: kenzo.pratama" required style="font-size: 0.88rem;">
+                                <small class="text-muted" style="font-size: 0.74rem;">Digunakan untuk masuk ke portal Siswa</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">PIN Angka (Tepat 6 Digit) <span class="text-danger">*</span></label>
+                                <input type="text" name="pin" id="tambahSiswaPin" class="form-control rounded-2 fw-semibold" placeholder="Contoh: 123456" maxlength="6" pattern="[0-9]{6}" required style="font-size: 0.88rem; letter-spacing: 2px;">
+                                <small class="text-muted" style="font-size: 0.74rem;">Wajib 6 digit angka numerik (0-9)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 p-4 pt-2">
+                        <button type="button" class="btn btn-light px-4 py-2 rounded-3 text-secondary" data-bs-dismiss="modal" style="font-size: 0.88rem;">
+                            Batal
+                        </button>
+                        <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold text-white" style="background-color: var(--primary-blue); font-size: 0.88rem;">
+                            <i class="bi bi-check-lg me-1"></i> Daftarkan Siswa
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL 3: FORM PERPANJANGAN PAKET (RENEWAL) DENGAN ISOLASI RIWAYAT (Backlog B-03 - Backend: Muhammad Fadhil Swarigading) -->
     <div class="modal fade" id="modalRenewalPaket" tabindex="-1" aria-labelledby="modalRenewalPaketLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 530px;">
@@ -1307,7 +1417,12 @@
 
                         <!-- Ringkasan Paket Sebelumnya yang Akan Diarsipkan -->
                         <div class="p-3 bg-light rounded-3 mb-3 border" style="font-size: 0.8rem;">
-                            <span class="text-muted d-block mb-1">Paket yang sedang berjalan (Akan Diarsipkan):</span>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted">Paket yang sedang berjalan (Akan Diarsipkan):</span>
+                                <a href="javascript:void(0)" onclick="lihatRiwayatDariModalRenewal()" class="text-primary text-decoration-none small fw-semibold">
+                                    <i class="bi bi-clock-history me-1"></i> Lihat Semua Riwayat
+                                </a>
+                            </div>
                             <div class="fw-semibold text-dark d-flex align-items-center justify-content-between">
                                 <span id="renewalOldPackageName">Semester • Junior Robotics (12 Sesi)</span>
                                 <span class="badge bg-secondary-subtle text-secondary rounded-pill" id="renewalOldSessions">12 / 12 Sesi Terpakai</span>
@@ -1383,6 +1498,101 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: TABEL DAFTAR RIWAYAT PAKET PADA PROFIL SISWA (Backlog B-03 / T-29 - Front-end: Fahriel Aziz Satrio) -->
+    <div class="modal fade" id="modalRiwayatPaketSiswa" tabindex="-1" aria-labelledby="modalRiwayatPaketSiswaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Modal Header -->
+                <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2 py-1 mb-2 fw-semibold" style="font-size: 0.72rem;">
+                            <i class="bi bi-clock-history me-1"></i> Riwayat Paket Siswa (B-03)
+                        </div>
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalRiwayatPaketSiswaLabel" style="font-size: 1.22rem; letter-spacing: -0.2px;">
+                            Riwayat Paket Belajar Siswa
+                        </h5>
+                        <p class="text-muted mb-0" id="riwayatSiswaSubtitle" style="font-size: 0.84rem;">
+                            Memuat data profil & riwayat paket...
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4 pt-2">
+                    <!-- Loading Indicator -->
+                    <div id="riwayatLoadingState" class="text-center py-5">
+                        <div class="spinner-border text-primary mb-2" role="status"></div>
+                        <p class="text-muted small mb-0">Mengambil data paket siswa dari server...</p>
+                    </div>
+
+                    <!-- Content Container (Hidden during load) -->
+                    <div id="riwayatContentContainer" style="display: none;">
+                        <!-- 1. Card Paket Aktif Saat Ini -->
+                        <div class="card border rounded-3 mb-4 shadow-none" style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);">
+                            <div class="card-body p-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="badge bg-success text-white rounded-pill px-2 py-1 fw-semibold" style="font-size: 0.72rem;">
+                                        <i class="bi bi-check-circle-fill me-1"></i> Paket Aktif Saat Ini
+                                    </span>
+                                    <span id="riwayatStatusPembayaranBadge" class="badge rounded-pill px-2 py-1 fw-semibold" style="font-size: 0.72rem;">-</span>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1" id="riwayatAktifProgram">-</h6>
+                                <div class="text-muted small mb-2" id="riwayatAktifJenis">-</div>
+
+                                <!-- Progress Kuota Sesi -->
+                                <div class="d-flex justify-content-between align-items-center mb-1" style="font-size: 0.78rem;">
+                                    <span class="text-muted">Pemakaian Kuota Sesi:</span>
+                                    <span class="fw-bold text-dark" id="riwayatAktifSesiText">0 / 0 Sesi</span>
+                                </div>
+                                <div class="progress" style="height: 7px; border-radius: 4px;">
+                                    <div class="progress-bar bg-primary" id="riwayatAktifProgressBar" role="progressbar" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Tabel Riwayat Paket Sebelumnya (Isolasi Riwayat B-03) -->
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">
+                                    <i class="bi bi-archive me-1 text-secondary"></i> Arsip Riwayat Paket Sebelumnya
+                                </h6>
+                                <small class="text-muted" style="font-size: 0.78rem;">Riwayat paket sebelumnya terisolasi aman dan tidak terhapus.</small>
+                            </div>
+                            <span class="badge bg-light text-secondary border rounded-pill" id="riwayatTotalSebelumnyaCount">0 paket lama</span>
+                        </div>
+
+                        <div class="table-responsive border rounded-3">
+                            <table class="table table-sm align-middle mb-0" style="font-size: 0.82rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="py-2 px-3">NO</th>
+                                        <th class="py-2">PROGRAM & PAKET</th>
+                                        <th class="py-2">KUOTA SESI</th>
+                                        <th class="py-2">STATUS PAKET</th>
+                                        <th class="py-2">PEMBAYARAN</th>
+                                        <th class="py-2 px-3">TGL AKTIVASI</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="riwayatTableBody">
+                                    <!-- Diisi via JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 p-4 pt-2 d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-primary rounded-3 fw-semibold px-3 py-2" id="btnPerpanjangDariRiwayat" style="font-size: 0.85rem;">
+                        <i class="bi bi-arrow-repeat me-1"></i> Perpanjang Paket Siswa Ini
+                    </button>
+                    <button type="button" class="btn btn-light rounded-3 px-4 py-2 text-secondary" data-bs-dismiss="modal" style="font-size: 0.85rem;">
+                        Tutup
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1650,6 +1860,19 @@
             }
         }
 
+        // Fungsi Membuka Modal Tambah Anak (Siswa) Baru — Backlog B-14 (Muhammad Fadhil Swarigading)
+        function openTambahAnakModal(idKeluarga, namaWali) {
+            const hiddenId = document.getElementById('tambahSiswaIdKeluarga');
+            const labelKeluarga = document.getElementById('tambahSiswaNamaKeluarga');
+            if (hiddenId) hiddenId.value = idKeluarga || '';
+            if (labelKeluarga) labelKeluarga.textContent = 'Akun Keluarga: ' + (namaWali || 'Keluarga #' + idKeluarga);
+            const modalEl = document.getElementById('modalTambahSiswa');
+            if (modalEl) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        }
+
         // Fungsi Membuka Modal Perpanjangan Paket (Renewal) — Backlog B-03 (Muhammad Fadhil Swarigading)
         function openRenewalModal(idSiswa, nama, program, jenisPaket, totalSesi, sesiTerpakai) {
             const selectSiswa = document.getElementById('renewalIdSiswa');
@@ -1737,6 +1960,168 @@
                 modalRenewal.show();
             }, 350);
         }
+
+        // ── Riwayat Paket Siswa & Profil (Backlog B-03 / T-29 - Fahriel Aziz Satrio) ──
+        let currentRiwayatSiswaId = null;
+        let currentRiwayatSiswaNama = '';
+
+        function openRiwayatPaketModal(idSiswa, namaSiswa, namaWali) {
+            currentRiwayatSiswaId = idSiswa;
+            currentRiwayatSiswaNama = namaSiswa || 'Siswa';
+
+            const modalEl = document.getElementById('modalRiwayatPaketSiswa');
+            const subtitleEl = document.getElementById('riwayatSiswaSubtitle');
+            const loadingEl = document.getElementById('riwayatLoadingState');
+            const contentEl = document.getElementById('riwayatContentContainer');
+            const tbody = document.getElementById('riwayatTableBody');
+
+            if (subtitleEl) {
+                subtitleEl.textContent = `Profil Siswa: ${currentRiwayatSiswaNama} (${namaWali || 'Wali Murid'})`;
+            }
+
+            if (loadingEl) {
+                loadingEl.innerHTML = '<div class="spinner-border text-primary mb-2" role="status"></div><p class="text-muted small mb-0">Mengambil data paket siswa dari server...</p>';
+                loadingEl.style.display = 'block';
+            }
+            if (contentEl) contentEl.style.display = 'none';
+            if (tbody) tbody.innerHTML = '';
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            fetch(`/api/admin/siswa/${idSiswa}/riwayat-paket`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (!res.success || !res.data) {
+                    throw new Error(res.message || 'Gagal memuat data riwayat');
+                }
+
+                const data = res.data;
+                const aktif = data.paket_aktif;
+                const riwayat = data.riwayat_paket_sebelumnya || [];
+
+                const progEl = document.getElementById('riwayatAktifProgram');
+                const jenisEl = document.getElementById('riwayatAktifJenis');
+                const badgeBayar = document.getElementById('riwayatStatusPembayaranBadge');
+                const sesiText = document.getElementById('riwayatAktifSesiText');
+                const progressBar = document.getElementById('riwayatAktifProgressBar');
+
+                if (aktif) {
+                    if (progEl) progEl.textContent = aktif.program || 'Junior Robotics';
+                    if (jenisEl) jenisEl.textContent = `${aktif.jenis_paket || 'Semester'} • Total ${aktif.total_sesi || 12} Sesi (Aktivasi: ${aktif.tanggal_aktivasi ? aktif.tanggal_aktivasi.substring(0, 10) : '-'})`;
+
+                    const bayar = aktif.status_pembayaran || 'Lunas';
+                    if (badgeBayar) {
+                        badgeBayar.style.display = 'inline-block';
+                        badgeBayar.textContent = bayar;
+                        badgeBayar.className = bayar === 'Lunas' ? 'badge bg-success-subtle text-success rounded-pill px-2 py-1 fw-semibold' : 'badge bg-warning-subtle text-warning-emphasis rounded-pill px-2 py-1 fw-semibold';
+                    }
+
+                    const terpakai = parseInt(aktif.sesi_terpakai) || 0;
+                    const total = parseInt(aktif.total_sesi) || 12;
+                    const persen = total > 0 ? Math.min(100, Math.round((terpakai / total) * 100)) : 0;
+
+                    if (sesiText) sesiText.textContent = `${terpakai} / ${total} Sesi (${Math.max(0, total - terpakai)} Sisa)`;
+                    if (progressBar) {
+                        progressBar.style.width = persen + '%';
+                        progressBar.className = persen >= 100 ? 'progress-bar bg-danger' : (persen >= 75 ? 'progress-bar bg-warning' : 'progress-bar bg-primary');
+                    }
+                } else {
+                    if (progEl) progEl.textContent = 'Belum Memiliki Paket Aktif';
+                    if (jenisEl) jenisEl.textContent = 'Silakan lakukan aktivasi atau perpanjangan paket belajar baru.';
+                    if (badgeBayar) badgeBayar.style.display = 'none';
+                    if (sesiText) sesiText.textContent = '-';
+                    if (progressBar) progressBar.style.width = '0%';
+                }
+
+                const countBadge = document.getElementById('riwayatTotalSebelumnyaCount');
+                if (countBadge) countBadge.textContent = `${riwayat.length} paket terdahulu`;
+
+                if (tbody) {
+                    if (riwayat.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-3 d-block text-secondary opacity-50 mb-1"></i>
+                                    Belum ada arsip riwayat paket sebelumnya. Paket saat ini adalah paket perdana siswa.
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        let html = '';
+                        riwayat.forEach((p, idx) => {
+                            const bayarClass = p.status_pembayaran === 'Lunas' ? 'text-success' : 'text-warning-emphasis';
+                            const tgl = p.tanggal_aktivasi ? p.tanggal_aktivasi.substring(0, 10) : (p.created_at ? p.created_at.substring(0, 10) : '-');
+                            html += `
+                                <tr>
+                                    <td class="py-2 px-3 fw-bold text-muted">${idx + 1}</td>
+                                    <td class="py-2">
+                                        <div class="fw-semibold text-dark">${p.program || '-'}</div>
+                                        <small class="text-muted">${p.jenis_paket || '-'}</small>
+                                    </td>
+                                    <td class="py-2">
+                                        <span class="badge bg-light text-dark border">${p.sesi_terpakai || 0} / ${p.total_sesi || 0} Sesi</span>
+                                    </td>
+                                    <td class="py-2">
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1">${p.status_paket || 'Selesai'}</span>
+                                    </td>
+                                    <td class="py-2 fw-semibold ${bayarClass}">${p.status_pembayaran || 'Lunas'}</td>
+                                    <td class="py-2 px-3 text-muted small">${tgl}</td>
+                                </tr>
+                            `;
+                        });
+                        tbody.innerHTML = html;
+                    }
+                }
+
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (contentEl) contentEl.style.display = 'block';
+            })
+            .catch(err => {
+                if (loadingEl) {
+                    loadingEl.innerHTML = `
+                        <div class="text-danger py-4">
+                            <i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>
+                            Gagal memuat riwayat paket siswa. Silakan coba lagi.
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function lihatRiwayatDariModalRenewal() {
+            const selectSiswa = document.getElementById('renewalIdSiswa');
+            if (selectSiswa && selectSiswa.value) {
+                const opt = selectSiswa.options[selectSiswa.selectedIndex];
+                const idSiswa = selectSiswa.value;
+                const nama = opt ? opt.getAttribute('data-nama') : 'Siswa';
+                const modalRenewal = bootstrap.Modal.getInstance(document.getElementById('modalRenewalPaket'));
+                if (modalRenewal) modalRenewal.hide();
+                setTimeout(() => {
+                    openRiwayatPaketModal(idSiswa, nama, '');
+                }, 350);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const btnPerpanjang = document.getElementById('btnPerpanjangDariRiwayat');
+            if (btnPerpanjang) {
+                btnPerpanjang.addEventListener('click', function () {
+                    const modalRiwayat = bootstrap.Modal.getInstance(document.getElementById('modalRiwayatPaketSiswa'));
+                    if (modalRiwayat) modalRiwayat.hide();
+                    setTimeout(() => {
+                        if (currentRiwayatSiswaId) {
+                            openRenewalModal(currentRiwayatSiswaId, currentRiwayatSiswaNama);
+                        }
+                    }, 350);
+                });
+            }
+        });
     </script>
 </body>
 

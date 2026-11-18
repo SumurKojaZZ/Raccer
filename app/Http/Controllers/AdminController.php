@@ -817,6 +817,20 @@ class AdminController extends Controller
             ->get();
 
         $paketAktif = $semuaPaket->firstWhere('status_paket', 'Aktif');
+        if (!$paketAktif && !empty($siswa->paket_belajar)) {
+            $paketAktif = (object) [
+                'id_paket_siswa' => 0,
+                'id_siswa' => $siswa->id_siswa,
+                'program' => $siswa->program,
+                'jenis_paket' => $siswa->jenis_paket,
+                'paket_belajar' => $siswa->paket_belajar,
+                'total_sesi' => $siswa->total_sesi,
+                'sesi_terpakai' => $siswa->sesi_terpakai,
+                'status_paket' => $siswa->status_paket ?? 'Aktif',
+                'status_pembayaran' => $siswa->status_pembayaran ?? 'Lunas',
+                'tanggal_aktivasi' => $siswa->dibuat_pada ?? now()->toDateString(),
+            ];
+        }
         $riwayatPaket = $semuaPaket->where('status_paket', '!=', 'Aktif')->values();
 
         return response()->json([
@@ -963,6 +977,9 @@ class AdminController extends Controller
             ],
             'username_secondary_parent' => ['nullable', 'string', 'max:50'],
             'password_secondary_parent' => ['nullable', 'string', 'min:6'],
+            // Kredensial Siswa (Backlog B-14)
+            'username_siswa' => ['nullable', 'string', 'max:50'],
+            'pin_siswa' => ['nullable', 'regex:/^[0-9]{6}$/'],
             'alamat_domisili' => ['nullable', 'string'],
             'kelurahan' => ['nullable', 'string', 'max:100'],
             'kecamatan' => ['nullable', 'string', 'max:100'],
@@ -973,6 +990,7 @@ class AdminController extends Controller
             'nama_wali.required' => 'Nama Primary Parent (Wali) wajib diisi.',
             'nomor_whatsapp.regex' => 'Nomor WhatsApp tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
             'nomor_whatsapp_secondary_parent.regex' => 'Nomor WhatsApp Secondary Parent tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
+            'pin_siswa.regex' => 'PIN Siswa harus berupa angka tepat 6 digit (0-9).',
         ]);
 
         $this->ensureTablesExist();
@@ -1023,6 +1041,10 @@ class AdminController extends Controller
         $customUsername = !empty($validated['username_wali']) ? strtolower(ltrim(trim($validated['username_wali']), '@')) : null;
         $waliUsername = $customUsername ?: ($prefixHubungan . '.' . $siswaSlug);
         $passwordWali = $validated['password_wali'] ?? 'RacerWali2026!';
+
+        // Kredensial Siswa (Backlog B-14)
+        $customSiswaUser = !empty($validated['username_siswa']) ? strtolower(ltrim(trim($validated['username_siswa']), '@')) : null;
+        $pinSiswa = !empty($validated['pin_siswa']) ? (string) $validated['pin_siswa'] : '123456';
 
         // Pengolahan data Secondary Parent (Opsional)
         $hasSecondaryInput = !empty($validated['nama_secondary_parent']);
@@ -1158,7 +1180,9 @@ class AdminController extends Controller
             $secHubungan,
             $secWhatsapp,
             $secUsername,
-            $secPassword
+            $secPassword,
+            $customSiswaUser,
+            $pinSiswa
         ) {
             // 1. Simpan ke tabel akun_keluarga
             $idKeluarga = 1;
@@ -1222,16 +1246,16 @@ class AdminController extends Controller
 
                 // 3. Simpan akun pengguna untuk Siswa
                 $siswaSlug = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $namaPanggilan)) ?: 'siswa';
-                $siswaUsername = 'siswa.' . $siswaSlug;
+                $siswaUsername = $customSiswaUser ?: ('siswa.' . $siswaSlug);
                 $sCounter = 1;
                 while (DB::table('pengguna')->where('username', $siswaUsername)->exists()) {
-                    $siswaUsername = 'siswa.' . $siswaSlug . $sCounter;
+                    $siswaUsername = ($customSiswaUser ?: ('siswa.' . $siswaSlug)) . $sCounter;
                     $sCounter++;
                 }
 
                 $idPenggunaSiswa = DB::table('pengguna')->insertGetId([
                     'username' => $siswaUsername,
-                    'password_hash' => Hash::make('123456'),
+                    'password_hash' => Hash::make($pinSiswa),
                     'role' => 'Siswa',
                     'status_aktif' => 1,
                     'jumlah_gagal_login' => 0,
@@ -1250,6 +1274,7 @@ class AdminController extends Controller
                 'kelas' => $kelas,
                 'tanggal_lahir' => $tanggalLahir,
                 'status_siswa' => 'Aktif',
+                'pin_hash' => Hash::make($pinSiswa),
                 'dibuat_pada' => now(),
                 'nama' => $namaSiswa,
                 'nama_wali' => $displayWali,
@@ -1527,6 +1552,259 @@ class AdminController extends Controller
         }
 
         return back()->with('success', 'Akun Secondary Parent berhasil dihapus!');
+    }
+
+    /**
+     * Endpoint untuk menambahkan akun Anak (Siswa) dengan username dan PIN angka 6 digit di bawah Akun Keluarga.
+     * Backlog B-14 / T-04 (Muhammad Fadhil Swarigading)
+     * POST /admin/keluarga/{id}/siswa
+     * POST /admin/siswa
+     * POST /api/admin/keluarga/{id}/siswa
+     * POST /api/keluarga/{id}/siswa
+     * POST /api/admin/siswa
+     * POST /api/siswa
+     */
+    public function storeSiswa(Request $request, ?int $id = null): JsonResponse|RedirectResponse
+    {
+        $this->ensureTablesExist();
+
+        // 1. Tentukan ID Keluarga dari URL parameter atau request body
+        $idKeluarga = $id ?? (int) $request->input('id_keluarga');
+
+        if (!$idKeluarga) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID Akun Keluarga wajib disertakan.',
+                ], 422);
+            }
+            return back()->withInput()->withErrors(['id_keluarga' => 'ID Akun Keluarga wajib disertakan.']);
+        }
+
+        // 2. Validasi keberadaan akun keluarga
+        $keluarga = null;
+        if (Schema::hasTable('akun_keluarga')) {
+            $keluarga = AkunKeluarga::find($idKeluarga);
+            if (!$keluarga) {
+                $kRow = DB::table('akun_keluarga')->where('id_keluarga', $idKeluarga)->first();
+                if ($kRow) {
+                    $keluarga = (object) (array) $kRow;
+                }
+            }
+        }
+
+        if (!$keluarga) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Akun Keluarga dengan ID {$idKeluarga} tidak ditemukan.",
+                ], 404);
+            }
+            return back()->with('error', "Akun Keluarga dengan ID {$idKeluarga} tidak ditemukan.");
+        }
+
+        // 3. Validasi input siswa sesuai Acceptance Criteria PBI B-14
+        $validated = $request->validate([
+            'nama' => ['required_without:nama_lengkap', 'nullable', 'string', 'max:150'],
+            'nama_lengkap' => ['required_without:nama', 'nullable', 'string', 'max:150'],
+            'nama_panggilan' => ['nullable', 'string', 'max:50'],
+            'jenjang' => ['required', 'in:TK,SD'],
+            'kelas' => ['nullable', 'string', 'max:20'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'nisn' => ['nullable', 'string', 'max:20', 'unique:siswa,nisn'],
+            'username' => [
+                'required',
+                'string',
+                'min:3',
+                'max:50',
+                'regex:/^[a-zA-Z0-9._]+$/',
+                'unique:pengguna,username',
+            ],
+            'pin' => [
+                'required',
+                'regex:/^[0-9]{6}$/',
+            ],
+            'paket_belajar' => ['nullable', 'string', 'max:255'],
+            'program' => ['nullable', 'string', 'max:100'],
+            'jenis_paket' => ['nullable', 'string', 'max:50'],
+            'total_sesi' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'nama.required_without' => 'Nama lengkap siswa wajib diisi.',
+            'nama_lengkap.required_without' => 'Nama lengkap siswa wajib diisi.',
+            'jenjang.required' => 'Jenjang pendidikan (TK/SD) wajib dipilih.',
+            'jenjang.in' => 'Jenjang pendidikan harus berupa TK atau SD.',
+            'username.required' => 'Username anak wajib diisi.',
+            'username.unique' => "Username ':input' sudah digunakan akun lain.",
+            'username.regex' => 'Username hanya boleh berisi huruf, angka, titik, dan garis bawah.',
+            'pin.required' => 'PIN siswa wajib diisi.',
+            'pin.regex' => 'PIN harus berupa angka tepat 6 digit (hanya angka 0-9).',
+        ]);
+
+        $namaLengkap = trim((string) ($validated['nama_lengkap'] ?? $validated['nama']));
+        $firstWord = explode(' ', $namaLengkap)[0] ?: $namaLengkap;
+        $namaPanggilan = substr(trim((string) ($validated['nama_panggilan'] ?? $firstWord)), 0, 50);
+        $jenjang = $validated['jenjang'];
+        $kelas = substr(trim((string) ($validated['kelas'] ?? ($jenjang === 'TK' ? 'TK A' : '1'))), 0, 20);
+        $tanggalLahir = $validated['tanggal_lahir'] ?? '2018-01-01';
+        $nisn = !empty($validated['nisn']) ? trim((string) $validated['nisn']) : null;
+        $usernameSiswa = strtolower(ltrim(trim((string) $validated['username']), '@'));
+        $pin = (string) $validated['pin'];
+        $hashedPin = Hash::make($pin);
+
+        // Cari data wali murid dari akun keluarga jika ada
+        $namaWali = 'Wali Siswa';
+        if (Schema::hasTable('orang_tua')) {
+            $ortu = DB::table('orang_tua')
+                ->where('id_keluarga', $idKeluarga)
+                ->orderBy('jenis_wali', 'asc')
+                ->first();
+            if ($ortu && !empty($ortu->nama_lengkap)) {
+                $namaWali = 'Wali: ' . $ortu->nama_lengkap;
+            }
+        } elseif (isset($keluarga->nama_keluarga)) {
+            $namaWali = 'Wali: ' . $keluarga->nama_keluarga;
+        }
+
+        $paketBelajar = $validated['paket_belajar'] ?? 'Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)';
+        $program = $validated['program'] ?? 'Junior Robotics';
+        $jenisPaket = $validated['jenis_paket'] ?? 'Bulanan';
+        $totalSesi = isset($validated['total_sesi']) ? (int) $validated['total_sesi'] : 4;
+
+        // 4. Eksekusi penyimpanan dalam transaksi DB
+        $newSiswa = DB::transaction(function () use (
+            $idKeluarga,
+            $usernameSiswa,
+            $hashedPin,
+            $namaLengkap,
+            $namaPanggilan,
+            $jenjang,
+            $kelas,
+            $tanggalLahir,
+            $nisn,
+            $namaWali,
+            $paketBelajar,
+            $program,
+            $jenisPaket,
+            $totalSesi
+        ) {
+            // A. Simpan akun pengguna siswa
+            $idPenggunaSiswa = null;
+            if (Schema::hasTable('pengguna')) {
+                $idPenggunaSiswa = DB::table('pengguna')->insertGetId([
+                    'username' => $usernameSiswa,
+                    'password_hash' => $hashedPin,
+                    'role' => 'Siswa',
+                    'status_aktif' => 1,
+                    'jumlah_gagal_login' => 0,
+                    'dibuat_pada' => now(),
+                ]);
+            }
+
+            // B. Simpan data siswa berstatus Aktif
+            $siswa = Siswa::create([
+                'id_keluarga' => $idKeluarga,
+                'id_pengguna' => $idPenggunaSiswa ?? 1,
+                'nisn' => $nisn,
+                'nama_lengkap' => $namaLengkap,
+                'nama_panggilan' => $namaPanggilan,
+                'jenjang' => $jenjang,
+                'kelas' => $kelas,
+                'tanggal_lahir' => $tanggalLahir,
+                'status_siswa' => 'Aktif',
+                'pin_hash' => $hashedPin,
+                'dibuat_pada' => now(),
+                'nama' => $namaLengkap,
+                'nama_wali' => $namaWali,
+                'program' => $program,
+                'jenis_paket' => $jenisPaket,
+                'paket_belajar' => $paketBelajar,
+                'total_sesi' => $totalSesi,
+                'sesi_terpakai' => 0,
+                'status_paket' => 'Menunggu Aktivasi',
+                'status_pembayaran' => 'Belum Bayar',
+            ]);
+
+            // C. Simpan entri riwayat paket siswa jika tabel tersedia
+            try {
+                if (Schema::hasTable('paket_siswa')) {
+                    DB::table('paket_siswa')->insert([
+                        'id_siswa' => $siswa->id_siswa,
+                        'program' => $program,
+                        'jenis_paket' => $jenisPaket,
+                        'paket_belajar' => $paketBelajar,
+                        'total_sesi' => $totalSesi,
+                        'sesi_terpakai' => 0,
+                        'status_paket' => 'Menunggu Aktivasi',
+                        'status_pembayaran' => 'Belum Bayar',
+                        'catatan' => 'Pendaftaran akun anak baru (B-14)',
+                        'tanggal_aktivasi' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            } catch (\Throwable $e) {}
+
+            return $siswa;
+        });
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Akun Anak (Siswa) berhasil ditambahkan.',
+                'data' => [
+                    'id_siswa' => $newSiswa->id_siswa,
+                    'id_keluarga' => (int) $idKeluarga,
+                    'id_pengguna' => $newSiswa->id_pengguna,
+                    'nama_lengkap' => $namaLengkap,
+                    'nama_panggilan' => $namaPanggilan,
+                    'jenjang' => $jenjang,
+                    'kelas' => $kelas,
+                    'status_siswa' => 'Aktif',
+                    'username' => $usernameSiswa,
+                    'pin_terhash' => true,
+                ],
+            ], 201);
+        }
+
+        return back()->with('success', "Akun Anak (Siswa) {$namaLengkap} berhasil ditambahkan!");
+    }
+
+    /**
+     * Endpoint untuk mendapatkan daftar anak (siswa) di bawah suatu Akun Keluarga.
+     * GET /api/admin/keluarga/{id}/siswa
+     * GET /api/keluarga/{id}/siswa
+     */
+    public function getSiswaKeluarga(Request $request, int $id): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $siswaList = Siswa::where('id_keluarga', $id)->get();
+
+        return response()->json([
+            'success' => true,
+            'id_keluarga' => (int) $id,
+            'total' => $siswaList->count(),
+            'data' => $siswaList->map(function ($s) {
+                $username = null;
+                if ($s->id_pengguna && Schema::hasTable('pengguna')) {
+                    $u = DB::table('pengguna')->where('id_pengguna', $s->id_pengguna)->first();
+                    $username = $u->username ?? null;
+                }
+                return [
+                    'id_siswa' => $s->id_siswa,
+                    'id_keluarga' => $s->id_keluarga,
+                    'nama_lengkap' => $s->nama_lengkap ?: $s->nama,
+                    'nama_panggilan' => $s->nama_panggilan,
+                    'jenjang' => $s->jenjang,
+                    'kelas' => $s->kelas,
+                    'status_siswa' => $s->status_siswa,
+                    'username' => $username,
+                    'paket_belajar' => $s->paket_belajar,
+                    'total_sesi' => $s->total_sesi,
+                    'sesi_terpakai' => $s->sesi_terpakai,
+                ];
+            }),
+        ]);
     }
 
     /**
@@ -2227,6 +2505,7 @@ class AdminController extends Controller
                     $table->string('kelas', 20)->default('1');
                     $table->date('tanggal_lahir')->default('2018-01-01');
                     $table->string('status_siswa', 30)->default('Aktif');
+                    $table->string('pin_hash', 255)->nullable();
                     $table->dateTime('dibuat_pada')->useCurrent();
                     $table->string('nama')->nullable();
                     $table->string('nama_wali')->nullable();
@@ -2257,6 +2536,7 @@ class AdminController extends Controller
                     'sesi_terpakai' => fn (Blueprint $table) => $table->integer('sesi_terpakai')->default(0),
                     'status_paket' => fn (Blueprint $table) => $table->string('status_paket')->default('Aktif'),
                     'status_pembayaran' => fn (Blueprint $table) => $table->string('status_pembayaran', 50)->default('Lunas'),
+                    'pin_hash' => fn (Blueprint $table) => $table->string('pin_hash', 255)->nullable(),
                     'created_at' => fn (Blueprint $table) => $table->timestamp('created_at')->nullable(),
                     'updated_at' => fn (Blueprint $table) => $table->timestamp('updated_at')->nullable(),
                 ];

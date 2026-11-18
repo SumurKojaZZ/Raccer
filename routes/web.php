@@ -97,6 +97,10 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     // Secondary Parent Opsional Maksimal 1 per Keluarga (B-13b - Muhammad Fadhil Swarigading)
     Route::post('/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'storeSecondaryParent'])->name('admin.keluarga.secondary-parent.store');
     Route::delete('/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('admin.keluarga.secondary-parent.destroy');
+
+    // Tambah Akun Anak (Siswa) dengan Username & PIN 6 Digit (B-14 - Muhammad Fadhil Swarigading)
+    Route::post('/admin/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('admin.keluarga.siswa.store');
+    Route::post('/admin/siswa', [AdminController::class, 'storeSiswa'])->name('admin.siswa.store');
 });
 
 // ── API Admin Endpoint ──────────────────────────────────
@@ -144,6 +148,14 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/api/keluarga/{id}/secondary-parent', [AdminController::class, 'storeSecondaryParent'])->name('api.keluarga.secondary-parent.store');
     Route::delete('/api/admin/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('api.admin.keluarga.secondary-parent.destroy');
     Route::delete('/api/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('api.keluarga.secondary-parent.destroy');
+
+    // API Tambah Akun Anak (Siswa) dengan Username & PIN 6 Digit (B-14 - Muhammad Fadhil Swarigading)
+    Route::get('/api/admin/keluarga/{id}/siswa', [AdminController::class, 'getSiswaKeluarga'])->name('api.admin.keluarga.siswa.index');
+    Route::get('/api/keluarga/{id}/siswa', [AdminController::class, 'getSiswaKeluarga'])->name('api.keluarga.siswa.index');
+    Route::post('/api/admin/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('api.admin.keluarga.siswa.store');
+    Route::post('/api/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('api.keluarga.siswa.store');
+    Route::post('/api/admin/siswa', [AdminController::class, 'storeSiswa'])->name('api.admin.siswa.store');
+    Route::post('/api/siswa', [AdminController::class, 'storeSiswa'])->name('api.siswa.store');
 });
 
 // ── Tutor Protected Routes (Khusus Portal Tutor) ───────

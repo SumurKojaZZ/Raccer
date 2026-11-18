@@ -25,6 +25,7 @@ class Siswa extends Model
         'kelas',
         'tanggal_lahir',
         'status_siswa',
+        'pin_hash',
         'dibuat_pada',
         'nama',
         'nama_wali',
@@ -35,6 +36,10 @@ class Siswa extends Model
         'sesi_terpakai',
         'status_paket',
         'status_pembayaran',
+    ];
+
+    protected $hidden = [
+        'pin_hash',
     ];
 
     /**
