@@ -1007,33 +1007,47 @@
                             </div>
                         </div>
 
-                        <!-- 3. Jenis Paket (Dropdown Sesuai Pilihan Paket Belajar) -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
-                                Jenis Paket <span class="text-danger">*</span>
-                            </label>
-                            <select name="jenis_paket" id="aktivasiJenisPaket" class="form-select rounded-3 @error('jenis_paket') is-invalid @enderror" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;" onchange="onAktivasiPaketChange()">
-                                <optgroup label="Paket Regular — Per Bulan (4× Pertemuan)">
-                                    <option value="Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Gold (1 Orang) · Per Bulan (4× Pertemuan)</option>
-                                    <option value="Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Silver (2 Orang) · Per Bulan (4× Pertemuan)</option>
-                                    <option value="Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Bronze (3 Orang) · Per Bulan (4× Pertemuan)</option>
-                                </optgroup>
-                                <optgroup label="Paket Regular — 1 Semester (12× Pertemuan)">
-                                    <option value="Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12" selected>Regular - Gold (1 Orang) · 1 Semester (12× Pertemuan)</option>
-                                    <option value="Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12× Pertemuan)</option>
-                                    <option value="Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12× Pertemuan)</option>
-                                </optgroup>
-                                <optgroup label="Paket Private">
-                                    <option value="Paket Private · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Private · Per Bulan (4× Pertemuan)</option>
-                                    <option value="Paket Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Private · 1 Semester (12× Pertemuan)</option>
-                                </optgroup>
-                                <optgroup label="Paket Online">
-                                    <option value="Paket Online · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Online · Per Bulan (4× Pertemuan)</option>
-                                    <option value="Paket Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12× Pertemuan)</option>
-                                </optgroup>
-                            </select>
-                            <div class="invalid-feedback" style="font-size: 0.76rem;">
-                                Silakan pilih jenis paket belajar.
+                        <!-- 3. Komponen Pemilih Jenis Paket & Kuota Otomatis -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-8">
+                                <label class="form-label fw-semibold text-dark mb-1" style="font-size: 0.83rem;">
+                                    Tipe & Paket Belajar <span class="text-danger">*</span>
+                                </label>
+                                <select name="jenis_paket" id="aktivasiJenisPaket" class="form-select rounded-3 @error('jenis_paket') is-invalid @enderror" required style="font-size: 0.88rem; padding: 0.65rem 0.9rem;" onchange="onAktivasiPaketChange()">
+                                    <optgroup label="Paket Regular — Per Bulan (4× Pertemuan)">
+                                        <option value="Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Gold (1 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Silver (2 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Bronze (3 Orang) · Per Bulan (4× Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Regular — 1 Semester (12× Pertemuan)">
+                                        <option value="Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12" selected>Regular - Gold (1 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12× Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Private">
+                                        <option value="Paket Private · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Private · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Paket Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Private · 1 Semester (12× Pertemuan)</option>
+                                    </optgroup>
+                                    <optgroup label="Paket Online">
+                                        <option value="Paket Online · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Online · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Paket Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12× Pertemuan)</option>
+                                    </optgroup>
+                                </select>
+                                <div class="invalid-feedback" style="font-size: 0.76rem;">
+                                    Silakan pilih jenis paket belajar.
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label fw-semibold text-dark mb-1 d-flex justify-content-between align-items-center" style="font-size: 0.83rem;">
+                                    <span>Kuota Sesi</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0" style="font-size: 0.68rem;">Otomatis</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0 rounded-start-3" style="padding: 0.65rem 0.75rem;">
+                                        <i class="bi bi-clock-history text-primary"></i>
+                                    </span>
+                                    <input type="number" id="previewAktivasiTotalSesi" class="form-control bg-light fw-bold text-dark border-start-0 rounded-end-3" value="12" readonly style="font-size: 0.9rem; padding: 0.65rem 0.75rem;">
+                                </div>
                             </div>
                         </div>
 
@@ -1145,31 +1159,51 @@
                             </div>
                         </div>
 
-                        <!-- 2. PILIHAN PAKET BELAJAR (Sesuai Wireframe Image 2) -->
-                        <div class="modal-section-title mt-4">PILIHAN PAKET BELAJAR</div>
+                        <!-- 2. PILIHAN PAKET BELAJAR & KUOTA OTOMATIS (Sesuai Wireframe Image 2) -->
+                        <div class="modal-section-title mt-4">PILIHAN PAKET BELAJAR & KUOTA OTOMATIS</div>
                         <div class="row g-3 mb-3">
-                            <div class="col-12">
-                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Paket Belajar</label>
-                                <select name="paket_belajar" id="inputPaketBelajar" class="form-select rounded-2" style="font-size: 0.88rem; padding: 0.6rem 0.85rem;">
+                            <div class="col-md-8">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Tipe & Paket Belajar <span class="text-danger">*</span></label>
+                                <select name="paket_belajar" id="inputPaketBelajar" class="form-select rounded-2" style="font-size: 0.88rem; padding: 0.6rem 0.85rem;" onchange="onKeluargaPaketChange()">
                                     <optgroup label="Paket Regular — Per Bulan (4× Pertemuan)">
-                                        <option value="Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)" selected>Regular - Gold (1 Orang) · Per Bulan (4× Pertemuan)</option>
-                                        <option value="Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)">Regular - Silver (2 Orang) · Per Bulan (4× Pertemuan)</option>
-                                        <option value="Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)">Regular - Bronze (3 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Gold (1 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4" selected>Regular - Gold (1 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Silver (2 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Silver (2 Orang) · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Regular - Bronze (3 Orang) · Per Bulan (4x Pertemuan)" data-sesi="4">Regular - Bronze (3 Orang) · Per Bulan (4× Pertemuan)</option>
                                     </optgroup>
                                     <optgroup label="Paket Regular — 1 Semester (12× Pertemuan)">
-                                        <option value="Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)">Regular - Gold (1 Orang) · 1 Semester (12× Pertemuan)</option>
-                                        <option value="Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)">Regular - Silver (2 Orang) · 1 Semester (12× Pertemuan)</option>
-                                        <option value="Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)">Regular - Bronze (3 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Gold (1 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Gold (1 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Silver (2 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Silver (2 Orang) · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Regular - Bronze (3 Orang) · 1 Semester (12x Pertemuan)" data-sesi="12">Regular - Bronze (3 Orang) · 1 Semester (12× Pertemuan)</option>
                                     </optgroup>
                                     <optgroup label="Paket Private">
-                                        <option value="Paket Private · Per Bulan (4x Pertemuan)">Paket Private · Per Bulan (4× Pertemuan)</option>
-                                        <option value="Paket Private · 1 Semester (12x Pertemuan)">Paket Private · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Paket Private · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Private · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Paket Private · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Private · 1 Semester (12× Pertemuan)</option>
                                     </optgroup>
                                     <optgroup label="Paket Online">
-                                        <option value="Paket Online · Per Bulan (4x Pertemuan)">Paket Online · Per Bulan (4× Pertemuan)</option>
-                                        <option value="Paket Online · 1 Semester (12x Pertemuan)">Paket Online · 1 Semester (12× Pertemuan)</option>
+                                        <option value="Paket Online · Per Bulan (4x Pertemuan)" data-sesi="4">Paket Online · Per Bulan (4× Pertemuan)</option>
+                                        <option value="Paket Online · 1 Semester (12x Pertemuan)" data-sesi="12">Paket Online · 1 Semester (12× Pertemuan)</option>
                                     </optgroup>
                                 </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium d-flex justify-content-between align-items-center mb-1" style="font-size: 0.82rem;">
+                                    <span>Kuota Sesi</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0" style="font-size: 0.68rem;">Otomatis</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0 rounded-start-2">
+                                        <i class="bi bi-clock-history text-primary"></i>
+                                    </span>
+                                    <input type="number" name="total_sesi" id="inputTotalSesiKeluarga" class="form-control bg-light fw-bold text-dark border-start-0 rounded-end-2" value="4" min="1" max="100" readonly style="font-size: 0.88rem;">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <div class="p-2 px-3 rounded-2 d-flex align-items-center gap-2" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                                    <i class="bi bi-check-circle-fill text-success flex-shrink-0" style="font-size: 0.9rem;"></i>
+                                    <small id="infoKuotaKeluargaText" class="text-success fw-medium" style="font-size: 0.77rem;">
+                                        Kuota dialokasikan otomatis: <strong>4 sesi</strong> (Paket Bulanan). Sesuai aturan paket belajar.
+                                    </small>
+                                </div>
                             </div>
                         </div>
 
@@ -1630,12 +1664,15 @@
             });
         }
 
-        // Inisialisasi Tooltip Bootstrap
+        // Inisialisasi Tooltip Bootstrap & Komponen Kuota
         document.addEventListener('DOMContentLoaded', function () {
             var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            if (typeof onKeluargaPaketChange === 'function') onKeluargaPaketChange();
+            if (typeof onAktivasiPaketChange === 'function') onAktivasiPaketChange();
 
             // Sinkronisasi otomatis total sesi saat jenis paket dipilih
             const selectJenisPaket = document.getElementById('aktivasiJenisPaket');
@@ -1668,6 +1705,7 @@
         function onAktivasiPaketChange() {
             const selectPaket = document.getElementById('aktivasiJenisPaket');
             const inputTotalSesi = document.getElementById('aktivasiTotalSesi');
+            const previewTotalSesi = document.getElementById('previewAktivasiTotalSesi');
             const infoText = document.getElementById('infoKuotaText');
             if (!selectPaket) return;
 
@@ -1678,8 +1716,30 @@
             }
 
             if (inputTotalSesi) inputTotalSesi.value = sesi;
+            if (previewTotalSesi) previewTotalSesi.value = sesi;
             if (infoText) {
                 infoText.textContent = `Kuota awal otomatis terisi ${sesi} sesi saat paket diaktifkan (berlaku walaupun status Belum Bayar).`;
+            }
+        }
+
+        // Sinkronisasi otomatis Total Sesi & Kuota di Modal Tambah / Edit Keluarga
+        function onKeluargaPaketChange() {
+            const selectPaket = document.getElementById('inputPaketBelajar');
+            const inputTotalSesi = document.getElementById('inputTotalSesiKeluarga');
+            const infoText = document.getElementById('infoKuotaKeluargaText');
+            if (!selectPaket) return;
+
+            const opt = selectPaket.options[selectPaket.selectedIndex];
+            let sesi = 4;
+            let labelTipe = 'Paket Bulanan';
+            if (opt) {
+                sesi = opt.getAttribute('data-sesi') || (opt.value.includes('12') || opt.value.toLowerCase().includes('semester') ? 12 : 4);
+                labelTipe = (sesi == 12) ? 'Paket 1 Semester' : 'Paket Bulanan';
+            }
+
+            if (inputTotalSesi) inputTotalSesi.value = sesi;
+            if (infoText) {
+                infoText.innerHTML = `Kuota dialokasikan otomatis: <strong>${sesi} sesi</strong> (${labelTipe}). Sesuai aturan paket belajar.`;
             }
         }
 
@@ -1815,8 +1875,9 @@
         function openTambahKeluargaModal() {
             const title = document.getElementById('modalAkunKeluargaTitle');
             const hiddenId = document.getElementById('inputEditIdSiswa');
-            if (title) title.textContent = 'Edit Akun Keluarga & Siswa';
+            if (title) title.textContent = 'Tambah Akun Keluarga & Siswa';
             if (hiddenId) hiddenId.value = '';
+            if (typeof onKeluargaPaketChange === 'function') onKeluargaPaketChange();
         }
 
         function openEditKeluargaModal(idSiswa, nama, panggilan, jenjang, kelas, nisn, paketBelajar, namaWali, wa, hubungan) {
@@ -1852,6 +1913,7 @@
                     }
                 }
             }
+            if (typeof onKeluargaPaketChange === 'function') onKeluargaPaketChange();
 
             const modalEl = document.getElementById('modalAkunKeluarga');
             if (modalEl) {

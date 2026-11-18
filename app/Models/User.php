@@ -90,4 +90,52 @@ class User extends Authenticatable
         // 5. Cek name jika mengandung admin
         return !empty($this->name) && str_contains(strtolower((string) $this->name), 'admin');
     }
+
+    /**
+     * Memeriksa apakah user memiliki peran Orang Tua / Wali.
+     */
+    public function isOrangTua(): bool
+    {
+        // 1. Cek langsung atribut role pada instance jika ada
+        if (!empty($this->role)) {
+            return in_array(strtolower((string) $this->role), ['orang_tua', 'orang tua', 'wali', 'parent']);
+        }
+
+        // 2. Cek session role jika ada
+        if (session()->has('role')) {
+            $sessRole = strtolower((string) session('role'));
+            if (in_array($sessRole, ['orang_tua', 'orang tua', 'wali', 'parent'])) {
+                return true;
+            }
+        }
+
+        // 3. Cek tabel pengguna
+        try {
+            $pengguna = \Illuminate\Support\Facades\DB::table('pengguna')
+                ->where('username', $this->username)
+                ->first();
+
+            if ($pengguna && isset($pengguna->role)) {
+                return in_array(strtolower((string) $pengguna->role), ['orang_tua', 'orang tua', 'wali', 'parent']);
+            }
+        } catch (\Throwable $e) {}
+
+        // 4. Cek apakah terdaftar di tabel orang_tua
+        try {
+            $orangTua = \Illuminate\Support\Facades\DB::table('orang_tua')
+                ->where('id_pengguna', function ($q) {
+                    $q->select('id_pengguna')
+                        ->from('pengguna')
+                        ->where('username', $this->username)
+                        ->limit(1);
+                })
+                ->exists();
+
+            if ($orangTua) {
+                return true;
+            }
+        } catch (\Throwable $e) {}
+
+        return false;
+    }
 }

@@ -606,8 +606,8 @@
                                         </td>
                                         <td class="text-end">
                                             <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1 me-1" 
-                                                    onclick="openPesertaModal({{ $jdw->id }}, '{{ addslashes($jdw->kelas ?? $jdw->program) }}', '{{ addslashes($jdw->program ?? '') }}')" 
-                                                    title="Kelola Peserta Kelas" style="font-size: 0.78rem;">
+                                                    onclick="openPesertaModal({{ $jdw->id }}, '{{ addslashes($jdw->kelas ?? $jdw->program) }}', '{{ addslashes($jdw->program ?? '') }}', '{{ addslashes($jdw->tutor_pengampu ?? $jdw->tutor ?? '') }}', '{{ addslashes($jdw->lokasi ?? '') }}', '{{ addslashes($jdw->tanggal ? \Carbon\Carbon::parse($jdw->tanggal)->translatedFormat('d M Y') : '') }}', '{{ addslashes(($jdw->jam_mulai ?? $jdw->waktu_mulai ?? '') . ' - ' . ($jdw->jam_selesai ?? $jdw->waktu_selesai ?? '')) }}', '{{ addslashes($jdw->moda ?? 'Offline') }}', '{{ addslashes($jdw->status ?? 'Terjadwal') }}')" 
+                                                    title="Detail & Peserta Kelas" style="font-size: 0.78rem;">
                                                 <i class="bi bi-people-fill me-1"></i> Peserta
                                             </button>
                                             @if($jdw->status !== 'Selesai')
@@ -724,7 +724,7 @@
                 <div class="modal-header border-0 pb-0">
                     <div>
                         <h5 class="modal-title fw-bold text-dark" id="modalPesertaJadwalLabel">
-                            <i class="bi bi-people-fill text-primary me-2"></i>Peserta Sesi Kelas
+                            <i class="bi bi-calendar2-week text-primary me-2"></i>Detail Jadwal & Peserta Siswa
                         </h5>
                         <p class="text-muted mb-0" id="pesertaJadwalSubtitle" style="font-size: 0.84rem;">
                             Memuat informasi sesi kelas...
@@ -732,7 +732,39 @@
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-4 pt-3">
+                    <!-- Ringkasan Detail Jadwal Kelas -->
+                    <div class="card border-0 rounded-3 p-3 mb-3" style="background-color: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom">
+                            <div>
+                                <span class="fw-bold text-dark" id="detailJadwalKelasNama" style="font-size: 1rem;">-</span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2" id="detailJadwalProgram">-</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="badge bg-secondary-subtle text-secondary" id="detailJadwalModa">Offline</span>
+                                <span class="badge bg-success-subtle text-success" id="detailJadwalStatus">Terjadwal</span>
+                            </div>
+                        </div>
+                        <div class="row g-2 text-muted" style="font-size: 0.82rem;">
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">TANGGAL</span>
+                                <span class="fw-semibold text-dark" id="detailJadwalTanggal">-</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">WAKTU</span>
+                                <span class="fw-semibold text-dark" id="detailJadwalWaktu">-</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">LOKASI / RUANGAN</span>
+                                <span class="fw-semibold text-dark" id="detailJadwalLokasi">-</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">TUTOR PENGAMPU</span>
+                                <span class="fw-semibold text-dark" id="detailJadwalTutor">-</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Form Tambah Peserta -->
                     <div class="card border-0 bg-light rounded-3 p-3 mb-4">
                         <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;">
@@ -842,12 +874,23 @@
         let activeJadwalId = null;
         let activeProgram = null;
 
-        async function openPesertaModal(jadwalId, namaKelas, program) {
+        async function openPesertaModal(jadwalId, namaKelas, program, tutor, lokasi, tanggal, waktu, moda, status) {
             activeJadwalId = jadwalId;
             activeProgram = program;
 
             document.getElementById('currentJadwalId').value = jadwalId;
             document.getElementById('pesertaJadwalSubtitle').textContent = `${namaKelas} • Program: ${program || 'Semua Program'}`;
+
+            // Isi rincian detail jadwal
+            if (document.getElementById('detailJadwalKelasNama')) document.getElementById('detailJadwalKelasNama').textContent = namaKelas || '-';
+            if (document.getElementById('detailJadwalProgram')) document.getElementById('detailJadwalProgram').textContent = program || '-';
+            if (document.getElementById('detailJadwalModa')) document.getElementById('detailJadwalModa').textContent = moda || 'Offline';
+            if (document.getElementById('detailJadwalStatus')) document.getElementById('detailJadwalStatus').textContent = status || 'Terjadwal';
+            if (document.getElementById('detailJadwalTanggal')) document.getElementById('detailJadwalTanggal').textContent = tanggal || '-';
+            if (document.getElementById('detailJadwalWaktu')) document.getElementById('detailJadwalWaktu').textContent = waktu || '-';
+            if (document.getElementById('detailJadwalLokasi')) document.getElementById('detailJadwalLokasi').textContent = lokasi || '-';
+            if (document.getElementById('detailJadwalTutor')) document.getElementById('detailJadwalTutor').textContent = tutor || '-';
+
             document.getElementById('alertPesertaMsg').style.display = 'none';
 
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPesertaJadwal'));

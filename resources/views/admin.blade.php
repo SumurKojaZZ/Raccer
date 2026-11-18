@@ -635,6 +635,13 @@
                                                         <span class="badge-soft-secondary me-2">Terjadwal</span>
                                                     @endif
 
+                                                    <!-- Tombol Buka Detail & Peserta Jadwal -->
+                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-2 py-1 me-1"
+                                                        onclick="openPesertaModalAdmin({{ $j->id }}, '{{ addslashes($j->kelas ?? $j->program) }}', '{{ addslashes($j->program ?? '') }}', '{{ addslashes($j->tutor ?? '') }}', '{{ addslashes($j->lokasi ?? '') }}', '{{ addslashes($j->tanggal ?? 'Hari Ini') }}', '{{ addslashes($j->waktu_mulai . ' - ' . $j->waktu_selesai) }}', '{{ addslashes($j->moda ?? 'Offline') }}', '{{ addslashes($j->status ?? 'Terjadwal') }}')"
+                                                        title="Detail & Peserta Siswa" style="font-size: 0.76rem;">
+                                                        <i class="bi bi-people-fill me-1"></i> Peserta
+                                                    </button>
+
                                                     <!-- Dropdown Ubah Status -->
                                                     <div class="dropdown d-inline">
                                                         <button class="btn btn-sm btn-link text-muted p-0"
@@ -984,6 +991,111 @@
         </div>
     </div>
 
+    <!-- ================= MODAL: DETAIL JADWAL & PEMILIHAN PESERTA SISWA ================= -->
+    <div class="modal fade" id="modalPesertaJadwalAdmin" tabindex="-1" aria-labelledby="modalPesertaJadwalAdminLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark" id="modalPesertaJadwalAdminLabel">
+                            <i class="bi bi-calendar2-week text-primary me-2"></i>Detail Jadwal & Peserta Siswa
+                        </h5>
+                        <p class="text-muted mb-0" id="pesertaJadwalAdminSubtitle" style="font-size: 0.84rem;">
+                            Memuat informasi sesi kelas...
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 pt-3">
+                    <!-- Ringkasan Detail Jadwal Kelas -->
+                    <div class="card border-0 rounded-3 p-3 mb-3" style="background-color: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom">
+                            <div>
+                                <span class="fw-bold text-dark" id="adminDetailKelasNama" style="font-size: 1rem;">-</span>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle ms-2" id="adminDetailProgram">-</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="badge bg-secondary-subtle text-secondary" id="adminDetailModa">Offline</span>
+                                <span class="badge bg-success-subtle text-success" id="adminDetailStatus">Terjadwal</span>
+                            </div>
+                        </div>
+                        <div class="row g-2 text-muted" style="font-size: 0.82rem;">
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">TANGGAL</span>
+                                <span class="fw-semibold text-dark" id="adminDetailTanggal">-</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">WAKTU</span>
+                                <span class="fw-semibold text-dark" id="adminDetailWaktu">-</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">LOKASI / RUANGAN</span>
+                                <span class="fw-semibold text-dark" id="adminDetailLokasi">-</span>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="d-block text-secondary" style="font-size: 0.72rem;">TUTOR PENGAMPU</span>
+                                <span class="fw-semibold text-dark" id="adminDetailTutor">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Tambah Peserta -->
+                    <div class="card border-0 bg-light rounded-3 p-3 mb-4">
+                        <h6 class="fw-bold text-dark mb-2" style="font-size: 0.9rem;">
+                            <i class="bi bi-person-plus-fill text-primary me-1"></i> Tambah Peserta Sesuai Program & Kuota Aktif
+                        </h6>
+                        <form id="formTambahPesertaAdmin" onsubmit="submitTambahPesertaAdmin(event)">
+                            <input type="hidden" id="currentJadwalIdAdmin">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label text-muted fw-semibold mb-1" style="font-size: 0.78rem;">Pilih Siswa (Hanya Siswa dengan Program Sesuai & Sisa Sesi > 0)</label>
+                                    <select id="selectPilihPesertaAdmin" class="form-select rounded-3" required style="font-size: 0.85rem;">
+                                        <option value="">-- Memuat siswa yang memenuhi syarat... --</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="submit" id="btnSubmitPesertaAdmin" class="btn btn-primary w-100 rounded-3 fw-semibold py-2" style="background-color: var(--primary-blue); font-size: 0.85rem;">
+                                        <i class="bi bi-plus-circle me-1"></i> Daftarkan Peserta
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="alertPesertaMsgAdmin" class="mt-2" style="display: none;"></div>
+                        </form>
+                    </div>
+
+                    <!-- Daftar Peserta Terdaftar -->
+                    <h6 class="fw-bold text-dark mb-3" style="font-size: 0.9rem;">
+                        <i class="bi bi-card-checklist text-primary me-1"></i> Daftar Peserta Terdaftar (<span id="totalPesertaCountAdmin">0</span>)
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size: 0.84rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nama Siswa</th>
+                                    <th>Program / Paket</th>
+                                    <th>Sisa Kuota</th>
+                                    <th>Status Kehadiran</th>
+                                    <th class="text-end">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyPesertaJadwalAdmin">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                        Memuat daftar peserta...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-3 px-3" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= MODAL: AKUN KELUARGA & SISWA ================= -->
     <div class="modal fade" id="modalAkunKeluarga" tabindex="-1" aria-labelledby="modalAkunKeluargaLabel"
         aria-hidden="true">
@@ -1039,13 +1151,13 @@
                                     placeholder="Nomor Induk Siswa Nasional">
                             </div>
 
-                            <!-- Paket Belajar -->
+                            <!-- Komponen Pemilih Tipe Paket & Pengisian Kuota Otomatis -->
                             <div class="col-12 pt-2 border-top">
                                 <small class="text-uppercase text-primary fw-bold"
-                                    style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar</small>
+                                    style="font-size: 0.72rem; letter-spacing: 0.6px;">Pilihan Paket Belajar & Kuota Otomatis</small>
                             </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Paket Belajar</label>
+                            <div class="col-12 col-md-8">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Tipe & Paket Belajar <span class="text-danger">*</span></label>
                                 <select name="paket_belajar" id="selectPaketBelajar" class="form-select rounded-3"
                                     required>
                                     <optgroup label="Paket Regular — Per Bulan (4x Pertemuan)">
@@ -1080,7 +1192,26 @@
                                             · 1 Semester (12x Pertemuan)</option>
                                     </optgroup>
                                 </select>
-                                <input type="hidden" name="total_sesi" id="inputTotalSesi" value="4">
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold d-flex justify-content-between align-items-center" style="font-size: 0.85rem;">
+                                    <span>Kuota Sesi</span>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0" style="font-size: 0.68rem;">Otomatis</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0 rounded-start-3">
+                                        <i class="bi bi-clock-history text-primary"></i>
+                                    </span>
+                                    <input type="number" name="total_sesi" id="inputTotalSesi" class="form-control bg-light fw-bold text-dark border-start-0 rounded-end-3" value="4" min="1" max="100" readonly style="font-size: 0.9rem;">
+                                </div>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <div class="p-2 px-3 rounded-3 d-flex align-items-center gap-2" style="background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                                    <i class="bi bi-check-circle-fill text-success flex-shrink-0" style="font-size: 0.92rem;"></i>
+                                    <small id="infoKuotaAdminText" class="text-success fw-medium" style="font-size: 0.78rem;">
+                                        Kuota dialokasikan otomatis: <strong>4 sesi</strong> (Paket Bulanan). Sesuai aturan paket belajar.
+                                    </small>
+                                </div>
                             </div>
 
                             <!-- Data Akun Keluarga & Primary Parent (Wali) -->
@@ -1238,17 +1369,29 @@
             });
         }
 
-        // Sinkronisasi otomatis Total Sesi berdasarkan dropdown Paket Belajar (Bulanan = 4x, Semester = 12x)
+        // Sinkronisasi otomatis Total Sesi & Kuota berdasarkan dropdown Paket Belajar (Bulanan = 4x, Semester = 12x)
         const selectPaketBelajar = document.getElementById('selectPaketBelajar');
         const inputTotalSesi = document.getElementById('inputTotalSesi');
-        if (selectPaketBelajar && inputTotalSesi) {
-            selectPaketBelajar.addEventListener('change', function () {
-                const selectedOption = this.options[this.selectedIndex];
-                const sesi = selectedOption ? selectedOption.getAttribute('data-sesi') : null;
-                if (sesi) {
-                    inputTotalSesi.value = sesi;
-                }
-            });
+        const infoKuotaAdminText = document.getElementById('infoKuotaAdminText');
+
+        function updateKuotaAdmin() {
+            if (!selectPaketBelajar || !inputTotalSesi) return;
+            const selectedOption = selectPaketBelajar.options[selectPaketBelajar.selectedIndex];
+            let sesi = 4;
+            let labelTipe = 'Paket Bulanan';
+            if (selectedOption) {
+                sesi = selectedOption.getAttribute('data-sesi') || (selectedOption.value.includes('12') || selectedOption.value.toLowerCase().includes('semester') ? 12 : 4);
+                labelTipe = (sesi == 12) ? 'Paket 1 Semester' : 'Paket Bulanan';
+            }
+            inputTotalSesi.value = sesi;
+            if (infoKuotaAdminText) {
+                infoKuotaAdminText.innerHTML = `Kuota dialokasikan otomatis: <strong>${sesi} sesi</strong> (${labelTipe}). Sesuai aturan paket belajar.`;
+            }
+        }
+
+        if (selectPaketBelajar) {
+            selectPaketBelajar.addEventListener('change', updateKuotaAdmin);
+            updateKuotaAdmin();
         }
 
         // Otomatis isi Nama Panggilan dari kata pertama Nama Lengkap jika Nama Panggilan belum diubah manual
@@ -1346,6 +1489,211 @@
             const modalKeluargaEl = document.getElementById('modalAkunKeluarga');
             if (modalKeluargaEl && window.bootstrap) {
                 new bootstrap.Modal(modalKeluargaEl).show();
+            }
+        }
+
+        // ================= DETAIL JADWAL & PEMILIHAN PESERTA SISWA (ADMIN) =================
+        let activeAdminJadwalId = null;
+        let activeAdminProgram = null;
+
+        async function openPesertaModalAdmin(jadwalId, namaKelas, program, tutor, lokasi, tanggal, waktu, moda, status) {
+            activeAdminJadwalId = jadwalId;
+            activeAdminProgram = program;
+
+            const currentInput = document.getElementById('currentJadwalIdAdmin');
+            if (currentInput) currentInput.value = jadwalId;
+
+            const subtitle = document.getElementById('pesertaJadwalAdminSubtitle');
+            if (subtitle) subtitle.textContent = `${namaKelas} • Program: ${program || 'Semua Program'}`;
+
+            // Isi rincian detail jadwal
+            if (document.getElementById('adminDetailKelasNama')) document.getElementById('adminDetailKelasNama').textContent = namaKelas || '-';
+            if (document.getElementById('adminDetailProgram')) document.getElementById('adminDetailProgram').textContent = program || '-';
+            if (document.getElementById('adminDetailModa')) document.getElementById('adminDetailModa').textContent = moda || 'Offline';
+            if (document.getElementById('adminDetailStatus')) document.getElementById('adminDetailStatus').textContent = status || 'Terjadwal';
+            if (document.getElementById('adminDetailTanggal')) document.getElementById('adminDetailTanggal').textContent = tanggal || '-';
+            if (document.getElementById('adminDetailWaktu')) document.getElementById('adminDetailWaktu').textContent = waktu || '-';
+            if (document.getElementById('adminDetailLokasi')) document.getElementById('adminDetailLokasi').textContent = lokasi || '-';
+            if (document.getElementById('adminDetailTutor')) document.getElementById('adminDetailTutor').textContent = tutor || '-';
+
+            const alertBox = document.getElementById('alertPesertaMsgAdmin');
+            if (alertBox) alertBox.style.display = 'none';
+
+            const modalEl = document.getElementById('modalPesertaJadwalAdmin');
+            if (modalEl && window.bootstrap) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+
+            await Promise.all([
+                loadPesertaListAdmin(jadwalId),
+                loadEligibleStudentsAdmin(jadwalId, program)
+            ]);
+        }
+
+        async function loadPesertaListAdmin(jadwalId) {
+            const tbody = document.getElementById('tbodyPesertaJadwalAdmin');
+            const totalCount = document.getElementById('totalPesertaCountAdmin');
+            if (!tbody) return;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-muted"><div class="spinner-border spinner-border-sm text-primary me-2"></div>Memuat peserta...</td></tr>`;
+
+            try {
+                const res = await fetch(`/api/admin/jadwal/${jadwalId}/peserta`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success && data.data) {
+                    if (totalCount) totalCount.textContent = data.data.length;
+                    if (data.data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-people fs-4 d-block mb-1"></i>Belum ada peserta yang didaftarkan ke jadwal ini.</td></tr>`;
+                        return;
+                    }
+
+                    tbody.innerHTML = data.data.map(p => {
+                        const siswa = p.siswa || {};
+                        const paket = p.paket_siswa || {};
+                        const sisa = paket.total_sesi ? (paket.total_sesi - paket.sesi_terpakai) : (siswa.total_sesi - siswa.sesi_terpakai);
+                        return `
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">${siswa.nama_lengkap || siswa.nama || 'Siswa'}</div>
+                                    <small class="text-muted">NISN: ${siswa.nisn || '-'}</small>
+                                </td>
+                                <td>
+                                    <div>${paket.program || siswa.program || '-'}</div>
+                                    <small class="text-muted">${paket.paket_belajar || siswa.paket_belajar || '-'}</small>
+                                </td>
+                                <td>
+                                    <span class="badge ${sisa > 2 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
+                                        ${sisa} Sesi Tersisa
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary">${p.status_kehadiran || 'Terdaftar'}</span>
+                                </td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" onclick="hapusPesertaAdmin(${jadwalId}, ${p.id_siswa})" title="Hapus dari jadwal">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3 text-danger">Gagal memuat peserta jadwal.</td></tr>`;
+            }
+        }
+
+        async function loadEligibleStudentsAdmin(jadwalId, program) {
+            const select = document.getElementById('selectPilihPesertaAdmin');
+            if (!select) return;
+            select.innerHTML = `<option value="">-- Memuat siswa yang memenuhi syarat... --</option>`;
+
+            try {
+                const queryUrl = `/api/admin/siswa/pilih-peserta?program=${encodeURIComponent(program || '')}&id_jadwal=${jadwalId}&hanya_sisa_sesi=1`;
+                const res = await fetch(queryUrl, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                const json = await res.json();
+
+                if (json.success && Array.isArray(json.data)) {
+                    const available = json.data.filter(s => !s.sudah_terdaftar);
+                    if (available.length === 0) {
+                        select.innerHTML = `<option value="">-- Tidak ada siswa yang sesuai program / kuota habis --</option>`;
+                        return;
+                    }
+
+                    select.innerHTML = `<option value="">-- Pilih Siswa (${available.length} siswa memenuhi syarat) --</option>` +
+                        available.map(s => `
+                            <option value="${s.id_siswa}">
+                                ${s.nama} (${s.program} • Sisa ${s.sisa_sesi} sesi)
+                            </option>
+                        `).join('');
+                }
+            } catch (e) {
+                select.innerHTML = `<option value="">Gagal memuat data siswa</option>`;
+            }
+        }
+
+        async function submitTambahPesertaAdmin(event) {
+            event.preventDefault();
+            const jadwalId = document.getElementById('currentJadwalIdAdmin').value;
+            const selectEl = document.getElementById('selectPilihPesertaAdmin');
+            const siswaId = selectEl ? selectEl.value : '';
+            const alertBox = document.getElementById('alertPesertaMsgAdmin');
+            const btnSubmit = document.getElementById('btnSubmitPesertaAdmin');
+
+            if (!siswaId) {
+                if (alertBox) {
+                    alertBox.className = 'mt-2 alert alert-warning p-2 rounded-3 text-small';
+                    alertBox.textContent = 'Silakan pilih siswa terlebih dahulu.';
+                    alertBox.style.display = 'block';
+                }
+                return;
+            }
+
+            if (btnSubmit) btnSubmit.disabled = true;
+            if (alertBox) alertBox.style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/admin/jadwal/${jadwalId}/peserta`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ id_siswa: siswaId })
+                });
+                const data = await res.json();
+                if (btnSubmit) btnSubmit.disabled = false;
+
+                if (res.ok && data.success) {
+                    if (alertBox) {
+                        alertBox.className = 'mt-2 alert alert-success p-2 rounded-3 text-small';
+                        alertBox.textContent = data.message || 'Peserta berhasil didaftarkan.';
+                        alertBox.style.display = 'block';
+                    }
+                    await loadPesertaListAdmin(jadwalId);
+                    await loadEligibleStudentsAdmin(jadwalId, activeAdminProgram);
+                } else {
+                    if (alertBox) {
+                        alertBox.className = 'mt-2 alert alert-danger p-2 rounded-3 text-small';
+                        alertBox.textContent = (data.errors && data.errors.id_siswa ? data.errors.id_siswa[0] : (data.message || 'Gagal menambahkan peserta.'));
+                        alertBox.style.display = 'block';
+                    }
+                }
+            } catch (e) {
+                if (btnSubmit) btnSubmit.disabled = false;
+                if (alertBox) {
+                    alertBox.className = 'mt-2 alert alert-danger p-2 rounded-3 text-small';
+                    alertBox.textContent = 'Terjadi kesalahan sistem saat menghubungi server.';
+                    alertBox.style.display = 'block';
+                }
+            }
+        }
+
+        async function hapusPesertaAdmin(jadwalId, siswaId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus peserta ini dari sesi kelas?')) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/admin/jadwal/${jadwalId}/peserta/${siswaId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadPesertaListAdmin(jadwalId);
+                    await loadEligibleStudentsAdmin(jadwalId, activeAdminProgram);
+                } else {
+                    alert(data.message || 'Gagal menghapus peserta.');
+                }
+            } catch (e) {
+                alert('Gagal menghubungi server.');
             }
         }
 
