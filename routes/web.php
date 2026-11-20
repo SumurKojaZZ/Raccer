@@ -241,3 +241,9 @@ Route::post('/reset-password', function (Request $request) {
         ? redirect()->route('login')->with('status', __($status))
         : back()->withErrors(['email' => __($status)]);
 })->name('password.update');
+
+// ── Route Simulasi Error untuk Pengujian Keamanan (Bukti 2) ──
+Route::get('/simulasi-error', function () {
+    throw new \RuntimeException('Database SQL connection failed: username=db_admin password=SuperSecretDbPassword123');
+})->name('simulasi.error');
+
