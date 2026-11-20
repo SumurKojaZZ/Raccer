@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckIdleTimeout
@@ -22,14 +23,30 @@ class CheckIdleTimeout
         if (Auth::check()) {
             $lastActivity = $request->session()->get('last_activity_time');
 
-            // Jika ada riwayat aktivitas dan jeda waktu melebihi batas AFK (15 menit)
+            // Jika ada riwayat aktivitas dan jeda waktu melebihi batas AFK (15 menit = 900 detik)
             if ($lastActivity && (now()->timestamp - $lastActivity > $this->maxIdleSeconds)) {
+                $role = $request->session()->get('role');
+                $user = Auth::user();
+
+                if ($user) {
+                    Log::info('Sesi pengguna berakhir otomatis karena batas waktu tidak aktif (AFK 15 menit)', [
+                        'user_id' => $user->id,
+                        'username' => $user->username,
+                        'role' => $role,
+                        'ip_address' => $request->ip(),
+                    ]);
+                }
+
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
+                $pesan = ($role === 'Orang_Tua')
+                    ? 'Sesi akun Orang Tua Anda telah berakhir karena tidak ada aktivitas selama 15 menit. Silakan masuk kembali demi keamanan data keluarga.'
+                    : 'Sesi Anda telah berakhir karena tidak ada aktivitas (AFK) selama 15 menit. Silakan masuk kembali.';
+
                 return redirect()->route('login')->withErrors([
-                    'username' => 'Sesi Anda telah berakhir karena tidak ada aktivitas (AFK) selama 15 menit. Silakan masuk kembali.',
+                    'username' => $pesan,
                 ]);
             }
 

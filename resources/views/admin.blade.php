@@ -1282,6 +1282,46 @@
                                 <input type="text" name="kota_kabupaten" class="form-control rounded-3"
                                     value="Jakarta Pusat" placeholder="Kota / Kabupaten">
                             </div>
+
+                            <!-- Data Secondary Parent (Opsional - Maks. 1 per Keluarga) -->
+                            <div class="col-12 mt-3 pt-3 border-top">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-uppercase fw-bold text-muted"
+                                        style="font-size: 0.72rem; letter-spacing: 0.6px;">Secondary Parent (Wali Pendamping - Opsional)</small>
+                                    <span class="badge bg-light text-muted border" style="font-size: 0.7rem;">Maks. 1 per Keluarga</span>
+                                </div>
+                                <p class="text-muted mb-2" style="font-size: 0.78rem;">
+                                    Pasangan atau wali pendamping opsional agar memiliki akses login memantau anak di portal Orang Tua. Kosongkan jika tidak ada.
+                                </p>
+                            </div>
+                            <div class="col-12 col-md-5">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Nama Secondary Parent</label>
+                                <input type="text" name="nama_secondary_parent" class="form-control rounded-3"
+                                    placeholder="Contoh: Bpk. Arif Wibowo">
+                            </div>
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Hubungan</label>
+                                <select name="hubungan_secondary_parent" class="form-select rounded-3">
+                                    <option value="Ayah" selected>Ayah</option>
+                                    <option value="Ibu">Ibu</option>
+                                    <option value="Wali">Wali</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">No. WhatsApp Secondary Parent</label>
+                                <input type="text" name="nomor_whatsapp_secondary_parent" class="form-control rounded-3"
+                                    placeholder="081399998888">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Username Login <span class="text-muted fw-normal">(Opsional)</span></label>
+                                <input type="text" name="username_secondary_parent" class="form-control rounded-3"
+                                    placeholder="ayah.andi (Otomatis)">
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-semibold" style="font-size: 0.85rem;">Password Awal</label>
+                                <input type="text" name="password_secondary_parent" class="form-control rounded-3"
+                                    value="RacerWali2026!">
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 pt-0">
@@ -1531,6 +1571,17 @@
             ]);
         }
 
+        // Helper Sanitasi XSS: Escape karakter berbahaya menjadi entitas teks HTML
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         async function loadPesertaListAdmin(jadwalId) {
             const tbody = document.getElementById('tbodyPesertaJadwalAdmin');
             const totalCount = document.getElementById('totalPesertaCountAdmin');
@@ -1553,15 +1604,20 @@
                         const siswa = p.siswa || {};
                         const paket = p.paket_siswa || {};
                         const sisa = paket.total_sesi ? (paket.total_sesi - paket.sesi_terpakai) : (siswa.total_sesi - siswa.sesi_terpakai);
+                        const safeNama = escapeHtml(siswa.nama_lengkap || siswa.nama || 'Siswa');
+                        const safeNisn = escapeHtml(siswa.nisn || '-');
+                        const safeProgram = escapeHtml(paket.program || siswa.program || '-');
+                        const safePaket = escapeHtml(paket.paket_belajar || siswa.paket_belajar || '-');
+                        const safeStatus = escapeHtml(p.status_kehadiran || 'Terdaftar');
                         return `
                             <tr>
                                 <td>
-                                    <div class="fw-bold text-dark">${siswa.nama_lengkap || siswa.nama || 'Siswa'}</div>
-                                    <small class="text-muted">NISN: ${siswa.nisn || '-'}</small>
+                                    <div class="fw-bold text-dark">${safeNama}</div>
+                                    <small class="text-muted">NISN: ${safeNisn}</small>
                                 </td>
                                 <td>
-                                    <div>${paket.program || siswa.program || '-'}</div>
-                                    <small class="text-muted">${paket.paket_belajar || siswa.paket_belajar || '-'}</small>
+                                    <div>${safeProgram}</div>
+                                    <small class="text-muted">${safePaket}</small>
                                 </td>
                                 <td>
                                     <span class="badge ${sisa > 2 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
@@ -1569,7 +1625,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-primary-subtle text-primary">${p.status_kehadiran || 'Terdaftar'}</span>
+                                    <span class="badge bg-primary-subtle text-primary">${safeStatus}</span>
                                 </td>
                                 <td class="text-end">
                                     <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" onclick="hapusPesertaAdmin(${jadwalId}, ${p.id_siswa})" title="Hapus dari jadwal">
@@ -1605,7 +1661,7 @@
                     select.innerHTML = `<option value="">-- Pilih Siswa (${available.length} siswa memenuhi syarat) --</option>` +
                         available.map(s => `
                             <option value="${s.id_siswa}">
-                                ${s.nama} (${s.program} • Sisa ${s.sisa_sesi} sesi)
+                                ${escapeHtml(s.nama)} (${escapeHtml(s.program)} • Sisa ${s.sisa_sesi} sesi)
                             </option>
                         `).join('');
                 }

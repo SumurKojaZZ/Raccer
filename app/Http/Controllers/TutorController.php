@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Jadwal;
 use App\Models\Pengumuman;
+use App\Models\PesertaJadwal;
+use App\Models\Siswa;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -18,29 +22,104 @@ class TutorController extends Controller
     /**
      * Tampilkan Portal & Beranda Khusus Tutor.
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
-        $user = Auth::user();
-        $activeTab = $request->input('tab', 'beranda');
-
-        // Cari profil detail tutor berdasarkan user login
-        $tutorProfile = null;
-        if ($user && Schema::hasTable('tutor')) {
-            try {
-                $tutorProfile = DB::table('tutor')
-                    ->where('nama_lengkap', 'like', "%{$user->name}%")
-                    ->orWhere('nama_panggilan', 'like', "%{$user->name}%")
-                    ->orWhere('username', '@' . $user->username)
-                    ->orWhere('username', $user->username)
-                    ->orWhere('email', $user->email)
-                    ->first();
-            } catch (\Throwable $e) {
-                $tutorProfile = DB::table('tutor')->where('nama_lengkap', 'like', "%{$user->name}%")->first();
-            }
+        // Proteksi hak akses: Jika orang tua mencoba akses portal tutor, alihkan ke portal orang tua
+        if ($request->session()->get('role') === 'Orang_Tua' || (Auth::check() && Auth::user()->isOrangTua())) {
+            return redirect()->route('orang-tua');
         }
 
-        // Ambil jadwal kelas
-        $jadwalHariIni = Jadwal::orderBy('waktu_mulai', 'asc')->get();
+        $user = Auth::user();
+        $activeTab = $request->input('tab', 'beranda');
+        $filterJadwal = strtolower(trim((string) $request->input('filter', 'semua')));
+
+        // Cari profil detail tutor dan identifier-nya (Data Isolation)
+        $tutorInfo = $this->getLoggedInTutorIdentifiers($user);
+        $tutorProfile = $tutorInfo['tutor'];
+        $identifiers = $tutorInfo['identifiers'];
+
+        // Ambil jadwal mengajar HANYA milik Tutor yang sedang login
+        $jadwalQuery = Jadwal::query()
+            ->with(['siswaPeserta', 'pesertaJadwal.siswa', 'pesertaJadwal.paketSiswa']);
+
+        if (!empty($identifiers)) {
+            $jadwalQuery->where(function ($q) use ($identifiers) {
+                foreach ($identifiers as $ident) {
+                    $q->orWhere('tutor', $ident)
+                      ->orWhere('tutor_pengampu', $ident)
+                      ->orWhere('tutor', 'like', "%{$ident}%")
+                      ->orWhere('tutor_pengampu', 'like', "%{$ident}%");
+                }
+            });
+        }
+
+        // Seluruh jadwal pribadi tutor
+        $allJadwalTutor = (clone $jadwalQuery)
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('waktu_mulai', 'asc')
+            ->get();
+
+        // 1. Kalender Bulanan Interaktif
+        $bulanKalender = (int) $request->input('bulan', now()->month);
+        $tahunKalender = (int) $request->input('tahun', now()->year);
+        $firstDateOfMonth = Carbon::createFromDate($tahunKalender, $bulanKalender, 1)->startOfDay();
+        $daysInMonth = (int) $firstDateOfMonth->daysInMonth;
+        // Hari pertama dalam minggu (1 = Senin, 7 = Minggu)
+        $startDayOfWeek = (int) $firstDateOfMonth->dayOfWeekIso;
+
+        $prevDate = (clone $firstDateOfMonth)->subMonth();
+        $prevMonth = $prevDate->month;
+        $prevYear = $prevDate->year;
+
+        $nextDate = (clone $firstDateOfMonth)->addMonth();
+        $nextMonth = $nextDate->month;
+        $nextYear = $nextDate->year;
+
+        $namaBulanTahun = $firstDateOfMonth->locale('id')->isoFormat('MMMM Y');
+
+        // Kelompokkan jadwal tutor berdasarkan tanggal (YYYY-MM-DD)
+        $jadwalPerTanggal = $allJadwalTutor->groupBy(function ($j) {
+            return !empty($j->tanggal) ? Carbon::parse($j->tanggal)->toDateString() : '';
+        });
+
+        // 2. Filter Daftar Jadwal (List View)
+        $filteredJadwal = clone $allJadwalTutor;
+        if ($filterJadwal === 'hari') {
+            $targetDate = $request->input('tanggal', now()->toDateString());
+            $filteredJadwal = $allJadwalTutor->filter(function ($j) use ($targetDate) {
+                return !empty($j->tanggal) && Carbon::parse($j->tanggal)->toDateString() === $targetDate;
+            });
+        } elseif ($filterJadwal === 'minggu') {
+            $startOfWeek = now()->startOfWeek()->toDateString();
+            $endOfWeek = now()->endOfWeek()->toDateString();
+            $filteredJadwal = $allJadwalTutor->filter(function ($j) use ($startOfWeek, $endOfWeek) {
+                if (empty($j->tanggal)) return false;
+                $tgl = Carbon::parse($j->tanggal)->toDateString();
+                return $tgl >= $startOfWeek && $tgl <= $endOfWeek;
+            });
+        } elseif ($filterJadwal === 'bulan') {
+            $filteredJadwal = $allJadwalTutor->filter(function ($j) use ($bulanKalender, $tahunKalender) {
+                if (empty($j->tanggal)) return false;
+                $d = Carbon::parse($j->tanggal);
+                return $d->month === $bulanKalender && $d->year === $tahunKalender;
+            });
+        }
+
+        // 3. Metrik Statistik Pribadi
+        $totalSesiPribadi = $allJadwalTutor->count();
+        $totalSesiSelesai = $allJadwalTutor->where('status', 'Selesai')->count();
+        $totalSesiAktif = $allJadwalTutor->whereIn('status', ['Terjadwal', 'Berlangsung'])->count();
+        $totalSiswaTerdaftar = $allJadwalTutor->flatMap(function ($j) {
+            return $j->pesertaJadwal->pluck('id_siswa');
+        })->unique()->count();
+
+        // 4. Jadwal Hari Ini untuk Widget Beranda
+        $jadwalHariIni = $allJadwalTutor->filter(function ($j) {
+            return !empty($j->tanggal) && Carbon::parse($j->tanggal)->isToday();
+        });
+        if ($jadwalHariIni->isEmpty()) {
+            $jadwalHariIni = $allJadwalTutor->take(5);
+        }
 
         // Ambil pengumuman akademik
         $pengumumanList = Pengumuman::orderBy('id', 'desc')->take(3)->get();
@@ -49,8 +128,25 @@ class TutorController extends Controller
             'user',
             'tutorProfile',
             'jadwalHariIni',
+            'filteredJadwal',
+            'allJadwalTutor',
+            'jadwalPerTanggal',
+            'bulanKalender',
+            'tahunKalender',
+            'daysInMonth',
+            'startDayOfWeek',
+            'prevMonth',
+            'prevYear',
+            'nextMonth',
+            'nextYear',
+            'namaBulanTahun',
+            'totalSesiPribadi',
+            'totalSesiSelesai',
+            'totalSesiAktif',
+            'totalSiswaTerdaftar',
             'pengumumanList',
-            'activeTab'
+            'activeTab',
+            'filterJadwal'
         ));
     }
 
@@ -203,6 +299,489 @@ class TutorController extends Controller
         }
 
         return redirect()->route('tutor', ['tab' => 'sandi'])->with('success', 'Kata sandi akun Anda berhasil diperbarui!');
+    }
+
+    /**
+     * Endpoint API & Web: Jadwal Mengajar Pribadi Tutor (Data Isolation & Filter Hari/Minggu).
+     */
+    public function jadwalPribadi(Request $request): JsonResponse|View|\Illuminate\Http\RedirectResponse
+    {
+        // 1. Verifikasi Autentikasi: Tolak Guest
+        if (!Auth::check()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated. Silakan login terlebih dahulu.',
+                ], 401);
+            }
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+
+        // 2. Verifikasi Otorisasi: Khusus Tutor (atau Admin)
+        $isTutor = method_exists($user, 'isTutor')
+            ? $user->isTutor()
+            : strcasecmp((string) (session('role') ?? $user->role), 'Tutor') === 0;
+
+        $isAdmin = method_exists($user, 'isAdmin')
+            ? $user->isAdmin()
+            : strcasecmp((string) (session('role') ?? $user->role), 'Admin') === 0;
+
+        if (!$isTutor && !$isAdmin) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Akses ini khusus untuk Tutor.',
+                ], 403);
+            }
+            abort(403, 'Akses ditolak. Endpoint ini khusus untuk jadwal Tutor.');
+        }
+
+        // 3. Resolusi Profil & Identifier Tutor (Data Isolation)
+        $tutorInfo = $this->getLoggedInTutorIdentifiers($user);
+        $tutorRecord = $tutorInfo['tutor'];
+        $identifiers = $tutorInfo['identifiers'];
+
+        // Jika Admin sedang memfilter tutor tertentu lewat parameter ?tutor_id atau ?tutor
+        if ($isAdmin && $request->filled('tutor')) {
+            $identifiers = [(string) $request->input('tutor')];
+        }
+
+        // 4. Query Jadwal Mengajar Khusus Tutor Ini
+        $jadwalQuery = Jadwal::query()
+            ->with(['siswaPeserta', 'pesertaJadwal.siswa']);
+
+        if (!empty($identifiers)) {
+            $jadwalQuery->where(function ($q) use ($identifiers) {
+                foreach ($identifiers as $ident) {
+                    $q->orWhere('tutor', $ident)
+                      ->orWhere('tutor_pengampu', $ident)
+                      ->orWhere('tutor', 'like', "%{$ident}%")
+                      ->orWhere('tutor_pengampu', 'like', "%{$ident}%");
+                }
+            });
+        }
+
+        // 5. Penanganan Filter: Hari / Minggu
+        $filter = strtolower(trim((string) $request->input('filter', '')));
+        $hari = strtolower(trim((string) $request->input('hari', '')));
+        $minggu = strtolower(trim((string) $request->input('minggu', '')));
+        $tanggal = trim((string) $request->input('tanggal', ''));
+        $startDate = trim((string) $request->input('start_date', ''));
+        $endDate = trim((string) $request->input('end_date', ''));
+
+        $filterApplied = 'semua';
+        $periodeLabel = 'Semua Jadwal Mengajar';
+        $targetDate = null;
+        $rangeStart = null;
+        $rangeEnd = null;
+
+        // Pemetaan nama hari ke indeks DAYOFWEEK MySQL (1=Minggu, 2=Senin, ..., 7=Sabtu)
+        $dayMap = [
+            'minggu' => 1, 'ahad' => 1, 'sunday' => 1,
+            'senin' => 2, 'monday' => 2,
+            'selasa' => 3, 'tuesday' => 3,
+            'rabu' => 4, 'wednesday' => 4,
+            'kamis' => 5, 'thursday' => 5,
+            'jumat' => 6, 'jum\'at' => 6, 'friday' => 6,
+            'sabtu' => 7, 'saturday' => 7,
+        ];
+
+        // A. Filter Hari
+        if ($filter === 'hari' || $filter === 'today' || $filter === 'hari_ini' || in_array($hari, ['hari_ini', 'today'])) {
+            $targetDate = $tanggal !== '' ? $tanggal : now()->toDateString();
+            $jadwalQuery->whereDate('tanggal', $targetDate);
+            $filterApplied = 'hari';
+            $periodeLabel = 'Hari Ini (' . Carbon::parse($targetDate)->locale('id')->isoFormat('dddd, D MMMM Y') . ')';
+        } elseif ($filter === 'besok' || $hari === 'besok' || $hari === 'tomorrow') {
+            $targetDate = now()->addDay()->toDateString();
+            $jadwalQuery->whereDate('tanggal', $targetDate);
+            $filterApplied = 'hari';
+            $periodeLabel = 'Besok (' . Carbon::parse($targetDate)->locale('id')->isoFormat('dddd, D MMMM Y') . ')';
+        } elseif ($hari !== '' && isset($dayMap[$hari])) {
+            $jadwalQuery->whereRaw('DAYOFWEEK(tanggal) = ?', [$dayMap[$hari]]);
+            $filterApplied = 'hari';
+            $periodeLabel = 'Setiap Hari ' . ucfirst($hari);
+        } elseif ($tanggal !== '') {
+            $targetDate = $tanggal;
+            $jadwalQuery->whereDate('tanggal', $targetDate);
+            $filterApplied = 'hari';
+            $periodeLabel = 'Tanggal ' . Carbon::parse($targetDate)->locale('id')->isoFormat('dddd, D MMMM Y');
+        }
+        // B. Filter Minggu
+        elseif ($filter === 'minggu' || $filter === 'week' || $filter === 'minggu_ini' || $filter === 'this_week' || in_array($minggu, ['ini', 'this_week', '1', 'current'])) {
+            $rangeStart = now()->startOfWeek()->toDateString();
+            $rangeEnd = now()->endOfWeek()->toDateString();
+            $jadwalQuery->whereBetween('tanggal', [$rangeStart, $rangeEnd]);
+            $filterApplied = 'minggu';
+            $periodeLabel = 'Minggu Ini (' . Carbon::parse($rangeStart)->format('d M') . ' - ' . Carbon::parse($rangeEnd)->format('d M Y') . ')';
+        } elseif ($filter === 'minggu_depan' || $filter === 'next_week' || in_array($minggu, ['depan', 'next_week', 'next'])) {
+            $rangeStart = now()->addWeek()->startOfWeek()->toDateString();
+            $rangeEnd = now()->addWeek()->endOfWeek()->toDateString();
+            $jadwalQuery->whereBetween('tanggal', [$rangeStart, $rangeEnd]);
+            $filterApplied = 'minggu';
+            $periodeLabel = 'Minggu Depan (' . Carbon::parse($rangeStart)->format('d M') . ' - ' . Carbon::parse($rangeEnd)->format('d M Y') . ')';
+        } elseif (is_numeric($minggu) && (int) $minggu >= 1 && (int) $minggu <= 53) {
+            $jadwalQuery->whereRaw('WEEK(tanggal, 1) = ?', [(int) $minggu]);
+            $filterApplied = 'minggu';
+            $periodeLabel = 'Minggu ke-' . $minggu;
+        } elseif ($startDate !== '' && $endDate !== '') {
+            $rangeStart = $startDate;
+            $rangeEnd = $endDate;
+            $jadwalQuery->whereDate('tanggal', '>=', $startDate)->whereDate('tanggal', '<=', $endDate);
+            $filterApplied = 'minggu';
+            $periodeLabel = 'Rentang Tanggal ' . $startDate . ' s/d ' . $endDate;
+        }
+
+        // Urutkan jadwal
+        $jadwalList = $jadwalQuery
+            ->orderBy('tanggal', 'asc')
+            ->orderBy('waktu_mulai', 'asc')
+            ->orderBy('jam_mulai', 'asc')
+            ->get();
+
+        // 6. Format Data Jadwal dan Daftar Siswa Peserta
+        $formattedData = $jadwalList->map(function ($j) {
+            $pesertaList = collect();
+
+            if ($j->relationLoaded('pesertaJadwal') && $j->pesertaJadwal->isNotEmpty()) {
+                $pesertaList = $j->pesertaJadwal->map(function ($pj) {
+                    $s = $pj->siswa;
+                    $paket = $pj->paketSiswa;
+
+                    return [
+                        'id_peserta_jadwal' => $pj->id_peserta_jadwal,
+                        'id_siswa' => $pj->id_siswa,
+                        'nama_lengkap' => $s?->nama_lengkap ?? $s?->nama ?? 'Siswa',
+                        'nama_panggilan' => $s?->nama_panggilan ?? $s?->nama ?? 'Siswa',
+                        'nisn' => $s?->nisn ?? null,
+                        'program' => $s?->program ?? null,
+                        'jenis_kelamin' => $s?->jenis_kelamin ?? null,
+                        'paket_belajar' => $paket?->paket_belajar ?? $s?->paket_belajar ?? null,
+                        'status_kehadiran' => $pj->status_kehadiran ?? 'Terdaftar',
+                        'catatan' => $pj->catatan ?? null,
+                    ];
+                });
+            } elseif ($j->relationLoaded('siswaPeserta') && $j->siswaPeserta->isNotEmpty()) {
+                $pesertaList = $j->siswaPeserta->map(function ($s) {
+                    return [
+                        'id_peserta_jadwal' => $s->pivot->id_peserta_jadwal ?? null,
+                        'id_siswa' => $s->id_siswa,
+                        'nama_lengkap' => $s->nama_lengkap ?? $s->nama ?? 'Siswa',
+                        'nama_panggilan' => $s->nama_panggilan ?? $s->nama ?? 'Siswa',
+                        'nisn' => $s->nisn ?? null,
+                        'program' => $s->program ?? null,
+                        'jenis_kelamin' => $s->jenis_kelamin ?? null,
+                        'paket_belajar' => $s->paket_belajar ?? null,
+                        'status_kehadiran' => $s->pivot->status_kehadiran ?? 'Terdaftar',
+                        'catatan' => $s->pivot->catatan ?? null,
+                    ];
+                });
+            } else {
+                $pesertaDb = PesertaJadwal::with(['siswa', 'paketSiswa'])->where('id_jadwal', $j->id)->get();
+                $pesertaList = $pesertaDb->map(function ($pj) {
+                    $s = $pj->siswa;
+                    $paket = $pj->paketSiswa;
+                    return [
+                        'id_peserta_jadwal' => $pj->id_peserta_jadwal,
+                        'id_siswa' => $pj->id_siswa,
+                        'nama_lengkap' => $s?->nama_lengkap ?? $s?->nama ?? 'Siswa',
+                        'nama_panggilan' => $s?->nama_panggilan ?? $s?->nama ?? 'Siswa',
+                        'nisn' => $s?->nisn ?? null,
+                        'program' => $s?->program ?? null,
+                        'jenis_kelamin' => $s?->jenis_kelamin ?? null,
+                        'paket_belajar' => $paket?->paket_belajar ?? $s?->paket_belajar ?? null,
+                        'status_kehadiran' => $pj->status_kehadiran ?? 'Terdaftar',
+                        'catatan' => $pj->catatan ?? null,
+                    ];
+                });
+            }
+
+            $namaHari = null;
+            if (!empty($j->tanggal)) {
+                try {
+                    $namaHari = Carbon::parse($j->tanggal)->locale('id')->isoFormat('dddd');
+                } catch (\Throwable $e) {}
+            }
+
+            return [
+                'id' => $j->id,
+                'id_jadwal' => $j->id,
+                'program' => $j->program ?? $j->kelas,
+                'kelas' => $j->kelas ?? $j->program,
+                'lokasi' => $j->lokasi ?? 'Lab Utama',
+                'tutor' => $j->tutor ?? $j->tutor_pengampu,
+                'tutor_pengampu' => $j->tutor_pengampu ?? $j->tutor,
+                'tanggal' => $j->tanggal,
+                'formatted_tanggal' => $j->formatted_tanggal,
+                'hari' => $namaHari,
+                'jam_mulai' => $j->jam_mulai ?? $j->waktu_mulai,
+                'jam_selesai' => $j->jam_selesai ?? $j->waktu_selesai,
+                'waktu_mulai' => $j->waktu_mulai ?? $j->jam_mulai,
+                'waktu_selesai' => $j->waktu_selesai ?? $j->jam_selesai,
+                'moda' => $j->moda ?? 'Offline',
+                'status' => $j->status ?? 'Terjadwal',
+                'total_peserta' => $pesertaList->count(),
+                'jumlah_peserta' => $pesertaList->count(),
+                'peserta' => $pesertaList,
+                'daftar_siswa' => $pesertaList,
+                'siswa_peserta' => $pesertaList,
+            ];
+        });
+
+        // Response JSON untuk request API
+        if ($request->expectsJson() || $request->is('api/*') || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Jadwal mengajar pribadi berhasil diambil.',
+                'tutor' => [
+                    'id_tutor' => $tutorRecord?->id_tutor ?? null,
+                    'nama_lengkap' => $tutorRecord?->nama_lengkap ?? $user->name,
+                    'nama_panggilan' => $tutorRecord?->nama_panggilan ?? $user->name,
+                    'kode_tutor' => $tutorRecord?->kode_tutor ?? null,
+                ],
+                'filter_applied' => $filterApplied,
+                'periode' => [
+                    'label' => $periodeLabel,
+                    'tanggal' => $targetDate,
+                    'start_date' => $rangeStart,
+                    'end_date' => $rangeEnd,
+                ],
+                'total_sesi' => $formattedData->count(),
+                'data' => $formattedData,
+            ], 200);
+        }
+
+        // Tampilan Web Portal Tutor dengan data terfilter
+        return $this->index($request->merge(['tab' => 'jadwal', 'filter' => $filterApplied]));
+    }
+
+    /**
+     * Mendapatkan profil Tutor yang sedang login dan daftar identifier-nya untuk isolasi data jadwal.
+     */
+    protected function getLoggedInTutorIdentifiers(?User $user): array
+    {
+        if (!$user) {
+            return ['tutor' => null, 'identifiers' => []];
+        }
+
+        $idPengguna = session('id_pengguna');
+        $tutorRecord = null;
+
+        if (Schema::hasTable('tutor')) {
+            if ($idPengguna) {
+                $tutorRecord = DB::table('tutor')->where('id_pengguna', $idPengguna)->first();
+            }
+            if (!$tutorRecord) {
+                $tutorRecord = DB::table('tutor')
+                    ->where('id_pengguna', $user->id)
+                    ->orWhere('username', '@' . $user->username)
+                    ->orWhere('username', $user->username)
+                    ->orWhere('email', $user->email)
+                    ->orWhere('nama_lengkap', $user->name)
+                    ->orWhere('nama_panggilan', $user->name)
+                    ->first();
+            }
+        }
+
+        $identifiers = [];
+
+        if ($tutorRecord) {
+            if (!empty($tutorRecord->nama_lengkap)) {
+                $identifiers[] = $tutorRecord->nama_lengkap;
+                $parts = explode(' ', trim($tutorRecord->nama_lengkap));
+                if (!empty($parts[0])) {
+                    $identifiers[] = $parts[0];
+                    $identifiers[] = 'Kak ' . $parts[0];
+                }
+            }
+            if (!empty($tutorRecord->nama_panggilan)) {
+                $identifiers[] = $tutorRecord->nama_panggilan;
+                $cleanPanggilan = preg_replace('/^kak\s+/i', '', trim($tutorRecord->nama_panggilan));
+                if ($cleanPanggilan !== '') {
+                    $identifiers[] = $cleanPanggilan;
+                    $identifiers[] = 'Kak ' . $cleanPanggilan;
+                }
+            }
+            if (!empty($tutorRecord->nama_gelar)) {
+                $identifiers[] = $tutorRecord->nama_gelar;
+            }
+            if (!empty($tutorRecord->kode_tutor)) {
+                $identifiers[] = $tutorRecord->kode_tutor;
+            }
+        }
+
+        if (!empty($user->name)) {
+            $identifiers[] = $user->name;
+            $cleanUserName = preg_replace('/^kak\s+/i', '', trim($user->name));
+            if ($cleanUserName !== '') {
+                $identifiers[] = $cleanUserName;
+                $identifiers[] = 'Kak ' . $cleanUserName;
+            }
+        }
+        if (!empty($user->username)) {
+            $identifiers[] = $user->username;
+            if (str_starts_with(strtolower($user->username), 'tutor.')) {
+                $raw = substr($user->username, 6);
+                $identifiers[] = $raw;
+                $identifiers[] = 'Kak ' . ucfirst($raw);
+            }
+        }
+
+        return [
+            'tutor' => $tutorRecord,
+            'identifiers' => array_values(array_unique(array_filter($identifiers))),
+        ];
+    }
+
+    /**
+     * Memeriksa apakah suatu jadwal adalah milik Tutor yang sedang login.
+     * Mengembalikan true jika jadwal milik Tutor login atau user adalah Admin.
+     * Mengembalikan false jika jadwal milik Tutor lain.
+     */
+    public function authorizeJadwalBelongsToTutor(Jadwal $jadwal, ?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // Admin memiliki hak akses penuh ke seluruh jadwal
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return true;
+        }
+        if (strcasecmp((string) (session('role') ?? $user->role), 'Admin') === 0) {
+            return true;
+        }
+
+        $tutorInfo = $this->getLoggedInTutorIdentifiers($user);
+        $identifiers = $tutorInfo['identifiers'];
+
+        $tutorJadwal = trim((string) ($jadwal->tutor_pengampu ?? $jadwal->tutor ?? ''));
+        if ($tutorJadwal === '') {
+            return false;
+        }
+
+        foreach ($identifiers as $ident) {
+            $ident = trim((string) $ident);
+            if ($ident === '') continue;
+
+            if (strcasecmp($tutorJadwal, $ident) === 0
+                || stripos($tutorJadwal, $ident) !== false
+                || stripos($ident, $tutorJadwal) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Endpoint API: Mengambil daftar siswa peserta pada suatu jadwal kelas.
+     * TOLAK AKSES JADWAL TUTOR LAIN DENGAN HTTP 403 FORBIDDEN.
+     * GET /api/tutor/jadwal/{id}/peserta
+     */
+    public function getPesertaJadwal(Request $request, int $id): JsonResponse
+    {
+        // 1. Verifikasi Autentikasi
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated. Silakan login terlebih dahulu.',
+            ], 401);
+        }
+
+        $user = Auth::user();
+
+        // 2. Verifikasi Otorisasi: Khusus Tutor (atau Admin)
+        $isTutor = method_exists($user, 'isTutor')
+            ? $user->isTutor()
+            : strcasecmp((string) (session('role') ?? $user->role), 'Tutor') === 0;
+
+        $isAdmin = method_exists($user, 'isAdmin')
+            ? $user->isAdmin()
+            : strcasecmp((string) (session('role') ?? $user->role), 'Admin') === 0;
+
+        if (!$isTutor && !$isAdmin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Akses ini khusus untuk Tutor.',
+            ], 403);
+        }
+
+        // 3. Cari Jadwal Kelas
+        $jadwal = Jadwal::find($id);
+        if (!$jadwal) {
+            return response()->json([
+                'success' => false,
+                'message' => "Jadwal dengan ID {$id} tidak ditemukan.",
+            ], 404);
+        }
+
+        // 4. Verifikasi Kepemilikan Jadwal: TOLAK TUTOR LAIN DENGAN HTTP 403 FORBIDDEN
+        if (!$this->authorizeJadwalBelongsToTutor($jadwal, $user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Akses ditolak (HTTP 403). Anda tidak memiliki izin untuk melihat peserta jadwal milik Tutor lain.',
+            ], 403);
+        }
+
+        // 5. Ambil Daftar Siswa Peserta
+        $pesertaList = PesertaJadwal::with(['siswa', 'paketSiswa'])
+            ->where('id_jadwal', $id)
+            ->orderBy('id_peserta_jadwal', 'asc')
+            ->get();
+
+        $formattedPeserta = $pesertaList->map(function ($pj) {
+            $s = $pj->siswa;
+            $paket = $pj->paketSiswa;
+
+            return [
+                'id_peserta_jadwal' => $pj->id_peserta_jadwal,
+                'id_siswa' => $pj->id_siswa,
+                'nama_lengkap' => $s?->nama_lengkap ?? $s?->nama ?? 'Siswa',
+                'nama_panggilan' => $s?->nama_panggilan ?? $s?->nama ?? 'Siswa',
+                'nisn' => $s?->nisn ?? null,
+                'program' => $s?->program ?? null,
+                'jenis_kelamin' => $s?->jenis_kelamin ?? null,
+                'paket_belajar' => $paket?->paket_belajar ?? $s?->paket_belajar ?? null,
+                'sisa_sesi' => $paket?->sisa_sesi ?? $s?->sisa_sesi ?? null,
+                'status_kehadiran' => $pj->status_kehadiran ?? 'Terdaftar',
+                'catatan' => $pj->catatan ?? null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar siswa peserta jadwal berhasil diambil.',
+            'jadwal' => [
+                'id' => $jadwal->id,
+                'program' => $jadwal->program ?? $jadwal->kelas,
+                'kelas' => $jadwal->kelas ?? $jadwal->program,
+                'tutor' => $jadwal->tutor ?? $jadwal->tutor_pengampu,
+                'tutor_pengampu' => $jadwal->tutor_pengampu ?? $jadwal->tutor,
+                'tanggal' => $jadwal->tanggal,
+                'jam_mulai' => $jadwal->jam_mulai ?? $jadwal->waktu_mulai,
+                'jam_selesai' => $jadwal->jam_selesai ?? $jadwal->waktu_selesai,
+                'lokasi' => $jadwal->lokasi,
+                'status' => $jadwal->status,
+            ],
+            'total_peserta' => $formattedPeserta->count(),
+            'jumlah_peserta' => $formattedPeserta->count(),
+            'peserta' => $formattedPeserta,
+            'daftar_siswa' => $formattedPeserta,
+            'data' => $formattedPeserta,
+        ], 200);
+    }
+
+    /**
+     * Endpoint API: Detail Jadwal beserta Daftar Siswa Peserta.
+     * TOLAK TUTOR LAIN DENGAN HTTP 403 FORBIDDEN.
+     * GET /api/tutor/jadwal/{id}
+     */
+    public function detailJadwal(Request $request, int $id): JsonResponse
+    {
+        return $this->getPesertaJadwal($request, $id);
     }
 }
 

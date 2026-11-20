@@ -28,7 +28,6 @@ class User extends Authenticatable
         'username',
         'email',
         'password',
-        'role',
     ];
 
     /**
@@ -52,6 +51,35 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Accessor dinamis untuk atribut role (diambil dari kolom jika ada, atau dari session / tabel pengguna).
+     */
+    public function getRoleAttribute(?string $value): ?string
+    {
+        if (!empty($value)) {
+            return $value;
+        }
+
+        if (session()->has('role')) {
+            return session('role');
+        }
+
+        try {
+            $pRole = \Illuminate\Support\Facades\DB::table('pengguna')
+                ->where('username', $this->username)
+                ->value('role');
+            if ($pRole) {
+                return $pRole;
+            }
+        } catch (\Throwable $e) {}
+
+        if ($this->isAdmin()) {
+            return 'Admin';
+        }
+
+        return 'Guest';
     }
 
     /**
@@ -89,6 +117,62 @@ class User extends Authenticatable
 
         // 5. Cek name jika mengandung admin
         return !empty($this->name) && str_contains(strtolower((string) $this->name), 'admin');
+    }
+
+    /**
+     * Memeriksa apakah user memiliki peran Tutor.
+     */
+    public function isTutor(): bool
+    {
+        // 1. Cek langsung atribut role pada instance jika ada
+        if (!empty($this->role)) {
+            return strcasecmp((string) $this->role, 'Tutor') === 0;
+        }
+
+        // 2. Cek session role jika ada
+        if (session()->has('role')) {
+            return strcasecmp((string) session('role'), 'Tutor') === 0;
+        }
+
+        // 3. Cek username
+        if (!empty($this->username) && str_starts_with(strtolower((string) $this->username), 'tutor.')) {
+            return true;
+        }
+
+        // 4. Cek email
+        if (!empty($this->email) && str_contains(strtolower((string) $this->email), 'tutor')) {
+            return true;
+        }
+
+        // 5. Cek tabel pengguna
+        try {
+            $pengguna = \Illuminate\Support\Facades\DB::table('pengguna')
+                ->where('username', $this->username)
+                ->first();
+
+            if ($pengguna && isset($pengguna->role)) {
+                return strcasecmp((string) $pengguna->role, 'Tutor') === 0;
+            }
+        } catch (\Throwable $e) {}
+
+        // 6. Cek apakah terdaftar di tabel tutor
+        try {
+            return \Illuminate\Support\Facades\DB::table('tutor')
+                ->where('id_pengguna', function ($q) {
+                    $q->select('id_pengguna')
+                        ->from('pengguna')
+                        ->where('username', $this->username)
+                        ->limit(1);
+                })
+                ->orWhere('username', '@' . $this->username)
+                ->orWhere('username', $this->username)
+                ->orWhere('email', $this->email)
+                ->orWhere('nama_lengkap', $this->name)
+                ->orWhere('nama_panggilan', $this->name)
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -137,5 +221,53 @@ class User extends Authenticatable
         } catch (\Throwable $e) {}
 
         return false;
+    }
+
+    /**
+     * Memeriksa apakah user memiliki peran Primary Parent (Wali Utama).
+     */
+    public function isPrimaryParent(): bool
+    {
+        if (session('jenis_wali') === 'Primary_Parent') {
+            return true;
+        }
+
+        try {
+            return \Illuminate\Support\Facades\DB::table('orang_tua')
+                ->where('id_pengguna', function ($q) {
+                    $q->select('id_pengguna')
+                        ->from('pengguna')
+                        ->where('username', $this->username)
+                        ->limit(1);
+                })
+                ->where('jenis_wali', 'Primary_Parent')
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Memeriksa apakah user memiliki peran Secondary Parent (Wali Pendamping).
+     */
+    public function isSecondaryParent(): bool
+    {
+        if (session('jenis_wali') === 'Secondary_Parent') {
+            return true;
+        }
+
+        try {
+            return \Illuminate\Support\Facades\DB::table('orang_tua')
+                ->where('id_pengguna', function ($q) {
+                    $q->select('id_pengguna')
+                        ->from('pengguna')
+                        ->where('username', $this->username)
+                        ->limit(1);
+                })
+                ->where('jenis_wali', 'Secondary_Parent')
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }

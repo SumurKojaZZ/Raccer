@@ -262,6 +262,119 @@
             flex-direction: column;
             justify-content: space-between;
         }
+
+        /* Calendar & Schedule Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-header-day {
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.78rem;
+            color: #64748b;
+            padding: 0.5rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .calendar-day-cell {
+            min-height: 110px;
+            background: #ffffff;
+            border: 1px solid #e9edf4;
+            border-radius: 10px;
+            padding: 0.55rem;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day-cell:hover {
+            border-color: #bcd4fd;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+
+        .calendar-day-cell.other-month {
+            background-color: #f8fafc;
+            opacity: 0.45;
+        }
+
+        .calendar-day-cell.is-today {
+            border: 2px solid var(--primary-blue);
+            background-color: #f7faff;
+        }
+
+        .calendar-date-number {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 0.35rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .calendar-day-cell.is-today .calendar-date-number {
+            background-color: var(--primary-blue);
+            color: #ffffff;
+        }
+
+        .calendar-event-badge {
+            font-size: 0.72rem;
+            padding: 0.3rem 0.45rem;
+            border-radius: 6px;
+            background-color: #eaf0fd;
+            color: #1e5ee6;
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+            line-height: 1.25;
+            text-decoration: none;
+            display: block;
+            border-left: 3px solid var(--primary-blue);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        .calendar-event-badge:hover {
+            transform: scale(1.02);
+            background-color: #dbe7fc;
+            color: #1142ab;
+        }
+
+        .filter-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 1rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .filter-pill.active {
+            background-color: var(--primary-blue);
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(30, 94, 230, 0.25);
+        }
+
+        .filter-pill.inactive {
+            background-color: #ffffff;
+            color: #64748b;
+            border-color: #e2e8f0;
+        }
+
+        .filter-pill.inactive:hover {
+            background-color: #f8fafc;
+            color: var(--primary-blue);
+        }
     </style>
 </head>
 
@@ -291,11 +404,11 @@
                             <i class="bi bi-house-door-fill"></i>
                             <span>Beranda Tutor</span>
                         </a>
-                            <a href="{{ ($activeTab ?? 'beranda') === 'beranda' ? '#jadwalSection' : route('tutor', ['tab' => 'beranda']) . '#jadwalSection' }}"
-                                class="nav-link-tutor">
-                                <i class="bi bi-calendar3"></i>
-                                <span>Jadwal Kelas Saya</span>
-                            </a>
+                        <a href="{{ route('tutor', ['tab' => 'jadwal']) }}"
+                            class="nav-link-tutor {{ ($activeTab ?? '') === 'jadwal' ? 'active' : '' }}">
+                            <i class="bi bi-calendar3"></i>
+                            <span>Jadwal Kelas Saya</span>
+                        </a>
                             <a href="#" class="nav-link-tutor" data-bs-toggle="modal" data-bs-target="#modalPresensi">
                                 <i class="bi bi-check2-square"></i>
                                 <span>Input Presensi Sesi</span>
@@ -374,6 +487,8 @@
                                     href="{{ route('tutor') }}">Portal Tutor</a></li>
                             @if (($activeTab ?? 'beranda') === 'sandi')
                                 <li class="breadcrumb-item active" aria-current="page">Pengaturan Sandi</li>
+                            @elseif (($activeTab ?? 'beranda') === 'jadwal')
+                                <li class="breadcrumb-item active" aria-current="page">Kalender & Jadwal Mengajar Pribadi</li>
                             @else
                                 <li class="breadcrumb-item active" aria-current="page">Beranda Tutor</li>
                             @endif
@@ -522,6 +637,382 @@
                             </form>
                         </div>
                     </div>
+                @elseif (($activeTab ?? 'beranda') === 'jadwal')
+                    <!-- ================= TAB KALENDER & JADWAL MENGAJAR PRIBADI ================= -->
+                    <!-- Header Tab Jadwal -->
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <h4 class="fw-bold text-dark mb-0">Kalender & Jadwal Mengajar Pribadi</h4>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1" style="font-size: 0.76rem;">
+                                    <i class="bi bi-shield-check me-1"></i> Data Pribadi Terisolasi
+                                </span>
+                            </div>
+                            <p class="text-muted mb-0" style="font-size: 0.88rem;">
+                                Menampilkan jadwal sesi kelas dan daftar siswa peserta yang hanya diampu oleh Anda 
+                                (<strong>{{ $tutorProfile->nama_lengkap ?? Auth::user()->name }}</strong>).
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => 'semua']) }}" class="btn btn-sm btn-light border shadow-sm rounded-3">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Muat Ulang
+                            </a>
+                            <button class="btn btn-sm btn-primary rounded-3 px-3" style="background-color: var(--primary-blue);" data-bs-toggle="modal" data-bs-target="#modalPresensi">
+                                <i class="bi bi-check2-circle me-1"></i> Presensi Cepat
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4 Kartu Metrik Ringkasan Pengajar -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fw-medium" style="font-size: 0.82rem;">Total Sesi Saya</span>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary-subtle text-primary" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-calendar3"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-number">{{ $totalSesiPribadi ?? 0 }}</div>
+                                <small class="text-muted" style="font-size: 0.74rem;">Seluruh sesi dialokasikan</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fw-medium" style="font-size: 0.82rem;">Sesi Aktif / Jadwal</span>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-warning-subtle text-warning" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-hourglass-split"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-number text-primary">{{ $totalSesiAktif ?? 0 }}</div>
+                                <small class="text-muted" style="font-size: 0.74rem;">Terjadwal & berlangsung</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fw-medium" style="font-size: 0.82rem;">Sesi Selesai</span>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-success-subtle text-success" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-check2-all"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-number text-success">{{ $totalSesiSelesai ?? 0 }}</div>
+                                <small class="text-muted" style="font-size: 0.74rem;">Selesai terlaksana</small>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="stat-card">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-muted fw-medium" style="font-size: 0.82rem;">Siswa Binaan</span>
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-info-subtle text-info" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-people-fill"></i>
+                                    </div>
+                                </div>
+                                <div class="stat-number text-info">{{ $totalSiswaTerdaftar ?? 0 }}</div>
+                                <small class="text-muted" style="font-size: 0.74rem;">Peserta aktif di kelas Anda</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Toolbar Filter & View Switcher -->
+                    <div class="card border-0 rounded-4 shadow-sm p-3 mb-4 bg-white">
+                        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                            <!-- Filter Tabs / Pills -->
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <span class="text-muted fw-semibold me-1" style="font-size: 0.82rem;"><i class="bi bi-funnel me-1"></i>Filter Jadwal:</span>
+                                <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => 'semua', 'bulan' => $bulanKalender, 'tahun' => $tahunKalender]) }}"
+                                    class="filter-pill {{ ($filterJadwal ?? 'semua') === 'semua' ? 'active' : 'inactive' }}">
+                                    Semua
+                                </a>
+                                <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => 'hari', 'bulan' => $bulanKalender, 'tahun' => $tahunKalender]) }}"
+                                    class="filter-pill {{ ($filterJadwal ?? '') === 'hari' ? 'active' : 'inactive' }}">
+                                    <i class="bi bi-sun"></i> Hari Ini
+                                </a>
+                                <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => 'minggu', 'bulan' => $bulanKalender, 'tahun' => $tahunKalender]) }}"
+                                    class="filter-pill {{ ($filterJadwal ?? '') === 'minggu' ? 'active' : 'inactive' }}">
+                                    <i class="bi bi-calendar-week"></i> Minggu Ini
+                                </a>
+                                <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => 'bulan', 'bulan' => $bulanKalender, 'tahun' => $tahunKalender]) }}"
+                                    class="filter-pill {{ ($filterJadwal ?? '') === 'bulan' ? 'active' : 'inactive' }}">
+                                    <i class="bi bi-calendar-month"></i> Bulan Ini
+                                </a>
+                            </div>
+
+                            <!-- Switcher Tampilan (Kalender vs Daftar) -->
+                            <div class="btn-group p-1 bg-light rounded-3 border" role="group" aria-label="Mode Tampilan">
+                                <button type="button" id="btnToggleKalender" class="btn btn-sm btn-white active shadow-sm rounded-2 fw-semibold px-3" style="font-size: 0.82rem;">
+                                    <i class="bi bi-calendar3 me-1"></i> Kalender Bulanan
+                                </button>
+                                <button type="button" id="btnToggleDaftar" class="btn btn-sm btn-light text-muted rounded-2 fw-semibold px-3" style="font-size: 0.82rem;">
+                                    <i class="bi bi-list-check me-1"></i> Daftar Jadwal & Siswa
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANDANGAN 1: KALENDER BULANAN INTERAKTIF -->
+                    <div id="containerKalenderView" class="mb-4">
+                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white">
+                            <!-- Header Kalender: Bulan, Tahun, Prev/Next -->
+                            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <h5 class="fw-bold text-dark mb-0">
+                                        <i class="bi bi-calendar-event text-primary me-2"></i>{{ $namaBulanTahun ?? date('F Y') }}
+                                    </h5>
+                                    <span class="badge bg-light text-muted border" style="font-size: 0.74rem;">WIB (UTC+7)</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => $filterJadwal, 'bulan' => $prevMonth, 'tahun' => $prevYear]) }}"
+                                        class="btn btn-sm btn-outline-secondary rounded-3 px-2 py-1" title="Bulan Sebelumnya">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                    <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => $filterJadwal, 'bulan' => (int)date('n'), 'tahun' => (int)date('Y')]) }}"
+                                        class="btn btn-sm btn-light border rounded-3 px-3 py-1" style="font-size: 0.82rem;">
+                                        Hari Ini
+                                    </a>
+                                    <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => $filterJadwal, 'bulan' => $nextMonth, 'tahun' => $nextYear]) }}"
+                                        class="btn btn-sm btn-outline-secondary rounded-3 px-2 py-1" title="Bulan Berikutnya">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Header Nama Hari (Sen - Min) -->
+                            <div class="calendar-grid mb-2">
+                                <div class="calendar-header-day text-secondary">Sen</div>
+                                <div class="calendar-header-day text-secondary">Sel</div>
+                                <div class="calendar-header-day text-secondary">Rab</div>
+                                <div class="calendar-header-day text-secondary">Kam</div>
+                                <div class="calendar-header-day text-secondary">Jum</div>
+                                <div class="calendar-header-day text-primary">Sab</div>
+                                <div class="calendar-header-day text-danger">Min</div>
+                            </div>
+
+                            <!-- Grid Tanggal Kalender -->
+                            <div class="calendar-grid">
+                                {{-- Sel kosong sebelum hari ke-1 --}}
+                                @for ($emptyDay = 1; $emptyDay < $startDayOfWeek; $emptyDay++)
+                                    <div class="calendar-day-cell other-month"></div>
+                                @endfor
+
+                                {{-- Sel Tanggal Bulan Berjalan --}}
+                                @for ($day = 1; $day <= $daysInMonth; $day++)
+                                    @php
+                                        $tglStr = sprintf('%04d-%02d-%02d', $tahunKalender, $bulanKalender, $day);
+                                        $isToday = ($tglStr === date('Y-m-d'));
+                                        $dayEvents = $jadwalPerTanggal[$tglStr] ?? collect();
+                                    @endphp
+                                    <div class="calendar-day-cell {{ $isToday ? 'is-today' : '' }}">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="calendar-date-number">{{ $day }}</span>
+                                            @if ($dayEvents->isNotEmpty())
+                                                <span class="badge rounded-pill bg-primary" style="font-size: 0.65rem;">
+                                                    {{ $dayEvents->count() }}
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        {{-- Daftar Jadwal pada tanggal ini --}}
+                                        <div class="calendar-events-list flex-grow-1 overflow-auto" style="max-height: 120px;">
+                                            @foreach ($dayEvents as $itemJadwal)
+                                                @php
+                                                    $pesertaCount = $itemJadwal->pesertaJadwal->count();
+                                                    $jamText = ($itemJadwal->jam_mulai ? substr($itemJadwal->jam_mulai, 0, 5) : ($itemJadwal->waktu_mulai ? substr($itemJadwal->waktu_mulai, 0, 5) : '09:00'));
+                                                @endphp
+                                                <div class="calendar-event-badge" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalDetailJadwal{{ $itemJadwal->id }}"
+                                                    title="{{ $itemJadwal->kelas ?? $itemJadwal->program }} ({{ $pesertaCount }} Siswa)">
+                                                    <div class="fw-bold text-truncate" style="font-size: 0.72rem;">
+                                                        <i class="bi bi-clock me-1"></i>{{ $jamText }}
+                                                    </div>
+                                                    <div class="text-truncate text-dark" style="font-size: 0.7rem;">
+                                                        {{ $itemJadwal->kelas ?? $itemJadwal->program ?? 'Kelas Robotika' }}
+                                                    </div>
+                                                    <div class="d-flex align-items-center justify-content-between mt-1 text-muted" style="font-size: 0.66rem;">
+                                                        <span><i class="bi bi-people me-1"></i>{{ $pesertaCount }} Siswa</span>
+                                                        <span class="badge {{ $itemJadwal->moda === 'Online' ? 'bg-info-subtle text-info' : 'bg-secondary-subtle text-secondary' }}" style="font-size: 0.6rem;">{{ $itemJadwal->moda ?? 'Offline' }}</span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endfor
+                            </div>
+
+                            <!-- Petunjuk Legenda Kalender -->
+                            <div class="d-flex align-items-center gap-3 mt-4 pt-3 border-top flex-wrap" style="font-size: 0.78rem;">
+                                <span class="text-muted fw-semibold">Keterangan:</span>
+                                <span class="d-flex align-items-center gap-1 text-muted">
+                                    <span class="d-inline-block rounded-circle bg-primary" style="width: 10px; height: 10px;"></span> Hari Ini
+                                </span>
+                                <span class="d-flex align-items-center gap-1 text-muted">
+                                    <span class="d-inline-block rounded" style="width: 12px; height: 12px; background: #eaf0fd; border-left: 3px solid #1e5ee6;"></span> Sesi Kelas Anda
+                                </span>
+                                <span class="d-flex align-items-center gap-1 text-muted">
+                                    <i class="bi bi-info-circle text-primary"></i> Klik pada kotak sesi di kalender untuk melihat rincian dan daftar siswa peserta.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PANDANGAN 2: DAFTAR JADWAL LENGKAP & DAFTAR SISWA PESERTA -->
+                    <div id="containerDaftarView" class="mb-4 d-none">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="bi bi-card-checklist text-primary me-2"></i>Daftar Sesi Mengajar & Siswa Peserta
+                            </h5>
+                            <span class="text-muted" style="font-size: 0.82rem;">
+                                Menampilkan {{ $filteredJadwal->count() }} sesi sesuai filter: <strong>{{ ucfirst($filterJadwal) }}</strong>
+                            </span>
+                        </div>
+
+                        @if ($filteredJadwal->isEmpty())
+                            <div class="card border-0 rounded-4 shadow-sm p-5 text-center bg-white">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center bg-light text-muted mx-auto mb-3" style="width: 60px; height: 60px;">
+                                    <i class="bi bi-calendar-x fs-3"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">Tidak Ada Jadwal Mengajar</h6>
+                                <p class="text-muted mb-3" style="font-size: 0.85rem;">
+                                    Tidak ditemukan jadwal mengajar aktif untuk tutor <strong>{{ $tutorProfile->nama_lengkap ?? Auth::user()->name }}</strong> pada filter ini.
+                                </p>
+                                <div>
+                                    <a href="{{ route('tutor', ['tab' => 'jadwal', 'filter' => 'semua']) }}" class="btn btn-sm btn-primary rounded-3 px-3" style="background-color: var(--primary-blue);">
+                                        Tampilkan Semua Jadwal
+                                    </a>
+                                </div>
+                            </div>
+                        @else
+                            <div class="row g-3">
+                                @foreach ($filteredJadwal as $jadwalItem)
+                                    @php
+                                        $pesertaList = $jadwalItem->pesertaJadwal;
+                                        $pesertaCount = $pesertaList->count();
+                                        $jamMulaiFormatted = $jadwalItem->jam_mulai ? substr($jadwalItem->jam_mulai, 0, 5) : ($jadwalItem->waktu_mulai ? substr($jadwalItem->waktu_mulai, 0, 5) : '09:00');
+                                        $jamSelesaiFormatted = $jadwalItem->jam_selesai ? substr($jadwalItem->jam_selesai, 0, 5) : ($jadwalItem->waktu_selesai ? substr($jadwalItem->waktu_selesai, 0, 5) : '10:30');
+                                        $statusClass = match(strtolower((string)$jadwalItem->status)) {
+                                            'selesai' => 'bg-secondary-subtle text-secondary',
+                                            'berlangsung' => 'bg-warning-subtle text-warning-emphasis',
+                                            'dibatalkan' => 'bg-danger-subtle text-danger',
+                                            default => 'bg-success-subtle text-success',
+                                        };
+                                    @endphp
+                                    <div class="col-12">
+                                        <div class="card border-0 rounded-4 shadow-sm p-4 bg-white">
+                                            <!-- Header Jadwal Card -->
+                                            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 pb-3 border-bottom">
+                                                <div>
+                                                    <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                                        <span class="badge {{ $statusClass }} rounded-pill px-3 py-1 fw-semibold" style="font-size: 0.74rem;">
+                                                            {{ $jadwalItem->status ?? 'Terjadwal' }}
+                                                        </span>
+                                                        <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1" style="font-size: 0.74rem;">
+                                                            <i class="bi bi-geo-alt me-1"></i>{{ $jadwalItem->moda ?? 'Offline' }} ({{ $jadwalItem->lokasi ?? 'Lab Robotika' }})
+                                                        </span>
+                                                        <span class="text-muted" style="font-size: 0.8rem;">
+                                                            <i class="bi bi-calendar3 me-1"></i>{{ $jadwalItem->tanggal ? \Carbon\Carbon::parse($jadwalItem->tanggal)->isoFormat('dddd, D MMMM Y') : 'Sesuai Jadwal' }}
+                                                        </span>
+                                                    </div>
+                                                    <h5 class="fw-bold text-dark mb-0">
+                                                        {{ $jadwalItem->kelas ?? $jadwalItem->program ?? 'Kelas Robotika' }}
+                                                    </h5>
+                                                    <small class="text-muted">
+                                                        Waktu: <strong>{{ $jamMulaiFormatted }} - {{ $jamSelesaiFormatted }} WIB</strong> • Tutor Pengampu: <strong>{{ $jadwalItem->tutor ?? $tutorProfile->nama_lengkap }}</strong>
+                                                    </small>
+                                                </div>
+
+                                                <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                                                    <span class="badge bg-light text-dark border px-3 py-2 rounded-3" style="font-size: 0.82rem;">
+                                                        <i class="bi bi-people-fill text-primary me-1"></i> {{ $pesertaCount }} Siswa Terdaftar
+                                                    </span>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#modalDetailJadwal{{ $jadwalItem->id }}">
+                                                        <i class="bi bi-eye me-1"></i> Detail
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Bagian Daftar Siswa Peserta Terdaftar -->
+                                            <div class="pt-3">
+                                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                                    <h6 class="fw-semibold text-dark mb-0" style="font-size: 0.88rem;">
+                                                        <i class="bi bi-person-lines-fill text-primary me-2"></i>Daftar Siswa Peserta Kelas
+                                                    </h6>
+                                                    <small class="text-muted" style="font-size: 0.76rem;">Kapasitas Maksimal: 12 Siswa / Sesi</small>
+                                                </div>
+
+                                                @if ($pesertaList->isEmpty())
+                                                    <div class="p-3 bg-light rounded-3 text-center text-muted" style="font-size: 0.82rem;">
+                                                        <i class="bi bi-info-circle me-1"></i> Belum ada siswa yang dialokasikan ke jadwal kelas ini.
+                                                    </div>
+                                                @else
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                                                            <thead class="table-light">
+                                                                <tr>
+                                                                    <th style="width: 40px;" class="text-center">No</th>
+                                                                    <th>Nama Lengkap Siswa</th>
+                                                                    <th>NISN</th>
+                                                                    <th>Jenjang & Kelas</th>
+                                                                    <th>Paket Siswa</th>
+                                                                    <th>Status Kehadiran</th>
+                                                                    <th>Catatan</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                @foreach ($pesertaList as $idx => $peserta)
+                                                                    @php
+                                                                        $siswa = $peserta->siswa;
+                                                                        $statusPresensiClass = match(strtolower((string)$peserta->status_kehadiran)) {
+                                                                            'hadir' => 'bg-success-subtle text-success',
+                                                                            'izin' => 'bg-info-subtle text-info',
+                                                                            'sakit' => 'bg-warning-subtle text-warning-emphasis',
+                                                                            'alpa' => 'bg-danger-subtle text-danger',
+                                                                            default => 'bg-primary-subtle text-primary',
+                                                                        };
+                                                                    @endphp
+                                                                    <tr>
+                                                                        <td class="text-center text-muted">{{ $idx + 1 }}</td>
+                                                                        <td>
+                                                                            <div class="fw-bold text-dark">{{ $siswa->nama_lengkap ?? 'Siswa #'.$peserta->id_siswa }}</div>
+                                                                            <small class="text-muted">Panggilan: {{ $siswa->nama_panggilan ?? '-' }}</small>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge bg-light text-secondary border font-monospace">
+                                                                                {{ $siswa->nisn ?? '-' }}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge bg-light text-dark border">
+                                                                                {{ $siswa->jenjang ?? 'SD' }} • Kelas {{ $siswa->kelas ?? '3' }}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="text-secondary">
+                                                                                {{ $peserta->paketSiswa->paket->nama_paket ?? 'Paket Robotika' }}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="badge {{ $statusPresensiClass }} rounded-pill px-2 py-1">
+                                                                                {{ $peserta->status_kehadiran ?? 'Terdaftar' }}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <span class="text-muted">{{ $peserta->catatan ?: '-' }}</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                 @else
                     <!-- Greeting & Date Row -->
                     <div
@@ -617,128 +1108,121 @@
                         <div class="col-12 col-lg-8">
                             <div class="bg-white p-3 p-md-4 rounded-4 border shadow-sm h-100">
                                 <!-- Card Header -->
-                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-2">
-                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.98rem;">Jadwal kelas hari ini
+                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.98rem;">
+                                            @if (($filterJadwal ?? 'hari') === 'minggu')
+                                                Jadwal Mengajar Minggu Ini
+                                            @elseif (($filterJadwal ?? 'hari') === 'semua')
+                                                Semua Jadwal Mengajar Pribadi
+                                            @else
+                                                Jadwal Mengajar Hari Ini
+                                            @endif
                                         </h6>
                                         <span class="badge bg-light text-secondary border rounded-pill px-2 py-1"
-                                            style="font-size: 0.72rem;">3 kelas</span>
+                                            style="font-size: 0.72rem;">{{ $jadwalHariIni->count() }} sesi</span>
                                     </div>
-                                    <a href="#" class="text-primary text-decoration-none fw-semibold"
-                                        style="font-size: 0.82rem;">
-                                        Semua jadwal <i class="bi bi-arrow-right"></i>
-                                    </a>
+                                    <!-- Filter Pills: Hari Ini vs Minggu Ini vs Semua -->
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="Filter Jadwal">
+                                        <a href="{{ route('tutor', ['filter' => 'hari']) }}"
+                                            class="btn btn-outline-primary {{ ($filterJadwal ?? 'hari') === 'hari' ? 'active' : '' }}"
+                                            style="font-size: 0.78rem;">
+                                            <i class="bi bi-calendar-day me-1"></i>Hari Ini
+                                        </a>
+                                        <a href="{{ route('tutor', ['filter' => 'minggu']) }}"
+                                            class="btn btn-outline-primary {{ ($filterJadwal ?? 'hari') === 'minggu' ? 'active' : '' }}"
+                                            style="font-size: 0.78rem;">
+                                            <i class="bi bi-calendar-week me-1"></i>Minggu Ini
+                                        </a>
+                                        <a href="{{ route('tutor', ['filter' => 'semua']) }}"
+                                            class="btn btn-outline-primary {{ ($filterJadwal ?? 'hari') === 'semua' ? 'active' : '' }}"
+                                            style="font-size: 0.78rem;">
+                                            <i class="bi bi-calendar3 me-1"></i>Semua
+                                        </a>
+                                    </div>
                                 </div>
 
                                 <!-- Schedule Items List -->
                                 <div>
-                                    <!-- Class 1: Selesai -->
-                                    <div
-                                        class="schedule-item d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-                                        <div class="d-flex align-items-start gap-3">
-                                            <div class="text-center pe-3 border-end" style="min-width: 65px;">
-                                                <span class="fw-bold d-block text-dark"
-                                                    style="font-size: 0.92rem;">09.00</span>
-                                                <small class="text-muted" style="font-size: 0.75rem;">10.30</small>
-                                            </div>
-                                            <div>
-                                                <div class="d-flex align-items-center gap-2 mb-1">
-                                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">
-                                                        Controller & AI</h6>
-                                                    <span class="badge-level">L3-A • Level 3</span>
+                                    @forelse ($jadwalHariIni as $j)
+                                        @php
+                                            $jamMulai = $j->jam_mulai ?? $j->waktu_mulai ?? '09.00';
+                                            $jamSelesai = $j->jam_selesai ?? $j->waktu_selesai ?? '10.30';
+                                            $status = $j->status ?? 'Terjadwal';
+                                            $pesertaCount = $j->siswaPeserta ? $j->siswaPeserta->count() : 0;
+                                            $isCompleted = (strcasecmp($status, 'Selesai') === 0);
+                                            $isActive = (strcasecmp($status, 'Berlangsung') === 0);
+                                        @endphp
+                                        <div class="schedule-item {{ $isActive ? 'active-schedule' : '' }} d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-3">
+                                            <div class="d-flex align-items-start gap-3">
+                                                <div class="text-center pe-3 border-end" style="min-width: 65px;">
+                                                    <span class="fw-bold d-block {{ $isActive ? 'text-primary' : 'text-dark' }}"
+                                                        style="font-size: 0.92rem;">{{ $jamMulai }}</span>
+                                                    <small class="text-muted" style="font-size: 0.75rem;">{{ $jamSelesai }}</small>
                                                 </div>
-                                                <p class="text-muted mb-1" style="font-size: 0.82rem;">Sesi 05 - Sensor
-                                                    ultrasonik & logika kontrol</p>
-                                                <div class="d-flex align-items-center gap-3 text-muted"
-                                                    style="font-size: 0.75rem;">
-                                                    <span><i class="bi bi-geo-alt me-1 text-primary"></i>Lab B - Robotics
-                                                        Hub</span>
-                                                    <span><i class="bi bi-people me-1"></i>10 siswa</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2 ms-auto ms-md-0">
-                                            <span class="badge px-2 py-1 rounded-pill"
-                                                style="background-color: #dcfce7; color: #15803d; font-size: 0.74rem;">Selesai</span>
-                                            <button class="btn btn-outline-secondary btn-sm rounded-3 px-3 py-1 fw-medium"
-                                                style="font-size: 0.8rem;" data-bs-toggle="modal"
-                                                data-bs-target="#modalPresensi">
-                                                Input presensi
-                                            </button>
-                                        </div>
-                                    </div>
+                                                <div>
+                                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">
+                                                            {{ $j->program ?? $j->kelas ?? 'Kelas Robotika' }}
+                                                        </h6>
+                                                        <span class="badge-level">{{ $j->formatted_tanggal ?? $j->tanggal }}</span>
+                                                    </div>
+                                                    <p class="text-muted mb-1" style="font-size: 0.82rem;">
+                                                        Tutor: <strong class="text-dark">{{ $j->tutor_pengampu ?? $j->tutor }}</strong>
+                                                        @if ($j->moda)
+                                                            • <span class="badge bg-light text-dark border">{{ $j->moda }}</span>
+                                                        @endif
+                                                    </p>
+                                                    <div class="d-flex align-items-center gap-3 text-muted" style="font-size: 0.75rem;">
+                                                        <span><i class="bi bi-geo-alt me-1 text-primary"></i>{{ $j->lokasi ?? 'Lab Robotika' }}</span>
+                                                        <span><i class="bi bi-people me-1"></i>{{ $pesertaCount }} siswa terdaftar</span>
+                                                    </div>
 
-                                    <!-- Class 2: Active / 15 Menit Lagi -->
-                                    <div
-                                        class="schedule-item active-schedule d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-                                        <div class="d-flex align-items-start gap-3">
-                                            <div class="text-center pe-3 border-end" style="min-width: 65px;">
-                                                <span class="fw-bold d-block text-primary"
-                                                    style="font-size: 0.92rem;">13.00</span>
-                                                <small class="text-muted" style="font-size: 0.75rem;">14.30</small>
-                                            </div>
-                                            <div>
-                                                <div class="d-flex align-items-center gap-2 mb-1">
-                                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">
-                                                        Controller & AI</h6>
-                                                    <span class="badge-level">L3-B • Level 3</span>
-                                                </div>
-                                                <p class="text-muted mb-1" style="font-size: 0.82rem;">Sesi 06 - Pemrograman
-                                                    robot line follower</p>
-                                                <div class="d-flex align-items-center gap-3 text-muted"
-                                                    style="font-size: 0.75rem;">
-                                                    <span><i class="bi bi-geo-alt me-1 text-primary"></i>Lab B - Robotics
-                                                        Hub</span>
-                                                    <span><i class="bi bi-people me-1"></i>10 siswa</span>
+                                                    {{-- Daftar Siswa Peserta Kelas --}}
+                                                    @php
+                                                        $daftarSiswa = $j->siswaPeserta ?? collect();
+                                                        if ($daftarSiswa->isEmpty() && $j->pesertaJadwal) {
+                                                            $daftarSiswa = $j->pesertaJadwal->map(fn($pj) => $pj->siswa)->filter();
+                                                        }
+                                                    @endphp
+                                                    @if ($daftarSiswa->isNotEmpty())
+                                                        <div class="mt-2 pt-2 border-top d-flex flex-wrap align-items-center gap-1">
+                                                            <span class="text-muted fw-semibold me-1" style="font-size: 0.73rem;">
+                                                                <i class="bi bi-person-check me-1 text-primary"></i>Peserta:
+                                                            </span>
+                                                            @foreach ($daftarSiswa as $siswa)
+                                                                <span class="badge bg-light text-dark border rounded-pill px-2 py-1" style="font-size: 0.72rem;">
+                                                                    {{ $siswa->nama_panggilan ?? $siswa->nama_lengkap ?? $siswa->nama }}
+                                                                </span>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="d-flex align-items-center gap-2 ms-auto ms-md-0">
-                                            <span class="text-primary fw-semibold" style="font-size: 0.78rem;">15 menit
-                                                lagi</span>
-                                            <button class="btn btn-primary btn-sm rounded-3 px-3 py-1 fw-semibold shadow-sm"
-                                                style="background-color: var(--primary-blue); font-size: 0.8rem;"
-                                                data-bs-toggle="modal" data-bs-target="#modalBukaKelas">
-                                                Buka kelas
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Class 3: Terjadwal -->
-                                    <div
-                                        class="schedule-item d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-0">
-                                        <div class="d-flex align-items-start gap-3">
-                                            <div class="text-center pe-3 border-end" style="min-width: 65px;">
-                                                <span class="fw-bold d-block text-dark"
-                                                    style="font-size: 0.92rem;">15.00</span>
-                                                <small class="text-muted" style="font-size: 0.75rem;">16.30</small>
-                                            </div>
-                                            <div>
-                                                <div class="d-flex align-items-center gap-2 mb-1">
-                                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem;">
-                                                        Controller & AI</h6>
-                                                    <span class="badge-level">L3-C • Level 3</span>
-                                                </div>
-                                                <p class="text-muted mb-1" style="font-size: 0.82rem;">Sesi 03 - Pengenalan
-                                                    machine learning</p>
-                                                <div class="d-flex align-items-center gap-3 text-muted"
-                                                    style="font-size: 0.75rem;">
-                                                    <span><i class="bi bi-geo-alt me-1 text-primary"></i>Lab B - Robotics
-                                                        Hub</span>
-                                                    <span><i class="bi bi-people me-1"></i>8 siswa</span>
-                                                </div>
+                                            <div class="d-flex align-items-center gap-2 ms-auto ms-md-0">
+                                                @if ($isCompleted)
+                                                    <span class="badge px-2 py-1 rounded-pill"
+                                                        style="background-color: #dcfce7; color: #15803d; font-size: 0.74rem;">Selesai</span>
+                                                @elseif ($isActive)
+                                                    <span class="badge px-2 py-1 rounded-pill bg-primary text-white"
+                                                        style="font-size: 0.74rem;">Berlangsung</span>
+                                                @else
+                                                    <span class="badge px-2 py-1 rounded-pill bg-light text-secondary border"
+                                                        style="font-size: 0.74rem;">Terjadwal</span>
+                                                @endif
+                                                <button class="btn btn-outline-secondary btn-sm rounded-3 px-3 py-1 fw-medium"
+                                                    style="font-size: 0.8rem;" data-bs-toggle="modal" data-bs-target="#modalPresensi">
+                                                    Presensi
+                                                </button>
                                             </div>
                                         </div>
-                                        <div class="d-flex align-items-center gap-2 ms-auto ms-md-0">
-                                            <span class="badge px-2 py-1 rounded-pill bg-light text-secondary border"
-                                                style="font-size: 0.74rem;">Terjadwal</span>
-                                            <button class="btn btn-outline-secondary btn-sm rounded-3 px-3 py-1 fw-medium"
-                                                style="font-size: 0.8rem;" data-bs-toggle="modal"
-                                                data-bs-target="#modalDetailSesi">
-                                                Detail sesi
-                                            </button>
+                                    @empty
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="bi bi-calendar-x fs-2 d-block text-secondary mb-2"></i>
+                                            <p class="mb-0 fw-medium">Tidak ada jadwal mengajar pada periode ini.</p>
+                                            <small class="text-muted">Gunakan tombol filter di atas untuk melihat jadwal hari lain atau minggu ini.</small>
                                         </div>
-                                    </div>
+                                    @endforelse
                                 </div>
 
                                 <!-- Alert Footer -->
@@ -965,6 +1449,122 @@
         <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
             <div class="modal-content rounded-4 border-0 p-3">
                 <div class="modal-header border-0 pb-0">
+                    <h5 class="fw-bold text-dark mb-0">Pengaturan Sandi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-3">
+                    <div class="avatar-initials mx-auto mb-3" style="width: 50px; height: 50px;">
+                        <i class="bi bi-shield-lock fs-4"></i>
+                    </div>
+                    <p class="text-muted mb-0" style="font-size: 0.88rem;">
+                        Untuk keamanan akun pengajar Anda, Anda dapat memperbarui kata sandi secara berkala di tab pengaturan sandi.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <a href="{{ route('tutor', ['tab' => 'sandi']) }}" class="btn btn-primary rounded-3 px-4" style="background-color: var(--primary-blue);">
+                        Buka Pengaturan Sandi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals Detail Jadwal Tutor & Siswa Peserta -->
+    @if (isset($allJadwalTutor) && $allJadwalTutor->isNotEmpty())
+        @foreach ($allJadwalTutor as $modalJadwal)
+            @php
+                $modalPeserta = $modalJadwal->pesertaJadwal;
+                $jamMulai = $modalJadwal->jam_mulai ? substr($modalJadwal->jam_mulai, 0, 5) : ($modalJadwal->waktu_mulai ? substr($modalJadwal->waktu_mulai, 0, 5) : '09:00');
+                $jamSelesai = $modalJadwal->jam_selesai ? substr($modalJadwal->jam_selesai, 0, 5) : ($modalJadwal->waktu_selesai ? substr($modalJadwal->waktu_selesai, 0, 5) : '10:30');
+            @endphp
+            <div class="modal fade" id="modalDetailJadwal{{ $modalJadwal->id }}" tabindex="-1" aria-labelledby="modalDetailJadwalLabel{{ $modalJadwal->id }}" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content rounded-4 border-0 p-3 p-md-4">
+                        <div class="modal-header border-0 pb-2">
+                            <div>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 mb-1" style="font-size: 0.76rem;">
+                                    {{ $modalJadwal->status ?? 'Terjadwal' }} • {{ $modalJadwal->moda ?? 'Offline' }}
+                                </span>
+                                <h5 class="fw-bold text-dark mb-0" id="modalDetailJadwalLabel{{ $modalJadwal->id }}">
+                                    {{ $modalJadwal->kelas ?? $modalJadwal->program ?? 'Detail Sesi Kelas Robotika' }}
+                                </h5>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body pt-2">
+                            <div class="row g-3 p-3 bg-light rounded-3 mb-3" style="font-size: 0.85rem;">
+                                <div class="col-sm-6">
+                                    <span class="text-muted d-block" style="font-size: 0.76rem;">Tanggal & Waktu</span>
+                                    <strong class="text-dark">
+                                        <i class="bi bi-calendar3 me-1 text-primary"></i>
+                                        {{ $modalJadwal->tanggal ? \Carbon\Carbon::parse($modalJadwal->tanggal)->isoFormat('dddd, D MMMM Y') : 'Sesuai Jadwal' }}
+                                    </strong>
+                                    <div class="text-secondary">{{ $jamMulai }} - {{ $jamSelesai }} WIB</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <span class="text-muted d-block" style="font-size: 0.76rem;">Lokasi / Ruangan & Pengampu</span>
+                                    <strong class="text-dark">
+                                        <i class="bi bi-geo-alt me-1 text-danger"></i>
+                                        {{ $modalJadwal->lokasi ?? 'Lab Robotika' }}
+                                    </strong>
+                                    <div class="text-secondary">Tutor: {{ $modalJadwal->tutor ?? $tutorProfile->nama_lengkap }}</div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <h6 class="fw-bold text-dark mb-0" style="font-size: 0.9rem;">
+                                    <i class="bi bi-people-fill text-primary me-2"></i>Daftar Siswa Peserta ({{ $modalPeserta->count() }} Terdaftar)
+                                </h6>
+                                <span class="badge bg-light text-muted border" style="font-size: 0.75rem;">Maksimal 12 Peserta</span>
+                            </div>
+
+                            @if ($modalPeserta->isEmpty())
+                                <div class="p-3 bg-light rounded-3 text-center text-muted" style="font-size: 0.84rem;">
+                                    Belum ada siswa yang didaftarkan ke sesi kelas ini.
+                                </div>
+                            @else
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0" style="font-size: 0.82rem;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="width: 35px;" class="text-center">No</th>
+                                                <th>Nama Siswa</th>
+                                                <th>NISN</th>
+                                                <th>Jenjang</th>
+                                                <th>Status</th>
+                                                <th>Catatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($modalPeserta as $num => $p)
+                                                @php $s = $p->siswa; @endphp
+                                                <tr>
+                                                    <td class="text-center text-muted">{{ $num + 1 }}</td>
+                                                    <td>
+                                                        <div class="fw-bold text-dark">{{ $s->nama_lengkap ?? 'Siswa #'.$p->id_siswa }}</div>
+                                                        <small class="text-muted">Panggilan: {{ $s->nama_panggilan ?? '-' }}</small>
+                                                    </td>
+                                                    <td><span class="badge bg-light text-secondary border font-monospace">{{ $s->nisn ?? '-' }}</span></td>
+                                                    <td>{{ $s->jenjang ?? 'SD' }} Kelas {{ $s->kelas ?? '3' }}</td>
+                                                    <td><span class="badge bg-success-subtle text-success">{{ $p->status_kehadiran ?? 'Terdaftar' }}</span></td>
+                                                    <td class="text-muted">{{ $p->catatan ?: '-' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="modal-footer border-0 pt-0">
+                            <button type="button" class="btn btn-light rounded-3 px-3" data-bs-dismiss="modal">Tutup</button>
+                            <button type="button" class="btn btn-primary rounded-3 px-4" style="background-color: var(--primary-blue);" data-bs-dismiss="modal">Presensi Selesai</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    @endif
+                <div class="modal-header border-0 pb-0">
                     <h5 class="fw-bold text-dark mb-0">Ubah Kata Sandi</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -1107,6 +1707,32 @@
                     icon.classList.add('bi-eye');
                 }
             }
+        }
+
+        // Switcher Mode Tampilan: Kalender Bulanan vs Daftar Jadwal
+        const btnToggleKalender = document.getElementById('btnToggleKalender');
+        const btnToggleDaftar = document.getElementById('btnToggleDaftar');
+        const containerKalenderView = document.getElementById('containerKalenderView');
+        const containerDaftarView = document.getElementById('containerDaftarView');
+
+        if (btnToggleKalender && btnToggleDaftar && containerKalenderView && containerDaftarView) {
+            btnToggleKalender.addEventListener('click', function() {
+                containerKalenderView.classList.remove('d-none');
+                containerDaftarView.classList.add('d-none');
+                btnToggleKalender.classList.add('active', 'btn-white', 'shadow-sm');
+                btnToggleKalender.classList.remove('btn-light', 'text-muted');
+                btnToggleDaftar.classList.remove('active', 'btn-white', 'shadow-sm');
+                btnToggleDaftar.classList.add('btn-light', 'text-muted');
+            });
+
+            btnToggleDaftar.addEventListener('click', function() {
+                containerDaftarView.classList.remove('d-none');
+                containerKalenderView.classList.add('d-none');
+                btnToggleDaftar.classList.add('active', 'btn-white', 'shadow-sm');
+                btnToggleDaftar.classList.remove('btn-light', 'text-muted');
+                btnToggleKalender.classList.remove('active', 'btn-white', 'shadow-sm');
+                btnToggleKalender.classList.add('btn-light', 'text-muted');
+            });
         }
 
         // Anti-Back-Button: Cegah tombol Back browser menampilkan halaman dari cache setelah logout

@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
@@ -33,6 +34,11 @@ class AdminController extends Controller
         // Proteksi hak akses: Jika tutor mencoba akses dashboard admin, alihkan ke portal tutor
         if ($request->session()->get('role') === 'Tutor' || (Auth::check() && str_starts_with(Auth::user()->username, 'tutor.'))) {
             return redirect()->route('tutor');
+        }
+
+        // Proteksi hak akses: Jika orang tua mencoba akses dashboard admin, alihkan ke portal orang tua
+        if ($request->session()->get('role') === 'Orang_Tua' || (Auth::check() && Auth::user()->isOrangTua())) {
+            return redirect()->route('orang-tua');
         }
 
         // Pastikan tabel-tabel dashboard ada di database
@@ -339,8 +345,16 @@ class AdminController extends Controller
     /**
      * Tampilkan halaman Akun Keluarga & Siswa (Panel Admin).
      */
-    public function keluarga(Request $request): View
+    public function keluarga(Request $request): View|RedirectResponse
     {
+        // Proteksi hak akses: Jika orang tua mencoba akses panel keluarga admin, alihkan ke portal orang tua
+        if ($request->session()->get('role') === 'Orang_Tua' || (Auth::check() && Auth::user()->isOrangTua())) {
+            return redirect()->route('orang-tua');
+        }
+        if ($request->session()->get('role') === 'Tutor' || (Auth::check() && str_starts_with(Auth::user()->username, 'tutor.'))) {
+            return redirect()->route('tutor');
+        }
+
         $this->ensureTablesExist();
 
         $search = trim((string) $request->input('q', ''));
@@ -400,7 +414,7 @@ class AdminController extends Controller
             ],
         ]);
 
-        $query = Siswa::query();
+        $query = Siswa::with(['keluarga.secondaryParent']);
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -951,7 +965,7 @@ class AdminController extends Controller
             'nama' => ['required_without:nama_lengkap', 'nullable', 'string', 'max:150'],
             'nama_lengkap' => ['required_without:nama', 'nullable', 'string', 'max:150'],
             'nama_panggilan' => ['nullable', 'string', 'max:50'],
-            'nisn' => ['nullable', 'string', 'max:20'],
+            'nisn' => ['nullable', 'string', 'regex:/^[0-9]{10}$/'],
             'jenjang' => ['nullable', 'in:TK,SD'],
             'kelas' => ['nullable', 'string', 'max:20'],
             'tanggal_lahir' => ['nullable', 'date'],
@@ -988,6 +1002,7 @@ class AdminController extends Controller
             'total_sesi' => ['nullable', 'integer', 'min:1'],
         ], [
             'nama_wali.required' => 'Nama Primary Parent (Wali) wajib diisi.',
+            'nisn.regex' => 'NISN harus terdiri dari tepat 10 digit angka.',
             'nomor_whatsapp.regex' => 'Nomor WhatsApp tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
             'nomor_whatsapp_secondary_parent.regex' => 'Nomor WhatsApp Secondary Parent tidak valid. Gunakan format diawali 08 atau +62 dengan minimal 10 digit angka.',
             'pin_siswa.regex' => 'PIN Siswa harus berupa angka tepat 6 digit (0-9).',
@@ -1494,6 +1509,15 @@ class AdminController extends Controller
         $primary = $keluarga->orangTua->firstWhere('jenis_wali', 'Primary_Parent');
         $secondary = $keluarga->orangTua->firstWhere('jenis_wali', 'Secondary_Parent');
 
+        if ($secondary && $secondary->id_pengguna && Schema::hasTable('pengguna')) {
+            $u = DB::table('pengguna')->where('id_pengguna', $secondary->id_pengguna)->value('username');
+            $secondary->setAttribute('username', $u);
+        }
+        if ($primary && $primary->id_pengguna && Schema::hasTable('pengguna')) {
+            $u = DB::table('pengguna')->where('id_pengguna', $primary->id_pengguna)->value('username');
+            $primary->setAttribute('username', $u);
+        }
+
         return response()->json([
             'success' => true,
             'id_keluarga' => $keluarga->id_keluarga,
@@ -1509,6 +1533,364 @@ class AdminController extends Controller
                 'nama' => $s->nama_lengkap ?: $s->nama,
             ]),
         ]);
+    }
+
+    /**
+     * Endpoint untuk menampilkan detail Akun Keluarga beserta kontak wali & domisili.
+     * GET /api/admin/keluarga/{id}
+     * GET /api/keluarga/{id}
+     */
+    public function showKeluarga(Request $request, int $id): JsonResponse
+    {
+        $this->ensureTablesExist();
+
+        $keluarga = null;
+        if (Schema::hasTable('akun_keluarga')) {
+            $keluarga = AkunKeluarga::with(['orangTua', 'siswa'])->find($id);
+        }
+
+        if (!$keluarga) {
+            return response()->json([
+                'success' => false,
+                'message' => "Akun Keluarga dengan ID {$id} tidak ditemukan.",
+            ], 404);
+        }
+
+        $primary = $keluarga->orangTua->firstWhere('jenis_wali', 'Primary_Parent') ?? $keluarga->orangTua->first();
+        $secondary = $keluarga->orangTua->firstWhere('jenis_wali', 'Secondary_Parent');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id_keluarga' => $keluarga->id_keluarga,
+                'nama_keluarga' => $keluarga->nama_keluarga,
+                'alamat_domisili' => $keluarga->alamat_domisili,
+                'kelurahan' => $keluarga->kelurahan,
+                'kecamatan' => $keluarga->kecamatan,
+                'kota_kabupaten' => $keluarga->kota_kabupaten,
+                'nomor_whatsapp' => $primary?->nomor_whatsapp,
+                'nomor_whatsapp_secondary' => $secondary?->nomor_whatsapp,
+                'primary_parent' => $primary ? [
+                    'id_orang_tua' => $primary->id_orang_tua,
+                    'nama_lengkap' => $primary->nama_lengkap,
+                    'hubungan' => $primary->hubungan,
+                    'nomor_whatsapp' => $primary->nomor_whatsapp,
+                ] : null,
+                'secondary_parent' => $secondary ? [
+                    'id_orang_tua' => $secondary->id_orang_tua,
+                    'nama_lengkap' => $secondary->nama_lengkap,
+                    'hubungan' => $secondary->hubungan,
+                    'nomor_whatsapp' => $secondary->nomor_whatsapp,
+                ] : null,
+                'siswa' => $keluarga->siswa->map(fn($s) => [
+                    'id_siswa' => $s->id_siswa,
+                    'nama' => $s->nama_lengkap ?: $s->nama,
+                ]),
+            ],
+        ]);
+    }
+
+    /**
+     * Endpoint Admin untuk memperbarui WhatsApp wali & alamat domisili Akun Keluarga beserta pencatatan log.
+     * Backlog B-42: Update WhatsApp Wali & Domisili Akun Keluarga + Audit Logging (Arta Maruf Rifaa Ulwan)
+     * POST /admin/keluarga/{id}/update-kontak-domisili
+     * PUT  /admin/keluarga/{id}
+     * POST /api/admin/keluarga/{id}/update-kontak-domisili
+     * PUT  /api/admin/keluarga/{id}
+     */
+    public function updateKontakDomisiliKeluarga(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        // 1. Proteksi otorisasi khusus Admin (Guest -> 401/Login, Non-Admin -> 403)
+        if (!Auth::check()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $isAdmin = false;
+        if ($user) {
+            $isAdmin = method_exists($user, 'isAdmin') ? $user->isAdmin() : (strcasecmp((string) (session('role') ?? $user->role), 'Admin') === 0);
+        }
+
+        if (!$isAdmin) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Akses ini khusus untuk Admin.',
+                ], 403);
+            }
+            abort(403, 'Unauthorized. Akses ini khusus untuk Admin.');
+        }
+
+        // 2. Validasi input allowlist server-side yang ketat
+        $validated = $request->validate([
+            'nomor_whatsapp' => [
+                'required',
+                'string',
+                'max:25',
+                'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/',
+            ],
+            'nomor_whatsapp_secondary' => [
+                'nullable',
+                'string',
+                'max:25',
+                'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/',
+            ],
+            'alamat_domisili' => ['required', 'string', 'max:500'],
+            'kelurahan' => ['nullable', 'string', 'max:100'],
+            'kecamatan' => ['nullable', 'string', 'max:100'],
+            'kota_kabupaten' => ['nullable', 'string', 'max:100'],
+            'nama_keluarga' => ['nullable', 'string', 'max:150'],
+        ], [
+            'nomor_whatsapp.required' => 'Nomor WhatsApp wali utama wajib diisi.',
+            'nomor_whatsapp.regex' => 'Format nomor WhatsApp wali utama tidak valid. Gunakan format diawali 08, 62, atau +62 dengan 9-16 digit angka.',
+            'nomor_whatsapp_secondary.regex' => 'Format nomor WhatsApp wali pendamping tidak valid. Gunakan format diawali 08, 62, atau +62 dengan 9-16 digit angka.',
+            'alamat_domisili.required' => 'Alamat domisili keluarga wajib diisi.',
+            'alamat_domisili.max' => 'Alamat domisili maksimal 500 karakter.',
+        ]);
+
+        $this->ensureTablesExist();
+
+        // 3. Cari record keluarga & orang tua target
+        $keluarga = null;
+        if (Schema::hasTable('akun_keluarga')) {
+            $keluarga = AkunKeluarga::with('orangTua')->find($id);
+        }
+
+        if (!$keluarga) {
+            $kRow = DB::table('akun_keluarga')->where('id_keluarga', $id)->first();
+            if ($kRow) {
+                $keluarga = (object) (array) $kRow;
+            }
+        }
+
+        if (!$keluarga) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Akun Keluarga dengan ID {$id} tidak ditemukan.",
+                ], 404);
+            }
+            return back()->with('error', "Akun Keluarga dengan ID {$id} tidak ditemukan.");
+        }
+
+        $allOrtu = collect();
+        if (Schema::hasTable('orang_tua')) {
+            $allOrtu = DB::table('orang_tua')->where('id_keluarga', $id)->get();
+        }
+
+        $primaryParent = $allOrtu->firstWhere('jenis_wali', 'Primary_Parent') ?? $allOrtu->first();
+        $secondaryParent = $allOrtu->firstWhere('jenis_wali', 'Secondary_Parent');
+
+        // 4. Catat data lama (old) sebelum pembaruan
+        $oldData = [
+            'nama_keluarga' => $keluarga->nama_keluarga ?? null,
+            'alamat_domisili' => $keluarga->alamat_domisili ?? null,
+            'kelurahan' => $keluarga->kelurahan ?? null,
+            'kecamatan' => $keluarga->kecamatan ?? null,
+            'kota_kabupaten' => $keluarga->kota_kabupaten ?? null,
+            'whatsapp_primary' => $primaryParent?->nomor_whatsapp ?? null,
+            'whatsapp_secondary' => $secondaryParent?->nomor_whatsapp ?? null,
+        ];
+
+        // 5. Susun data baru yang telah divalidasi
+        $newNamaKeluarga = !empty($validated['nama_keluarga']) ? trim((string) $validated['nama_keluarga']) : ($keluarga->nama_keluarga ?? ('Keluarga #' . $id));
+        $newAlamat = trim((string) $validated['alamat_domisili']);
+        $newKelurahan = isset($validated['kelurahan']) ? trim((string) $validated['kelurahan']) : ($keluarga->kelurahan ?? null);
+        $newKecamatan = isset($validated['kecamatan']) ? trim((string) $validated['kecamatan']) : ($keluarga->kecamatan ?? null);
+        $newKota = isset($validated['kota_kabupaten']) ? trim((string) $validated['kota_kabupaten']) : ($keluarga->kota_kabupaten ?? null);
+        $cleanWaPrimary = trim((string) $validated['nomor_whatsapp']);
+        $cleanWaSecondary = !empty($validated['nomor_whatsapp_secondary']) ? trim((string) $validated['nomor_whatsapp_secondary']) : ($secondaryParent?->nomor_whatsapp ?? null);
+
+        $newData = [
+            'nama_keluarga' => $newNamaKeluarga,
+            'alamat_domisili' => $newAlamat,
+            'kelurahan' => $newKelurahan,
+            'kecamatan' => $newKecamatan,
+            'kota_kabupaten' => $newKota,
+            'whatsapp_primary' => $cleanWaPrimary,
+            'whatsapp_secondary' => $cleanWaSecondary,
+        ];
+
+        // 6. Eksekusi pembaruan dalam database transaction
+        DB::transaction(function () use ($id, $keluarga, $primaryParent, $secondaryParent, $newData, $validated) {
+            // Update tabel akun_keluarga
+            if ($keluarga instanceof AkunKeluarga) {
+                $keluarga->update([
+                    'nama_keluarga' => $newData['nama_keluarga'],
+                    'alamat_domisili' => $newData['alamat_domisili'],
+                    'kelurahan' => $newData['kelurahan'],
+                    'kecamatan' => $newData['kecamatan'],
+                    'kota_kabupaten' => $newData['kota_kabupaten'],
+                ]);
+            } else {
+                DB::table('akun_keluarga')->where('id_keluarga', $id)->update([
+                    'nama_keluarga' => $newData['nama_keluarga'],
+                    'alamat_domisili' => $newData['alamat_domisili'],
+                    'kelurahan' => $newData['kelurahan'],
+                    'kecamatan' => $newData['kecamatan'],
+                    'kota_kabupaten' => $newData['kota_kabupaten'],
+                ]);
+            }
+
+            // Update nomor WhatsApp Primary Parent di tabel orang_tua
+            if ($primaryParent) {
+                DB::table('orang_tua')
+                    ->where('id_orang_tua', $primaryParent->id_orang_tua)
+                    ->update(['nomor_whatsapp' => $newData['whatsapp_primary']]);
+            } else if (Schema::hasTable('orang_tua')) {
+                // Jika belum ada record orang tua, buatkan Primary Parent default
+                $idPengguna = DB::table('pengguna')->where('username', 'like', 'ibu.%')->value('id_pengguna') ?? 1;
+                DB::table('orang_tua')->insert([
+                    'id_keluarga' => $id,
+                    'id_pengguna' => $idPengguna,
+                    'jenis_wali' => 'Primary_Parent',
+                    'nama_lengkap' => $newData['nama_keluarga'],
+                    'hubungan' => 'Wali',
+                    'nomor_whatsapp' => $newData['whatsapp_primary'],
+                ]);
+            }
+
+            // Update nomor WhatsApp Secondary Parent jika tersedia
+            if ($secondaryParent && !empty($validated['nomor_whatsapp_secondary'])) {
+                DB::table('orang_tua')
+                    ->where('id_orang_tua', $secondaryParent->id_orang_tua)
+                    ->update(['nomor_whatsapp' => $newData['whatsapp_secondary']]);
+            }
+
+            // Sinkronkan ke tabel siswa jika memiliki kolom nomor_whatsapp atau alamat
+            if (Schema::hasTable('siswa')) {
+                $updateSiswa = [];
+                if (Schema::hasColumn('siswa', 'nomor_whatsapp')) {
+                    $updateSiswa['nomor_whatsapp'] = $newData['whatsapp_primary'];
+                }
+                if (Schema::hasColumn('siswa', 'alamat')) {
+                    $updateSiswa['alamat'] = $newData['alamat_domisili'];
+                }
+                if (!empty($updateSiswa)) {
+                    DB::table('siswa')->where('id_keluarga', $id)->update($updateSiswa);
+                }
+            }
+        });
+
+        // 7. Pencatatan Audit Log terperinci via Log::info() dan tabel log_aktivitas
+        $adminId = Auth::id() ?? $user?->id;
+        $adminUsername = $user?->username ?? 'admin';
+        $adminEmail = $user?->email ?? 'admin@raccer.com';
+
+        $auditPayload = [
+            'event' => 'audit.keluarga.update_kontak_domisili',
+            'action' => 'Admin memperbarui kontak WhatsApp wali & domisili Akun Keluarga',
+            'admin' => [
+                'id' => $adminId,
+                'username' => $adminUsername,
+                'email' => $adminEmail,
+            ],
+            'id_keluarga' => $id,
+            'nama_keluarga' => $newData['nama_keluarga'],
+            'perubahan' => [
+                'whatsapp_primary' => [
+                    'old' => $oldData['whatsapp_primary'],
+                    'new' => $newData['whatsapp_primary'],
+                ],
+                'whatsapp_secondary' => [
+                    'old' => $oldData['whatsapp_secondary'],
+                    'new' => $newData['whatsapp_secondary'],
+                ],
+                'alamat_domisili' => [
+                    'old' => $oldData['alamat_domisili'],
+                    'new' => $newData['alamat_domisili'],
+                ],
+                'kelurahan' => [
+                    'old' => $oldData['kelurahan'],
+                    'new' => $newData['kelurahan'],
+                ],
+                'kecamatan' => [
+                    'old' => $oldData['kecamatan'],
+                    'new' => $newData['kecamatan'],
+                ],
+                'kota_kabupaten' => [
+                    'old' => $oldData['kota_kabupaten'],
+                    'new' => $newData['kota_kabupaten'],
+                ],
+            ],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'timestamp' => now()->toIso8601String(),
+        ];
+
+        Log::info('Admin memperbarui kontak WhatsApp wali & domisili Akun Keluarga', $auditPayload);
+
+        // Simpan juga ke basis data log_aktivitas untuk kemudahan audit panel
+        try {
+            $this->ensureLogAktivitasTable();
+            DB::table('log_aktivitas')->insert([
+                'id_pengguna' => $adminId,
+                'username' => $adminUsername,
+                'role' => 'Admin',
+                'aktivitas' => "Update Kontak & Domisili Keluarga #{$id}",
+                'deskripsi' => "Memperbarui WhatsApp Primary: {$newData['whatsapp_primary']} dan Alamat: {$newData['alamat_domisili']}",
+                'payload_lama' => json_encode($oldData),
+                'payload_baru' => json_encode($newData),
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 500),
+                'waktu' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Pencatatan log_aktivitas database dilewati: ' . $e->getMessage());
+        }
+
+        // 8. Respon JSON atau Browser Redirect
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Data kontak WhatsApp wali dan alamat domisili Akun Keluarga berhasil diperbarui.',
+                'data' => [
+                    'id_keluarga' => $id,
+                    'nama_keluarga' => $newData['nama_keluarga'],
+                    'alamat_domisili' => $newData['alamat_domisili'],
+                    'kelurahan' => $newData['kelurahan'],
+                    'kecamatan' => $newData['kecamatan'],
+                    'kota_kabupaten' => $newData['kota_kabupaten'],
+                    'nomor_whatsapp' => $newData['whatsapp_primary'],
+                    'nomor_whatsapp_secondary' => $newData['whatsapp_secondary'],
+                    'updated_at' => now()->toIso8601String(),
+                ],
+            ], 200);
+        }
+
+        return redirect()->route('admin.keluarga')->with('success', "Data kontak WhatsApp wali dan alamat domisili Akun Keluarga ({$newData['nama_keluarga']}) berhasil diperbarui.");
+    }
+
+    /**
+     * Memastikan tabel log_aktivitas tersedia di basis data.
+     */
+    protected function ensureLogAktivitasTable(): void
+    {
+        if (Schema::hasTable('log_aktivitas')) {
+            return;
+        }
+
+        try {
+            Schema::create('log_aktivitas', function (Blueprint $table) {
+                $table->increments('id_log');
+                $table->unsignedInteger('id_pengguna')->nullable();
+                $table->string('username', 100)->nullable();
+                $table->string('role', 50)->nullable();
+                $table->string('aktivitas', 255);
+                $table->text('deskripsi')->nullable();
+                $table->json('payload_lama')->nullable();
+                $table->json('payload_baru')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
+                $table->dateTime('waktu')->useCurrent();
+            });
+        } catch (\Throwable $e) {}
     }
 
     /**
@@ -1611,7 +1993,7 @@ class AdminController extends Controller
             'jenjang' => ['required', 'in:TK,SD'],
             'kelas' => ['nullable', 'string', 'max:20'],
             'tanggal_lahir' => ['nullable', 'date'],
-            'nisn' => ['nullable', 'string', 'max:20', 'unique:siswa,nisn'],
+            'nisn' => ['nullable', 'string', 'regex:/^[0-9]{10}$/', 'unique:siswa,nisn'],
             'username' => [
                 'required',
                 'string',
@@ -1633,6 +2015,7 @@ class AdminController extends Controller
             'nama_lengkap.required_without' => 'Nama lengkap siswa wajib diisi.',
             'jenjang.required' => 'Jenjang pendidikan (TK/SD) wajib dipilih.',
             'jenjang.in' => 'Jenjang pendidikan harus berupa TK atau SD.',
+            'nisn.regex' => 'NISN harus terdiri dari tepat 10 digit angka.',
             'username.required' => 'Username anak wajib diisi.',
             'username.unique' => "Username ':input' sudah digunakan akun lain.",
             'username.regex' => 'Username hanya boleh berisi huruf, angka, titik, dan garis bawah.',
@@ -2090,6 +2473,30 @@ class AdminController extends Controller
                 'success' => false,
                 'message' => "Jadwal dengan ID {$id} tidak ditemukan.",
             ], 404);
+        }
+
+        // Verifikasi hak akses: Admin atau Tutor pengampu jadwal (tolak peran lain atau Tutor lain dengan HTTP 403)
+        $user = Auth::user();
+        if ($user) {
+            $isAdmin = method_exists($user, 'isAdmin') ? $user->isAdmin() : (strcasecmp((string) (session('role') ?? $user->role), 'Admin') === 0);
+            $isTutor = method_exists($user, 'isTutor') ? $user->isTutor() : (strcasecmp((string) (session('role') ?? $user->role), 'Tutor') === 0);
+
+            if (!$isAdmin && !$isTutor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Akses ini khusus untuk Admin dan Tutor pengampu.',
+                ], 403);
+            }
+
+            if ($isTutor && !$isAdmin) {
+                $tutorController = new \App\Http\Controllers\TutorController();
+                if (!$tutorController->authorizeJadwalBelongsToTutor($jadwal, $user)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized. Akses ditolak (HTTP 403). Anda tidak memiliki izin untuk melihat jadwal Tutor lain.',
+                    ], 403);
+                }
+            }
         }
 
         $pesertaList = PesertaJadwal::with(['siswa', 'paketSiswa'])

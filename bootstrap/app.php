@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'tutor' => \App\Http\Middleware\TutorMiddleware::class,
             'orang_tua' => \App\Http\Middleware\OrangTuaMiddleware::class,
             'ortu' => \App\Http\Middleware\OrangTuaMiddleware::class,
         ]);

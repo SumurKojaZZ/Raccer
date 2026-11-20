@@ -755,7 +755,14 @@
                                             <i class="bi bi-clock-history"></i> Riwayat
                                         </button>
                                     </div>
-                                    <small class="text-muted" style="font-size: 0.78rem;">{{ $s->nama_wali }}</small>
+                                    <div class="d-flex align-items-center flex-wrap gap-1 mt-1">
+                                        <small class="text-muted" style="font-size: 0.78rem;">{{ $s->nama_wali }}</small>
+                                        @if(!empty($s->keluarga?->secondaryParent))
+                                            <span class="badge border rounded-pill px-2 py-0" style="font-size: 0.68rem; background-color: #f5f3ff; color: #6d28d9; border-color: #ddd6fe !important;" title="Secondary Parent (Wali Pendamping): {{ $s->keluarga->secondaryParent->nama_lengkap }} ({{ $s->keluarga->secondaryParent->hubungan }})">
+                                                <i class="bi bi-person-check-fill me-1"></i>+{{ $s->keluarga->secondaryParent->hubungan }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 <!-- Kolom 2: Paket Belajar -->
@@ -840,6 +847,18 @@
                                                 <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
                                                     onclick="openTambahAnakModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama_wali }}')">
                                                     <i class="bi bi-person-plus text-primary"></i> Tambah Anak (Siswa) Baru
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                    onclick="openSecondaryParentModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
+                                                    <i class="bi bi-person-badge text-primary" style="color: #6366f1 !important;"></i> Kelola Secondary Parent
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                    onclick="openUpdateKontakDomisiliModal('{{ $s->id_keluarga ?? 1 }}', '{{ addslashes($s->nama_keluarga ?? $s->nama_wali ?? 'Keluarga Siswa') }}')">
+                                                    <i class="bi bi-geo-alt-fill text-warning"></i> Update WA & Domisili
                                                 </a>
                                             </li>
                                             <li>
@@ -1391,6 +1410,144 @@
         </div>
     </div>
 
+    <!-- MODAL: KELOLA SECONDARY PARENT (WALI PENDAMPING OPSIONAL - Backlog B-13b) -->
+    <div class="modal fade" id="modalSecondaryParent" tabindex="-1" aria-labelledby="modalSecondaryParentLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 580px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="badge rounded-pill px-2 py-1 mb-2 fw-semibold" style="font-size: 0.72rem; background-color: #e0e7ff; color: #4338ca; border: 1px solid #c7d2fe;">
+                            <i class="bi bi-person-badge me-1"></i> Secondary Parent (Opsional)
+                        </div>
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalSecondaryParentLabel" style="font-size: 1.18rem; letter-spacing: -0.2px;">
+                            Wali Pendamping Keluarga
+                        </h5>
+                        <p class="text-muted mb-0" style="font-size: 0.83rem;">
+                            Pasangan atau wali pendamping agar memiliki akses portal Orang Tua. Maksimal 1 per Akun Keluarga.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <!-- Info Akun Keluarga Terpilih -->
+                <div class="px-4 pt-2">
+                    <div class="alert alert-light border d-flex align-items-center justify-content-between p-2 px-3 rounded-3 mb-0">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-house-door text-primary"></i>
+                            <span class="text-dark fw-semibold" style="font-size: 0.85rem;" id="secondaryParentNamaKeluarga">Akun Keluarga: -</span>
+                        </div>
+                        <span class="badge bg-light text-muted border" id="secondaryParentStatusBadge" style="font-size: 0.72rem;">Memuat...</span>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="secondaryParentLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted small mt-2 mb-0">Memuat data orang tua keluarga...</p>
+                </div>
+
+                <!-- STATE A: Secondary Parent SUDAH ADA -->
+                <div id="secondaryParentExistingView" class="p-4 pt-3 d-none">
+                    <div class="card border rounded-3 p-3 bg-light mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 fw-semibold" style="font-size: 0.72rem;">
+                                    <i class="bi bi-check-circle me-1"></i> Aktif Terdaftar
+                                </span>
+                                <h6 class="fw-bold text-dark mb-0 mt-2" id="existingSecNama" style="font-size: 1rem;">-</h6>
+                                <small class="text-muted" id="existingSecHubungan">Hubungan: -</small>
+                            </div>
+                            <div class="rounded-circle bg-white shadow-sm p-2 text-primary d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                <i class="bi bi-person-check fs-5"></i>
+                            </div>
+                        </div>
+                        <hr class="my-2 border-secondary-subtle">
+                        <div class="row g-2" style="font-size: 0.82rem;">
+                            <div class="col-6">
+                                <span class="text-muted d-block" style="font-size: 0.74rem;">No. WhatsApp:</span>
+                                <span class="fw-semibold text-dark" id="existingSecWa">-</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted d-block" style="font-size: 0.74rem;">Username Login:</span>
+                                <span class="fw-semibold text-dark" id="existingSecUsername">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning py-2 px-3 border-0 rounded-3 d-flex align-items-center gap-2 mb-3" style="font-size: 0.8rem; background-color: #fffbeb; color: #92400e;">
+                        <i class="bi bi-info-circle-fill flex-shrink-0"></i>
+                        <span>Satu keluarga hanya dapat memiliki maksimal 1 Secondary Parent. Untuk mengganti dengan wali lain, hapus Secondary Parent ini terlebih dahulu.</span>
+                    </div>
+
+                    <form id="formHapusSecondaryParent" method="POST" action="" onsubmit="return confirm('Apakah Anda yakin ingin menghapus Secondary Parent ini dari Akun Keluarga?')">
+                        @csrf
+                        @method('DELETE')
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-light px-4 py-2 rounded-3 text-secondary" data-bs-dismiss="modal" style="font-size: 0.88rem;">
+                                Tutup
+                            </button>
+                            <button type="submit" class="btn btn-outline-danger px-4 py-2 rounded-3 fw-semibold" style="font-size: 0.88rem;">
+                                <i class="bi bi-trash me-1"></i> Hapus Secondary Parent
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- STATE B: Secondary Parent BELUM ADA (Form Input Tambah) -->
+                <form method="POST" action="" id="formTambahSecondaryParent" class="needs-validation d-none" novalidate>
+                    @csrf
+                    <div class="modal-body p-4 pt-3">
+                        <p class="text-muted mb-3" style="font-size: 0.82rem;">
+                            Keluarga ini belum memiliki Secondary Parent. Isi formulir opsional berikut untuk menambahkan wali pendamping.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-7">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Nama Secondary Parent <span class="text-danger">*</span></label>
+                                <input type="text" name="nama_lengkap" id="tambahSecNama" class="form-control rounded-2" placeholder="Contoh: Bpk. Arif Wibowo" required style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Hubungan <span class="text-danger">*</span></label>
+                                <select name="hubungan" id="tambahSecHubungan" class="form-select rounded-2" required style="font-size: 0.88rem;">
+                                    <option value="Ayah" selected>Ayah</option>
+                                    <option value="Ibu">Ibu</option>
+                                    <option value="Wali">Wali</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">No. WhatsApp Secondary Parent <span class="text-danger">*</span></label>
+                                <input type="text" name="nomor_whatsapp" id="tambahSecWa" class="form-control rounded-2" placeholder="081399998888" required style="font-size: 0.88rem;">
+                                <small class="text-muted" style="font-size: 0.74rem;">Format: 08... atau +62... minimal 10 digit angka</small>
+                            </div>
+                            <div class="col-12">
+                                <hr class="my-1">
+                                <div class="modal-section-title my-2" style="font-size: 0.78rem;">KREDENSIAL LOGIN PORTAL ORANG TUA (OPSIONAL)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Username Login (Opsional)</label>
+                                <input type="text" name="username" id="tambahSecUsername" class="form-control rounded-2" placeholder="ayah.arif (Otomatis)" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Password Awal</label>
+                                <input type="text" name="password" id="tambahSecPassword" class="form-control rounded-2" value="RacerWali2026!" style="font-size: 0.88rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 p-4 pt-2 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light px-4 py-2 rounded-3 text-secondary" data-bs-dismiss="modal" style="font-size: 0.88rem;">
+                            Batal
+                        </button>
+                        <button type="submit" class="btn btn-primary px-4 py-2 rounded-3 fw-semibold text-white" style="background-color: var(--primary-blue); font-size: 0.88rem;">
+                            <i class="bi bi-save me-1"></i> Simpan Secondary Parent
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL 3: FORM PERPANJANGAN PAKET (RENEWAL) DENGAN ISOLASI RIWAYAT (Backlog B-03 - Backend: Muhammad Fadhil Swarigading) -->
     <div class="modal fade" id="modalRenewalPaket" tabindex="-1" aria-labelledby="modalRenewalPaketLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 530px;">
@@ -1636,6 +1793,113 @@
 
     <!-- Custom Scripts for Modal Interaction & Client-side Validation -->
 
+    <!-- Modal Update Kontak WhatsApp Wali & Domisili Akun Keluarga (Backlog B-42 - Arta Maruf Rifaa Ulwan) -->
+    <div class="modal fade" id="modalUpdateKontakDomisili" tabindex="-1" aria-labelledby="modalUpdateKontakDomisiliLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 580px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-start">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalUpdateKontakDomisiliLabel" style="font-size: 1.2rem; letter-spacing: -0.2px;">
+                            <i class="bi bi-geo-alt-fill text-primary me-2"></i>Update Kontak WA & Domisili
+                        </h5>
+                        <p class="text-muted mb-0" id="modalUpdateKontakDomisiliSubtitle" style="font-size: 0.83rem;">
+                            Perbarui nomor WhatsApp wali dan rincian alamat domisili Akun Keluarga.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form id="formUpdateKontakDomisili" method="POST" action="">
+                    @csrf
+                    <input type="hidden" name="id_keluarga" id="inputEditKontakIdKeluarga" value="">
+
+                    <div class="modal-body p-4 pt-2">
+                        <!-- Alert Info Audit Logging -->
+                        <div class="p-3 mb-3 rounded-3 d-flex align-items-center gap-2" style="background-color: #eff6ff; border: 1px solid #bfdbfe;">
+                            <i class="bi bi-shield-check text-primary fs-5 flex-shrink-0"></i>
+                            <div style="font-size: 0.78rem; color: #1e40af;">
+                                <strong>Pencatatan Log Audit Aktif:</strong> Setiap perubahan nomor WhatsApp dan alamat domisili akan dicatat secara otomatis dalam log audit sistem demi keamanan data.
+                            </div>
+                        </div>
+
+                        <!-- Data Form -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
+                                    Nama Akun Keluarga <span class="text-muted">(Opsional)</span>
+                                </label>
+                                <input type="text" name="nama_keluarga" id="inputEditKontakNamaKeluarga" class="form-control rounded-2" placeholder="Contoh: Keluarga Ratna & Arif" maxlength="150" style="font-size: 0.88rem;">
+                            </div>
+
+                            <!-- WhatsApp Primary Parent (Wali Utama) -->
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
+                                    No. WhatsApp Wali Utama <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0 rounded-start-2">
+                                        <i class="bi bi-whatsapp text-success"></i>
+                                    </span>
+                                    <input type="text" name="nomor_whatsapp" id="inputEditKontakWhatsappPrimary" class="form-control border-start-0 rounded-end-2" placeholder="081234567890 atau +628..." required maxlength="25" style="font-size: 0.88rem;">
+                                </div>
+                                <small class="text-muted" style="font-size: 0.72rem;">Primary Parent (Wali Utama)</small>
+                            </div>
+
+                            <!-- WhatsApp Secondary Parent (Wali Pendamping) -->
+                            <div class="col-md-6">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
+                                    No. WhatsApp Wali Pendamping <span class="text-muted">(Opsional)</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light text-muted border-end-0 rounded-start-2">
+                                        <i class="bi bi-whatsapp text-secondary"></i>
+                                    </span>
+                                    <input type="text" name="nomor_whatsapp_secondary" id="inputEditKontakWhatsappSecondary" class="form-control border-start-0 rounded-end-2" placeholder="081399998888 (Opsional)" maxlength="25" style="font-size: 0.88rem;">
+                                </div>
+                                <small class="text-muted" style="font-size: 0.72rem;">Secondary Parent (Jika tersedia)</small>
+                            </div>
+
+                            <!-- Alamat Domisili -->
+                            <div class="col-12">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
+                                    Alamat Domisili Lengkap <span class="text-danger">*</span>
+                                </label>
+                                <textarea name="alamat_domisili" id="inputEditKontakAlamat" rows="3" class="form-control rounded-2" placeholder="Tuliskan nama jalan, nomor rumah, RT/RW..." required maxlength="500" style="font-size: 0.88rem;"></textarea>
+                                <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.72rem;">
+                                    <span>Format allowlist teks terproteksi XSS.</span>
+                                    <span>Maks. 500 karakter</span>
+                                </div>
+                            </div>
+
+                            <!-- Kelurahan, Kecamatan, Kota/Kabupaten -->
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kelurahan</label>
+                                <input type="text" name="kelurahan" id="inputEditKontakKelurahan" class="form-control rounded-2" placeholder="Contoh: Menteng" maxlength="100" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kecamatan</label>
+                                <input type="text" name="kecamatan" id="inputEditKontakKecamatan" class="form-control rounded-2" placeholder="Contoh: Menteng" maxlength="100" style="font-size: 0.88rem;">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">Kota / Kabupaten</label>
+                                <input type="text" name="kota_kabupaten" id="inputEditKontakKota" class="form-control rounded-2" placeholder="Jakarta Pusat" maxlength="100" style="font-size: 0.88rem;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 p-4 pt-0 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light rounded-3 px-3 py-2 fw-medium text-secondary" data-bs-dismiss="modal" style="font-size: 0.88rem;">
+                            Batal
+                        </button>
+                        <button type="submit" id="btnSubmitUpdateKontakDomisili" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold d-flex align-items-center gap-2" style="background-color: var(--primary-blue); font-size: 0.88rem;">
+                            <i class="bi bi-check-lg"></i> Simpan Perubahan & Catat Log
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Konfirmasi Logout -->
     <div class="modal fade" id="modalKonfirmasiLogout" tabindex="-1" aria-labelledby="modalKonfirmasiLogoutLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
@@ -1877,6 +2141,18 @@
             const hiddenId = document.getElementById('inputEditIdSiswa');
             if (title) title.textContent = 'Tambah Akun Keluarga & Siswa';
             if (hiddenId) hiddenId.value = '';
+
+            const inputSecNama = document.getElementById('inputNamaSecondaryParent');
+            const inputSecHub = document.getElementById('inputHubunganSecondaryParent');
+            const inputSecWa = document.getElementById('inputWhatsappSecondaryParent');
+            const inputSecUser = document.getElementById('inputUsernameSecondaryParent');
+            const inputSecPass = document.getElementById('inputPasswordSecondaryParent');
+            if (inputSecNama) inputSecNama.value = '';
+            if (inputSecHub) inputSecHub.value = 'Ayah';
+            if (inputSecWa) inputSecWa.value = '';
+            if (inputSecUser) inputSecUser.value = '';
+            if (inputSecPass) inputSecPass.value = 'RacerWali2026!';
+
             if (typeof onKeluargaPaketChange === 'function') onKeluargaPaketChange();
         }
 
@@ -1885,6 +2161,17 @@
             const hiddenId = document.getElementById('inputEditIdSiswa');
             if (title) title.textContent = 'Edit Akun Keluarga & Siswa (' + (nama || 'Siswa') + ')';
             if (hiddenId) hiddenId.value = idSiswa || '';
+
+            const inputSecNama = document.getElementById('inputNamaSecondaryParent');
+            const inputSecHub = document.getElementById('inputHubunganSecondaryParent');
+            const inputSecWa = document.getElementById('inputWhatsappSecondaryParent');
+            const inputSecUser = document.getElementById('inputUsernameSecondaryParent');
+            const inputSecPass = document.getElementById('inputPasswordSecondaryParent');
+            if (inputSecNama) inputSecNama.value = '';
+            if (inputSecHub) inputSecHub.value = 'Ayah';
+            if (inputSecWa) inputSecWa.value = '';
+            if (inputSecUser) inputSecUser.value = '';
+            if (inputSecPass) inputSecPass.value = 'RacerWali2026!';
 
             const inputNama = document.getElementById('inputNamaSiswa');
             const inputPanggilan = document.getElementById('inputNamaPanggilan');
@@ -1933,6 +2220,90 @@
                 const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
                 modal.show();
             }
+        }
+
+        // Fungsi Membuka Modal Kelola Secondary Parent (Wali Pendamping Opsional) — Backlog B-13b
+        function openSecondaryParentModal(idKeluarga, namaSiswa, namaWali) {
+            const modalEl = document.getElementById('modalSecondaryParent');
+            if (!modalEl) return;
+
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            const lblKeluarga = document.getElementById('secondaryParentNamaKeluarga');
+            const badgeStatus = document.getElementById('secondaryParentStatusBadge');
+            const loading = document.getElementById('secondaryParentLoading');
+            const existingView = document.getElementById('secondaryParentExistingView');
+            const formTambah = document.getElementById('formTambahSecondaryParent');
+            const formHapus = document.getElementById('formHapusSecondaryParent');
+
+            if (lblKeluarga) lblKeluarga.textContent = 'Akun Keluarga: ' + (namaWali || 'Keluarga #' + idKeluarga) + ' (Siswa: ' + (namaSiswa || '-') + ')';
+            if (badgeStatus) {
+                badgeStatus.textContent = 'Memuat...';
+                badgeStatus.className = 'badge bg-light text-muted border';
+            }
+
+            loading.classList.remove('d-none');
+            existingView.classList.add('d-none');
+            formTambah.classList.add('d-none');
+
+            // Set action URL untuk form
+            const storeUrl = "{{ url('/admin/keluarga') }}/" + idKeluarga + "/secondary-parent";
+            const deleteUrl = "{{ url('/admin/keluarga') }}/" + idKeluarga + "/secondary-parent";
+            if (formTambah) formTambah.action = storeUrl;
+            if (formHapus) formHapus.action = deleteUrl;
+
+            // Reset field tambah
+            const inpNama = document.getElementById('tambahSecNama');
+            const inpHub = document.getElementById('tambahSecHubungan');
+            const inpWa = document.getElementById('tambahSecWa');
+            const inpUser = document.getElementById('tambahSecUsername');
+            const inpPass = document.getElementById('tambahSecPassword');
+            if (inpNama) inpNama.value = '';
+            if (inpHub) inpHub.value = 'Ayah';
+            if (inpWa) inpWa.value = '';
+            if (inpUser) inpUser.value = '';
+            if (inpPass) inpPass.value = 'RacerWali2026!';
+
+            // Panggil API getOrangTuaKeluarga
+            fetch("{{ url('/api/keluarga') }}/" + idKeluarga + "/orang-tua")
+                .then(res => res.json())
+                .then(data => {
+                    loading.classList.add('d-none');
+                    if (data && data.success) {
+                        if (data.has_secondary_parent && data.secondary_parent) {
+                            const sec = data.secondary_parent;
+                            if (badgeStatus) {
+                                badgeStatus.textContent = 'Secondary Parent Aktif';
+                                badgeStatus.className = 'badge bg-success-subtle text-success border border-success-subtle';
+                            }
+                            const elNama = document.getElementById('existingSecNama');
+                            const elHub = document.getElementById('existingSecHubungan');
+                            const elWa = document.getElementById('existingSecWa');
+                            const elUser = document.getElementById('existingSecUsername');
+                            if (elNama) elNama.textContent = sec.nama_lengkap || '-';
+                            if (elHub) elHub.textContent = 'Hubungan: ' + (sec.hubungan || '-');
+                            if (elWa) elWa.textContent = sec.nomor_whatsapp || '-';
+                            if (elUser) elUser.textContent = sec.username || '(ID Pengguna: ' + (sec.id_pengguna || '-') + ')';
+                            existingView.classList.remove('d-none');
+                        } else {
+                            if (badgeStatus) {
+                                badgeStatus.textContent = 'Belum Ada';
+                                badgeStatus.className = 'badge bg-secondary-subtle text-secondary border border-secondary-subtle';
+                            }
+                            formTambah.classList.remove('d-none');
+                        }
+                    } else {
+                        if (badgeStatus) badgeStatus.textContent = 'Mode Input';
+                        formTambah.classList.remove('d-none');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching data orang-tua:', err);
+                    loading.classList.add('d-none');
+                    if (badgeStatus) badgeStatus.textContent = 'Mode Input';
+                    formTambah.classList.remove('d-none');
+                });
         }
 
         // Fungsi Membuka Modal Perpanjangan Paket (Renewal) — Backlog B-03 (Muhammad Fadhil Swarigading)
@@ -2021,6 +2392,75 @@
                 const modalRenewal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRenewalPaket'));
                 modalRenewal.show();
             }, 350);
+        }
+
+        // ── Modal Update Kontak WhatsApp Wali & Domisili Akun Keluarga (Backlog B-42 - Arta Maruf Rifaa Ulwan) ──
+        function openUpdateKontakDomisiliModal(idKeluarga, fallbackNama) {
+            const form = document.getElementById('formUpdateKontakDomisili');
+            const hiddenId = document.getElementById('inputEditKontakIdKeluarga');
+            const subtitle = document.getElementById('modalUpdateKontakDomisiliSubtitle');
+            const inputNama = document.getElementById('inputEditKontakNamaKeluarga');
+            const inputWaPrimary = document.getElementById('inputEditKontakWhatsappPrimary');
+            const inputWaSec = document.getElementById('inputEditKontakWhatsappSecondary');
+            const inputAlamat = document.getElementById('inputEditKontakAlamat');
+            const inputKel = document.getElementById('inputEditKontakKelurahan');
+            const inputKec = document.getElementById('inputEditKontakKecamatan');
+            const inputKota = document.getElementById('inputEditKontakKota');
+
+            if (form) {
+                form.action = `/admin/keluarga/${idKeluarga}/update-kontak-domisili`;
+            }
+            if (hiddenId) hiddenId.value = idKeluarga;
+            if (subtitle) subtitle.textContent = `Memperbarui data kontak & domisili untuk ${fallbackNama || ('Keluarga #' + idKeluarga)}`;
+
+            // Reset field value
+            if (inputNama) inputNama.value = fallbackNama || '';
+            if (inputWaPrimary) inputWaPrimary.value = 'Memuat...';
+            if (inputWaSec) inputWaSec.value = '';
+            if (inputAlamat) inputAlamat.value = 'Memuat alamat domisili...';
+            if (inputKel) inputKel.value = '';
+            if (inputKec) inputKec.value = '';
+            if (inputKota) inputKota.value = '';
+
+            const modalEl = document.getElementById('modalUpdateKontakDomisili');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            // Panggil API showKeluarga / orang-tua
+            fetch(`/api/admin/keluarga/${idKeluarga}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && data.data) {
+                    const d = data.data;
+                    if (inputNama) inputNama.value = d.nama_keluarga || fallbackNama || '';
+                    if (inputWaPrimary) inputWaPrimary.value = d.nomor_whatsapp || d.primary_parent?.nomor_whatsapp || '';
+                    if (inputWaSec) inputWaSec.value = d.nomor_whatsapp_secondary || d.secondary_parent?.nomor_whatsapp || '';
+                    if (inputAlamat) inputAlamat.value = d.alamat_domisili || '';
+                    if (inputKel) inputKel.value = d.kelurahan || '';
+                    if (inputKec) inputKec.value = d.kecamatan || '';
+                    if (inputKota) inputKota.value = d.kota_kabupaten || '';
+                }
+            })
+            .catch(() => {
+                if (inputWaPrimary && inputWaPrimary.value === 'Memuat...') inputWaPrimary.value = '';
+                if (inputAlamat && inputAlamat.value === 'Memuat alamat domisili...') inputAlamat.value = '';
+            });
+        }
+
+        // Helper Sanitasi XSS: Escape karakter berbahaya menjadi entitas teks HTML
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
         // ── Riwayat Paket Siswa & Profil (Backlog B-03 / T-29 - Fahriel Aziz Satrio) ──
@@ -2118,21 +2558,25 @@
                         let html = '';
                         riwayat.forEach((p, idx) => {
                             const bayarClass = p.status_pembayaran === 'Lunas' ? 'text-success' : 'text-warning-emphasis';
-                            const tgl = p.tanggal_aktivasi ? p.tanggal_aktivasi.substring(0, 10) : (p.created_at ? p.created_at.substring(0, 10) : '-');
+                            const tgl = escapeHtml(p.tanggal_aktivasi ? p.tanggal_aktivasi.substring(0, 10) : (p.created_at ? p.created_at.substring(0, 10) : '-'));
+                            const safeProgram = escapeHtml(p.program || '-');
+                            const safeJenis = escapeHtml(p.jenis_paket || '-');
+                            const safeStatusPaket = escapeHtml(p.status_paket || 'Selesai');
+                            const safeStatusBayar = escapeHtml(p.status_pembayaran || 'Lunas');
                             html += `
                                 <tr>
                                     <td class="py-2 px-3 fw-bold text-muted">${idx + 1}</td>
                                     <td class="py-2">
-                                        <div class="fw-semibold text-dark">${p.program || '-'}</div>
-                                        <small class="text-muted">${p.jenis_paket || '-'}</small>
+                                        <div class="fw-semibold text-dark">${safeProgram}</div>
+                                        <small class="text-muted">${safeJenis}</small>
                                     </td>
                                     <td class="py-2">
-                                        <span class="badge bg-light text-dark border">${p.sesi_terpakai || 0} / ${p.total_sesi || 0} Sesi</span>
+                                        <span class="badge bg-light text-dark border">${parseInt(p.sesi_terpakai) || 0} / ${parseInt(p.total_sesi) || 0} Sesi</span>
                                     </td>
                                     <td class="py-2">
-                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1">${p.status_paket || 'Selesai'}</span>
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 py-1">${safeStatusPaket}</span>
                                     </td>
-                                    <td class="py-2 fw-semibold ${bayarClass}">${p.status_pembayaran || 'Lunas'}</td>
+                                    <td class="py-2 fw-semibold ${bayarClass}">${safeStatusBayar}</td>
                                     <td class="py-2 px-3 text-muted small">${tgl}</td>
                                 </tr>
                             `;

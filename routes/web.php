@@ -79,6 +79,7 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     Route::get('/admin/keluarga', [AdminController::class, 'keluarga'])->name('admin.keluarga');
     Route::post('/admin/keluarga/aktivasi-paket', [AdminController::class, 'aktivasiPaket'])->name('admin.keluarga.aktivasi-paket');
     Route::post('/admin/paket-siswa/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('admin.paket-siswa.aktivasi');
+    Route::post('/admin/paket/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('admin.paket.aktivasi');
     Route::post('/admin/keluarga/renewal-paket', [AdminController::class, 'renewalPaket'])->name('admin.keluarga.renewal-paket');
     Route::post('/admin/paket-siswa/renewal', [AdminController::class, 'renewalPaket'])->name('admin.paket-siswa.renewal');
     Route::post('/admin/paket-siswa/{id}/renewal', [AdminController::class, 'renewalPaket'])->name('admin.paket-siswa.renewal.id');
@@ -101,6 +102,10 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     // Tambah Akun Anak (Siswa) dengan Username & PIN 6 Digit (B-14 - Muhammad Fadhil Swarigading)
     Route::post('/admin/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('admin.keluarga.siswa.store');
     Route::post('/admin/siswa', [AdminController::class, 'storeSiswa'])->name('admin.siswa.store');
+
+    // Update Kontak WhatsApp Wali & Domisili Akun Keluarga (Backlog B-42 - Arta Maruf Rifaa Ulwan)
+    Route::match(['post', 'put'], '/admin/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('admin.keluarga.update-kontak-domisili');
+    Route::put('/admin/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('admin.keluarga.update');
 });
 
 // ── API Admin Endpoint ──────────────────────────────────
@@ -115,6 +120,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/api/paket-siswa', [AdminController::class, 'indexPaketSiswa'])->name('api.paket-siswa.index');
     Route::post('/api/admin/paket-siswa', [AdminController::class, 'aktivasiPaket'])->name('api.admin.paket-siswa.store');
     Route::post('/api/admin/paket-siswa/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('api.admin.paket-siswa.aktivasi');
+    Route::post('/api/admin/paket/aktivasi', [AdminController::class, 'aktivasiPaket'])->name('api.admin.paket.aktivasi');
     Route::post('/api/paket-siswa', [AdminController::class, 'aktivasiPaket'])->name('api.paket-siswa.store');
     Route::post('/api/admin/paket-siswa/{id}/toggle-pembayaran', [AdminController::class, 'togglePembayaran'])->name('api.admin.paket-siswa.toggle-pembayaran');
 
@@ -133,7 +139,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/api/admin/siswa/pilih-peserta', [AdminController::class, 'pilihPeserta'])->name('api.admin.siswa.pilih-peserta');
     Route::get('/api/siswa/pilih-peserta', [AdminController::class, 'pilihPeserta'])->name('api.siswa.pilih-peserta');
     Route::get('/api/admin/jadwal/{id}/peserta', [AdminController::class, 'getPesertaJadwal'])->name('api.admin.jadwal.peserta.index');
-    Route::get('/api/jadwal/{id}/peserta', [AdminController::class, 'getPesertaJadwal'])->name('api.jadwal.peserta.index');
     Route::post('/api/admin/jadwal/{id}/peserta', [AdminController::class, 'storePesertaJadwal'])->name('api.admin.jadwal.peserta.store');
     Route::post('/api/jadwal/{id}/peserta', [AdminController::class, 'storePesertaJadwal'])->name('api.jadwal.peserta.store');
     Route::delete('/api/admin/jadwal/{id}/peserta/{id_siswa}', [AdminController::class, 'destroyPesertaJadwal'])->name('api.admin.jadwal.peserta.destroy');
@@ -156,12 +161,42 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/api/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('api.keluarga.siswa.store');
     Route::post('/api/admin/siswa', [AdminController::class, 'storeSiswa'])->name('api.admin.siswa.store');
     Route::post('/api/siswa', [AdminController::class, 'storeSiswa'])->name('api.siswa.store');
+
+    // API Update Kontak WhatsApp Wali & Domisili Akun Keluarga Beserta Pencatatan Log (Backlog B-42 - Arta Maruf Rifaa Ulwan)
+    Route::get('/api/admin/keluarga/{id}', [AdminController::class, 'showKeluarga'])->name('api.admin.keluarga.show');
+    Route::get('/api/keluarga/{id}', [AdminController::class, 'showKeluarga'])->name('api.keluarga.show');
+    Route::match(['post', 'put'], '/api/admin/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.admin.keluarga.update-kontak-domisili');
+    Route::match(['post', 'put'], '/api/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.keluarga.update-kontak-domisili');
+    Route::put('/api/admin/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.admin.keluarga.update');
+    Route::put('/api/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.keluarga.update');
 });
 
 // ── Tutor Protected Routes (Khusus Portal Tutor) ───────
-Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
+Route::middleware(['auth', 'tutor', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
     Route::get('/tutor', [TutorController::class, 'index'])->name('tutor');
     Route::post('/tutor/password', [TutorController::class, 'updatePassword'])->name('tutor.password.update');
+    Route::get('/tutor/jadwal', [TutorController::class, 'jadwalPribadi'])->name('tutor.jadwal');
+    Route::get('/tutor/jadwal/{id}', [TutorController::class, 'detailJadwal'])->name('tutor.jadwal.detail');
+    Route::get('/tutor/jadwal/{id}/peserta', [TutorController::class, 'getPesertaJadwal'])->name('tutor.jadwal.peserta');
+});
+
+// ── API Tutor Endpoint (Jadwal Mengajar Pribadi Terisolasi & Filter Hari/Minggu) ──
+Route::middleware(['auth', 'tutor'])->group(function () {
+    Route::get('/api/tutor/jadwal', [TutorController::class, 'jadwalPribadi'])->name('api.tutor.jadwal.index');
+    Route::get('/api/tutor/jadwal-pribadi', [TutorController::class, 'jadwalPribadi'])->name('api.tutor.jadwal-pribadi');
+    Route::get('/api/tutor/jadwal/{id}', [TutorController::class, 'detailJadwal'])->name('api.tutor.jadwal.detail');
+    Route::get('/api/tutor/jadwal/{id}/peserta', [TutorController::class, 'getPesertaJadwal'])->name('api.tutor.jadwal.peserta');
+});
+
+// ── Shared Endpoint Peserta Jadwal (Akses untuk Admin & Tutor Pengampu) ──
+Route::middleware(['auth'])->group(function () {
+    Route::get('/api/jadwal/{id}/peserta', [AdminController::class, 'getPesertaJadwal'])->name('api.jadwal.peserta.index');
+});
+
+// ── Orang Tua Protected Routes (Khusus Portal Orang Tua / Wali) ───────
+Route::middleware(['auth', 'orang_tua', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
+    Route::get('/orang-tua', [LoginController::class, 'portalOrangTua'])->name('orang-tua');
+    Route::get('/portal-orang-tua', [LoginController::class, 'portalOrangTua'])->name('portal.orang-tua');
 });
 
 // ── Lupa Password ──────────────────────────────────────
