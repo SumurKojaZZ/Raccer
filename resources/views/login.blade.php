@@ -219,12 +219,18 @@
             <form method="POST" action="{{ route('login') }}">
                 @csrf
 
-                <!-- Input Username -->
+                <!-- Input Username / No WhatsApp -->
                 <div class="mb-4">
-                    <label for="username" class="form-label-custom">Username</label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label for="username" class="form-label-custom mb-0">Username / No. WhatsApp</label>
+                        <span class="badge bg-light text-muted border" style="font-size: 0.72rem;">Multi-Role</span>
+                    </div>
                     <input type="text" class="form-control form-control-custom @error('username') is-invalid @enderror"
-                        id="username" name="username" value="{{ old('username') }}" placeholder="Masukkan username"
+                        id="username" name="username" value="{{ old('username') }}" placeholder="Username atau no. WhatsApp (08...)"
                         required autofocus>
+                    <small class="text-muted mt-1 d-block" style="font-size: 0.82rem;">
+                        <i class="bi bi-info-circle me-1"></i> Orang Tua (Primary / Secondary) dapat login dengan username atau no. WhatsApp terdaftar.
+                    </small>
                 </div>
 
                 <!-- Input Password -->

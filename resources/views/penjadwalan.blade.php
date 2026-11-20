@@ -902,6 +902,17 @@
             ]);
         }
 
+        // Helper Sanitasi XSS: Escape karakter berbahaya menjadi entitas teks HTML
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         async function loadPesertaList(jadwalId) {
             const tbody = document.getElementById('tbodyPesertaJadwal');
             const totalCount = document.getElementById('totalPesertaCount');
@@ -923,15 +934,20 @@
                         const siswa = p.siswa || {};
                         const paket = p.paket_siswa || {};
                         const sisa = paket.total_sesi ? (paket.total_sesi - paket.sesi_terpakai) : (siswa.total_sesi - siswa.sesi_terpakai);
+                        const safeNama = escapeHtml(siswa.nama_lengkap || siswa.nama || 'Siswa');
+                        const safeNisn = escapeHtml(siswa.nisn || '-');
+                        const safeProgram = escapeHtml(paket.program || siswa.program || '-');
+                        const safePaket = escapeHtml(paket.paket_belajar || siswa.paket_belajar || '-');
+                        const safeStatus = escapeHtml(p.status_kehadiran || 'Terdaftar');
                         return `
                             <tr>
                                 <td>
-                                    <div class="fw-bold text-dark">${siswa.nama_lengkap || siswa.nama || 'Siswa'}</div>
-                                    <small class="text-muted">NISN: ${siswa.nisn || '-'}</small>
+                                    <div class="fw-bold text-dark">${safeNama}</div>
+                                    <small class="text-muted">NISN: ${safeNisn}</small>
                                 </td>
                                 <td>
-                                    <div>${paket.program || siswa.program || '-'}</div>
-                                    <small class="text-muted">${paket.paket_belajar || siswa.paket_belajar || '-'}</small>
+                                    <div>${safeProgram}</div>
+                                    <small class="text-muted">${safePaket}</small>
                                 </td>
                                 <td>
                                     <span class="badge ${sisa > 2 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'}">
@@ -939,7 +955,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-primary-subtle text-primary">${p.status_kehadiran || 'Terdaftar'}</span>
+                                    <span class="badge bg-primary-subtle text-primary">${safeStatus}</span>
                                 </td>
                                 <td class="text-end">
                                     <button type="button" class="btn btn-sm btn-outline-danger rounded-3 px-2 py-1" onclick="hapusPeserta(${jadwalId}, ${p.id_siswa})" title="Hapus dari jadwal">
@@ -974,7 +990,7 @@
                     select.innerHTML = `<option value="">-- Pilih Siswa (${available.length} siswa memenuhi syarat) --</option>` +
                         available.map(s => `
                             <option value="${s.id_siswa}">
-                                ${s.nama} (${s.program} • Sisa ${s.sisa_sesi} sesi)
+                                ${escapeHtml(s.nama)} (${escapeHtml(s.program)} • Sisa ${s.sisa_sesi} sesi)
                             </option>
                         `).join('');
                 }

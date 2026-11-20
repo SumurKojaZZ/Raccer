@@ -517,13 +517,45 @@
                 </a>
             </nav>
 
-            <!-- Tombol Masuk / Login -->
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-3 py-1 fw-bold"
-                    style="font-size: 0.85rem; border-color: var(--racer-sky-blue); color: var(--racer-sky-blue);">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Masuk
-                </a>
-            </div>
+            @auth
+                <!-- User Authenticated Menu -->
+                <div class="d-flex align-items-center gap-2">
+                    @if(session('role') === 'Orang_Tua' || (Auth::user()->isOrangTua()))
+                        <a href="{{ route('orang-tua') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1" style="font-size: 0.84rem;">
+                            <i class="bi bi-people-fill text-primary"></i>
+                            <span>Portal Orang Tua</span>
+                            <span class="badge rounded-pill text-white ms-1" style="font-size: 0.68rem; background-color: {{ (session('jenis_wali') === 'Secondary_Parent') ? '#6366f1' : '#1570EF' }};">
+                                {{ (session('jenis_wali') === 'Secondary_Parent') ? 'Secondary' : 'Primary' }}
+                            </span>
+                        </a>
+                    @elseif(session('role') === 'Tutor')
+                        <a href="{{ route('tutor') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1" style="font-size: 0.84rem;">
+                            <i class="bi bi-mortarboard-fill"></i>
+                            <span>Portal Tutor</span>
+                        </a>
+                    @else
+                        <a href="{{ route('admin') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1" style="font-size: 0.84rem;">
+                            <i class="bi bi-speedometer2"></i>
+                            <span>Dashboard Admin</span>
+                        </a>
+                    @endif
+
+                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-light border rounded-pill px-3 py-1 fw-semibold text-secondary" style="font-size: 0.84rem;" title="Keluar dari akun">
+                            <i class="bi bi-box-arrow-right me-1"></i> Keluar
+                        </button>
+                    </form>
+                </div>
+            @else
+                <!-- Tombol Masuk / Login -->
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ route('login') }}" class="btn btn-outline-primary rounded-pill px-3 py-1 fw-bold"
+                        style="font-size: 0.85rem; border-color: var(--racer-sky-blue); color: var(--racer-sky-blue);">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Masuk
+                    </a>
+                </div>
+            @endauth
         </div>
     </header>
 
