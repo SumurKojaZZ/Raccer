@@ -1,3 +1,3 @@
 "@php
-    dd($jdw)
+    dd($jdw) //acuu padil
 @endphp"
