@@ -446,7 +446,7 @@ class LoginController extends Controller
             }
         }
 
-        $idKeluarga = $orangTua->id_keluarga ?? session('id_keluarga') ?? 1;
+        $idKeluarga = OrangTuaController::resolveKeluargaIdFromUser($user) ?? $orangTua->id_keluarga ?? session('id_keluarga') ?? 1;
         $jenisWali = $orangTua->jenis_wali ?? session('jenis_wali') ?? 'Primary_Parent';
         $hubungan = $orangTua->hubungan ?? session('hubungan_wali') ?? 'Orang Tua';
 
@@ -469,6 +469,21 @@ class LoginController extends Controller
             $siswaList = DB::table('siswa')->where('id_keluarga', $idKeluarga)->get();
         }
 
+        // Child Switcher: Menentukan anak aktif tanpa login ulang (via query param / session / fallback anak pertama)
+        $selectedChildId = $request->input('anak') ?? $request->input('siswa') ?? session('active_child_id') ?? ($siswaList->first()->id_siswa ?? $siswaList->first()->id ?? null);
+        if ($selectedChildId) {
+            session(['active_child_id' => $selectedChildId]);
+        }
+
+        $activeChild = $siswaList->firstWhere('id_siswa', $selectedChildId)
+            ?? $siswaList->firstWhere('id', $selectedChildId)
+            ?? $siswaList->first();
+
+        $activeChildUsername = null;
+        if ($activeChild && !empty($activeChild->id_pengguna) && Schema::hasTable('pengguna')) {
+            $activeChildUsername = DB::table('pengguna')->where('id_pengguna', $activeChild->id_pengguna)->value('username');
+        }
+
         return view('portal-orang-tua', compact(
             'user',
             'orangTua',
@@ -477,7 +492,9 @@ class LoginController extends Controller
             'keluarga',
             'primaryParent',
             'secondaryParent',
-            'siswaList'
+            'siswaList',
+            'activeChild',
+            'activeChildUsername'
         ));
     }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\OrangTuaController;
 use App\Http\Controllers\TutorController;
 use App\Models\Pengumuman;
 use Illuminate\Http\Request;
@@ -104,8 +105,8 @@ Route::middleware(['auth', \App\Http\Middleware\CheckIdleTimeout::class])->group
     Route::post('/admin/siswa', [AdminController::class, 'storeSiswa'])->name('admin.siswa.store');
 
     // Update Kontak WhatsApp Wali & Domisili Akun Keluarga (Backlog B-42 - Arta Maruf Rifaa Ulwan)
-    Route::match(['post', 'put'], '/admin/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('admin.keluarga.update-kontak-domisili');
-    Route::put('/admin/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('admin.keluarga.update');
+    Route::match(['post', 'put', 'patch'], '/admin/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('admin.keluarga.update-kontak-domisili');
+    Route::match(['put', 'patch'], '/admin/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('admin.keluarga.update');
 });
 
 // ── API Admin Endpoint ──────────────────────────────────
@@ -155,8 +156,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/api/keluarga/{id}/secondary-parent', [AdminController::class, 'destroySecondaryParent'])->name('api.keluarga.secondary-parent.destroy');
 
     // API Tambah Akun Anak (Siswa) dengan Username & PIN 6 Digit (B-14 - Muhammad Fadhil Swarigading)
-    Route::get('/api/admin/keluarga/{id}/siswa', [AdminController::class, 'getSiswaKeluarga'])->name('api.admin.keluarga.siswa.index');
-    Route::get('/api/keluarga/{id}/siswa', [AdminController::class, 'getSiswaKeluarga'])->name('api.keluarga.siswa.index');
     Route::post('/api/admin/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('api.admin.keluarga.siswa.store');
     Route::post('/api/keluarga/{id}/siswa', [AdminController::class, 'storeSiswa'])->name('api.keluarga.siswa.store');
     Route::post('/api/admin/siswa', [AdminController::class, 'storeSiswa'])->name('api.admin.siswa.store');
@@ -165,10 +164,38 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // API Update Kontak WhatsApp Wali & Domisili Akun Keluarga Beserta Pencatatan Log (Backlog B-42 - Arta Maruf Rifaa Ulwan)
     Route::get('/api/admin/keluarga/{id}', [AdminController::class, 'showKeluarga'])->name('api.admin.keluarga.show');
     Route::get('/api/keluarga/{id}', [AdminController::class, 'showKeluarga'])->name('api.keluarga.show');
-    Route::match(['post', 'put'], '/api/admin/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.admin.keluarga.update-kontak-domisili');
-    Route::match(['post', 'put'], '/api/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.keluarga.update-kontak-domisili');
-    Route::put('/api/admin/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.admin.keluarga.update');
-    Route::put('/api/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.keluarga.update');
+    Route::match(['post', 'put', 'patch'], '/api/admin/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.admin.keluarga.update-kontak-domisili');
+    Route::match(['post', 'put', 'patch'], '/api/keluarga/{id}/update-kontak-domisili', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.keluarga.update-kontak-domisili');
+    Route::match(['put', 'patch'], '/api/admin/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.admin.keluarga.update');
+    Route::match(['put', 'patch'], '/api/keluarga/{id}', [AdminController::class, 'updateKontakDomisiliKeluarga'])->name('api.keluarga.update');
+});
+
+// ── Shared / Orang Tua Authenticated Endpoints (Validasi Kepemilikan Sesi di Server - Muhammad Fadhil Swarigading) ──
+Route::middleware(['auth'])->group(function () {
+    // API Daftar Anak per ID Keluarga
+    Route::get('/api/admin/keluarga/{id}/siswa', [OrangTuaController::class, 'getAnakPerKeluarga'])->name('api.admin.keluarga.siswa.index');
+    Route::get('/api/keluarga/{id}/siswa', [OrangTuaController::class, 'getAnakPerKeluarga'])->name('api.keluarga.siswa.index');
+    Route::get('/api/admin/keluarga/{id}/anak', [OrangTuaController::class, 'getAnakPerKeluarga'])->name('api.admin.keluarga.anak.index');
+    Route::get('/api/keluarga/{id}/anak', [OrangTuaController::class, 'getAnakPerKeluarga'])->name('api.keluarga.anak.index');
+    Route::get('/api/orang-tua/keluarga/{id}/anak', [OrangTuaController::class, 'getAnakPerKeluarga'])->name('api.orang-tua.keluarga.anak.index');
+    Route::get('/api/orang-tua/anak', [OrangTuaController::class, 'getAnakPerKeluarga'])->name('api.orang-tua.anak.index');
+
+    // Detail Profil Anak
+    Route::get('/api/admin/siswa/{id}', [OrangTuaController::class, 'getDetailAnak'])->name('api.admin.siswa.show');
+    Route::get('/api/siswa/{id}', [OrangTuaController::class, 'getDetailAnak'])->name('api.siswa.show');
+    Route::get('/api/anak/{id}', [OrangTuaController::class, 'getDetailAnak'])->name('api.anak.show');
+    Route::get('/api/keluarga/{id}/anak/{id_siswa}', [OrangTuaController::class, 'getDetailAnak'])->name('api.keluarga.anak.show');
+    Route::get('/api/keluarga/{id}/siswa/{id_siswa}', [OrangTuaController::class, 'getDetailAnak'])->name('api.keluarga.siswa.show');
+
+    // API Pembaruan WhatsApp Sendiri, Alamat Domisili, dan Data Secondary Parent (PUT/PATCH)
+    Route::match(['put', 'patch', 'post'], '/api/orang-tua/profil', [OrangTuaController::class, 'updateProfilDanKeluarga'])->name('api.orang-tua.profil.update');
+    Route::match(['put', 'patch', 'post'], '/api/orang-tua/kontak-domisili', [OrangTuaController::class, 'updateProfilDanKeluarga'])->name('api.orang-tua.kontak-domisili.update');
+    Route::match(['put', 'patch', 'post'], '/api/keluarga/{id}/orang-tua', [OrangTuaController::class, 'updateProfilDanKeluarga'])->name('api.keluarga.orang-tua.update');
+    Route::match(['put', 'patch', 'post'], '/api/keluarga/{id}/profil', [OrangTuaController::class, 'updateProfilDanKeluarga'])->name('api.keluarga.profil.update');
+    Route::match(['put', 'patch', 'post'], '/api/keluarga/{id}/secondary-parent', [OrangTuaController::class, 'updateSecondaryParentOrangTua'])->name('api.keluarga.secondary-parent.update');
+    Route::match(['put', 'patch', 'post'], '/api/orang-tua/secondary-parent', [OrangTuaController::class, 'updateSecondaryParentOrangTua'])->name('api.orang-tua.secondary-parent.update');
+    Route::delete('/api/keluarga/{id}/secondary-parent', [OrangTuaController::class, 'destroySecondaryParentOrangTua'])->name('api.keluarga.secondary-parent.destroy');
+    Route::delete('/api/orang-tua/secondary-parent', [OrangTuaController::class, 'destroySecondaryParentOrangTua'])->name('api.orang-tua.secondary-parent.destroy');
 });
 
 // ── Tutor Protected Routes (Khusus Portal Tutor) ───────
@@ -178,6 +205,8 @@ Route::middleware(['auth', 'tutor', \App\Http\Middleware\CheckIdleTimeout::class
     Route::get('/tutor/jadwal', [TutorController::class, 'jadwalPribadi'])->name('tutor.jadwal');
     Route::get('/tutor/jadwal/{id}', [TutorController::class, 'detailJadwal'])->name('tutor.jadwal.detail');
     Route::get('/tutor/jadwal/{id}/peserta', [TutorController::class, 'getPesertaJadwal'])->name('tutor.jadwal.peserta');
+    Route::match(['post', 'put', 'patch'], '/tutor/jadwal/{id}/link', [TutorController::class, 'updateLinkKelas'])->name('tutor.jadwal.update-link');
+    Route::match(['post', 'put', 'patch'], '/tutor/jadwal/{id}/link-kelas', [TutorController::class, 'updateLinkKelas']);
 });
 
 // ── API Tutor Endpoint (Jadwal Mengajar Pribadi Terisolasi & Filter Hari/Minggu) ──
@@ -186,6 +215,9 @@ Route::middleware(['auth', 'tutor'])->group(function () {
     Route::get('/api/tutor/jadwal-pribadi', [TutorController::class, 'jadwalPribadi'])->name('api.tutor.jadwal-pribadi');
     Route::get('/api/tutor/jadwal/{id}', [TutorController::class, 'detailJadwal'])->name('api.tutor.jadwal.detail');
     Route::get('/api/tutor/jadwal/{id}/peserta', [TutorController::class, 'getPesertaJadwal'])->name('api.tutor.jadwal.peserta');
+    Route::match(['post', 'put', 'patch'], '/api/tutor/jadwal/{id}/link', [TutorController::class, 'updateLinkKelas'])->name('api.tutor.jadwal.update-link');
+    Route::match(['post', 'put', 'patch'], '/api/tutor/jadwal/{id}/link-kelas', [TutorController::class, 'updateLinkKelas']);
+    Route::match(['post', 'put', 'patch'], '/api/tutor/jadwal/{id}/url-online', [TutorController::class, 'updateLinkKelas']);
 });
 
 // ── Shared Endpoint Peserta Jadwal (Akses untuk Admin & Tutor Pengampu) ──
@@ -197,6 +229,12 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'orang_tua', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
     Route::get('/orang-tua', [LoginController::class, 'portalOrangTua'])->name('orang-tua');
     Route::get('/portal-orang-tua', [LoginController::class, 'portalOrangTua'])->name('portal.orang-tua');
+    Route::get('/orang-tua/anak/{id}', [OrangTuaController::class, 'getDetailAnak'])->name('orang-tua.anak.detail');
+    Route::get('/orang-tua/edit-kontak', [OrangTuaController::class, 'editKontakKeluarga'])->name('orang-tua.edit-kontak');
+    Route::get('/orang-tua/profil/edit', [OrangTuaController::class, 'editKontakKeluarga'])->name('orang-tua.profil.edit');
+    Route::match(['put', 'patch', 'post'], '/orang-tua/profil', [OrangTuaController::class, 'updateProfilDanKeluarga'])->name('orang-tua.profil.update');
+    Route::match(['put', 'patch', 'post'], '/orang-tua/secondary-parent', [OrangTuaController::class, 'updateSecondaryParentOrangTua'])->name('orang-tua.secondary-parent.update');
+    Route::delete('/orang-tua/secondary-parent', [OrangTuaController::class, 'destroySecondaryParentOrangTua'])->name('orang-tua.secondary-parent.destroy');
 });
 
 // ── Lupa Password ──────────────────────────────────────

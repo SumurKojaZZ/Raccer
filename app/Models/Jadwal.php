@@ -19,6 +19,7 @@ class Jadwal extends Model
         'program',
         'kelas',
         'lokasi',
+        'link_kelas',
         'tutor',
         'tutor_pengampu',
         'tanggal',

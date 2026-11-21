@@ -702,14 +702,19 @@
                         @endif
                     </form>
 
-                    <!-- 2 Action Buttons: + Aktivasi Paket & + Akun Keluarga -->
+                    <!-- Action Buttons: + Aktivasi Paket, Edit Kontak & Alamat, + Akun Keluarga -->
                     <div class="d-flex align-items-center gap-2">
                         <!-- Tombol 1: + Aktivasi Paket (Outline Button) -->
                         <button type="button" class="btn btn-white bg-white border d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 text-primary" data-bs-toggle="modal" data-bs-target="#modalAktivasiPaket" style="font-size: 0.88rem; border-color: var(--primary-blue) !important;">
                             <i class="bi bi-plus-lg text-primary"></i> Aktivasi Paket
                         </button>
 
-                        <!-- Tombol 2: Edit/Tambah Keluarga (Solid Primary Button Sesuai Permintaan) -->
+                        <!-- Tombol 2: Edit Kontak Wali & Alamat Domisili -->
+                        <button type="button" class="btn btn-white bg-white border d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3 text-dark" onclick="openUpdateKontakDomisiliModal('', '')" style="font-size: 0.88rem; border-color: #cbd5e1 !important;" title="Pembaruan Kontak WhatsApp Wali & Alamat Domisili">
+                            <i class="bi bi-geo-alt-fill text-warning"></i> Edit Kontak & Alamat
+                        </button>
+
+                        <!-- Tombol 3: Edit/Tambah Keluarga (Solid Primary Button Sesuai Permintaan) -->
                         <button type="button" class="btn btn-primary d-flex align-items-center gap-2 px-3 py-2 fw-semibold rounded-3" data-bs-toggle="modal" data-bs-target="#modalAkunKeluarga" onclick="openTambahKeluargaModal()" style="background-color: var(--primary-blue); font-size: 0.88rem;">
                             <i class="bi bi-plus-lg"></i> Akun Keluarga
                         </button>
@@ -762,6 +767,28 @@
                                                 <i class="bi bi-person-check-fill me-1"></i>+{{ $s->keluarga->secondaryParent->hubungan }}
                                             </span>
                                         @endif
+                                    </div>
+                                    <div class="mt-1 d-flex align-items-center gap-2 flex-wrap" style="font-size: 0.74rem;">
+                                        @php
+                                            $waItem = $s->nomor_whatsapp ?? $s->keluarga?->primaryParent?->nomor_whatsapp ?? null;
+                                            $alamatItem = $s->keluarga?->alamat_domisili ?? $s->alamat ?? null;
+                                        @endphp
+                                        @if ($waItem)
+                                            <span class="text-success fw-medium d-inline-flex align-items-center gap-1" title="WhatsApp Wali: {{ $waItem }}">
+                                                <i class="bi bi-whatsapp"></i> {{ $waItem }}
+                                            </span>
+                                        @endif
+                                        @if ($alamatItem)
+                                            <span class="text-muted d-inline-flex align-items-center gap-1" title="Domisili: {{ $alamatItem }}">
+                                                <i class="bi bi-geo-alt text-warning"></i>
+                                                <span class="text-truncate" style="max-width: 140px;">{{ $alamatItem }}</span>
+                                            </span>
+                                        @endif
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none text-primary fw-medium" style="font-size: 0.72rem;"
+                                            onclick="openUpdateKontakDomisiliModal('{{ $s->id_keluarga ?? 1 }}', '{{ addslashes($s->nama_keluarga ?? $s->nama_wali ?? 'Keluarga Siswa') }}')"
+                                            title="Edit Kontak Wali & Alamat Domisili">
+                                            <i class="bi bi-pencil-square"></i> Edit Kontak
+                                        </button>
                                     </div>
                                 </td>
 
@@ -819,70 +846,79 @@
 
                                 <!-- Kolom 6: Aksi Dropdown -->
                                 <td class="text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light border-0 rounded-circle text-muted p-1"
-                                            type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;">
-                                            <i class="bi bi-three-dots"></i>
+                                    <div class="d-flex align-items-center justify-content-end gap-1">
+                                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-2 py-1 d-inline-flex align-items-center gap-1 text-secondary"
+                                            style="font-size: 0.75rem;"
+                                            title="Edit Kontak Wali & Alamat Domisili"
+                                            onclick="openUpdateKontakDomisiliModal('{{ $s->id_keluarga ?? 1 }}', '{{ addslashes($s->nama_keluarga ?? $s->nama_wali ?? 'Keluarga Siswa') }}')">
+                                            <i class="bi bi-geo-alt-fill text-warning"></i>
+                                            <span class="d-none d-xl-inline">Kontak & Alamat</span>
                                         </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 py-2" style="font-size: 0.82rem; min-width: 190px;">
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openAktivasiModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->status_pembayaran }}')">
-                                                    <i class="bi bi-lightning-charge text-primary"></i> Aktivasi / Perbarui Paket
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openRenewalModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->sesi_terpakai }}')">
-                                                    <i class="bi bi-arrow-repeat text-success"></i> Perpanjang Paket (Renewal)
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openRiwayatPaketModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
-                                                    <i class="bi bi-clock-history text-info"></i> Riwayat Paket Siswa
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openTambahAnakModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama_wali }}')">
-                                                    <i class="bi bi-person-plus text-primary"></i> Tambah Anak (Siswa) Baru
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openSecondaryParentModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
-                                                    <i class="bi bi-person-badge text-primary" style="color: #6366f1 !important;"></i> Kelola Secondary Parent
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openUpdateKontakDomisiliModal('{{ $s->id_keluarga ?? 1 }}', '{{ addslashes($s->nama_keluarga ?? $s->nama_wali ?? 'Keluarga Siswa') }}')">
-                                                    <i class="bi bi-geo-alt-fill text-warning"></i> Update WA & Domisili
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
-                                                    onclick="openEditKeluargaModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_panggilan ?? '' }}', '{{ $s->jenjang ?? 'SD' }}', '{{ $s->kelas ?? '3' }}', '{{ $s->nisn ?? '' }}', '{{ $s->paket_belajar }}', '{{ $s->nama_wali }}', '{{ $s->nomor_whatsapp ?? '081234567890' }}', '{{ $s->hubungan ?? 'Ibu' }}')">
-                                                    <i class="bi bi-pencil-square text-secondary"></i> Edit Data Keluarga
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <form method="POST" action="{{ route('admin.keluarga.toggle-pembayaran', $s->id_siswa ?? $s->id ?? 1) }}">
-                                                    @csrf
-                                                    <button type="submit" class="dropdown-item py-2 d-flex align-items-center gap-2">
-                                                        <i class="bi bi-arrow-repeat text-warning"></i>
-                                                        Ubah ke {{ ($s->status_pembayaran ?? 'Lunas') === 'Lunas' ? 'Belum Bayar' : 'Lunas' }}
-                                                    </button>
-                                                </form>
-                                            </li>
-                                            <li><hr class="dropdown-divider my-1"></li>
-                                            <li>
-                                                <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-muted" href="https://wa.me/6281234567890?text=Halo%20Wali%20{{ urlencode($s->nama) }},%20kami%20dari%20Racer%20Robotic%20ingin%20mengonfirmasi%20paket%20belajar%20anak." target="_blank">
-                                                    <i class="bi bi-whatsapp text-success"></i> Hubungi Wali via WA
-                                                </a>
-                                            </li>
-                                        </ul>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light border-0 rounded-circle text-muted p-1"
+                                                type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px;">
+                                                <i class="bi bi-three-dots"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3 py-2" style="font-size: 0.82rem; min-width: 190px;">
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openAktivasiModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->status_pembayaran }}')">
+                                                        <i class="bi bi-lightning-charge text-primary"></i> Aktivasi / Perbarui Paket
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openRenewalModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->program }}', '{{ $s->jenis_paket }}', '{{ $s->total_sesi }}', '{{ $s->sesi_terpakai }}')">
+                                                        <i class="bi bi-arrow-repeat text-success"></i> Perpanjang Paket (Renewal)
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openRiwayatPaketModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
+                                                        <i class="bi bi-clock-history text-info"></i> Riwayat Paket Siswa
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openTambahAnakModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama_wali }}')">
+                                                        <i class="bi bi-person-plus text-primary"></i> Tambah Anak (Siswa) Baru
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openSecondaryParentModal('{{ $s->id_keluarga ?? 1 }}', '{{ $s->nama }}', '{{ $s->nama_wali }}')">
+                                                        <i class="bi bi-person-badge text-primary" style="color: #6366f1 !important;"></i> Kelola Secondary Parent
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openUpdateKontakDomisiliModal('{{ $s->id_keluarga ?? 1 }}', '{{ addslashes($s->nama_keluarga ?? $s->nama_wali ?? 'Keluarga Siswa') }}')">
+                                                        <i class="bi bi-geo-alt-fill text-warning"></i> Update WA & Domisili
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="javascript:void(0)"
+                                                        onclick="openEditKeluargaModal('{{ $s->id_siswa ?? $s->id }}', '{{ $s->nama }}', '{{ $s->nama_panggilan ?? '' }}', '{{ $s->jenjang ?? 'SD' }}', '{{ $s->kelas ?? '3' }}', '{{ $s->nisn ?? '' }}', '{{ $s->paket_belajar }}', '{{ $s->nama_wali }}', '{{ $s->nomor_whatsapp ?? '081234567890' }}', '{{ $s->hubungan ?? 'Ibu' }}')">
+                                                        <i class="bi bi-pencil-square text-secondary"></i> Edit Data Keluarga
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <form method="POST" action="{{ route('admin.keluarga.toggle-pembayaran', $s->id_siswa ?? $s->id ?? 1) }}">
+                                                        @csrf
+                                                        <button type="submit" class="dropdown-item py-2 d-flex align-items-center gap-2">
+                                                            <i class="bi bi-arrow-repeat text-warning"></i>
+                                                            Ubah ke {{ ($s->status_pembayaran ?? 'Lunas') === 'Lunas' ? 'Belum Bayar' : 'Lunas' }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                                <li><hr class="dropdown-divider my-1"></li>
+                                                <li>
+                                                    <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-muted" href="https://wa.me/6281234567890?text=Halo%20Wali%20{{ urlencode($s->nama) }},%20kami%20dari%20Racer%20Robotic%20ingin%20mengonfirmasi%20paket%20belajar%20anak." target="_blank">
+                                                        <i class="bi bi-whatsapp text-success"></i> Hubungi Wali via WA
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
@@ -1795,15 +1831,15 @@
 
     <!-- Modal Update Kontak WhatsApp Wali & Domisili Akun Keluarga (Backlog B-42 - Arta Maruf Rifaa Ulwan) -->
     <div class="modal fade" id="modalUpdateKontakDomisili" tabindex="-1" aria-labelledby="modalUpdateKontakDomisiliLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 580px;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 620px;">
             <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                 <div class="modal-header border-0 p-4 pb-2 d-flex justify-content-between align-items-start">
                     <div>
-                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalUpdateKontakDomisiliLabel" style="font-size: 1.2rem; letter-spacing: -0.2px;">
-                            <i class="bi bi-geo-alt-fill text-primary me-2"></i>Update Kontak WA & Domisili
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="modalUpdateKontakDomisiliLabel" style="font-size: 1.25rem; letter-spacing: -0.2px;">
+                            <i class="bi bi-geo-alt-fill text-primary me-2"></i>Edit Kontak Wali & Alamat Domisili
                         </h5>
                         <p class="text-muted mb-0" id="modalUpdateKontakDomisiliSubtitle" style="font-size: 0.83rem;">
-                            Perbarui nomor WhatsApp wali dan rincian alamat domisili Akun Keluarga.
+                            Perbarui nomor WhatsApp wali utama, wali pendamping, dan alamat domisili Akun Keluarga.
                         </p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -1818,12 +1854,34 @@
                         <div class="p-3 mb-3 rounded-3 d-flex align-items-center gap-2" style="background-color: #eff6ff; border: 1px solid #bfdbfe;">
                             <i class="bi bi-shield-check text-primary fs-5 flex-shrink-0"></i>
                             <div style="font-size: 0.78rem; color: #1e40af;">
-                                <strong>Pencatatan Log Audit Aktif:</strong> Setiap perubahan nomor WhatsApp dan alamat domisili akan dicatat secara otomatis dalam log audit sistem demi keamanan data.
+                                <strong>Pencatatan Log Audit Aktif:</strong> Setiap perubahan nomor WhatsApp dan alamat domisili akan dicatat secara otomatis dalam basis data log audit sistem demi kepatuhan dan keamanan data.
                             </div>
                         </div>
 
+                        <!-- Alert Error Client/Server Feedback -->
+                        <div id="alertEditKontakError" class="alert alert-danger d-none rounded-3 py-2 px-3 mb-3" style="font-size: 0.82rem;"></div>
+
                         <!-- Data Form -->
                         <div class="row g-3">
+                            <!-- Dropdown Pemilihan Keluarga Target -->
+                            <div class="col-12" id="wrapperSelectKeluargaTarget">
+                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
+                                    Pilih Akun Keluarga Target <span class="text-danger">*</span>
+                                </label>
+                                <select id="selectKeluargaTarget" class="form-select rounded-2" style="font-size: 0.88rem;" onchange="onSelectKeluargaTargetChange(this.value)">
+                                    <option value="">-- Pilih Akun Keluarga --</option>
+                                    @if(isset($allKeluargaOptions))
+                                        @foreach ($allKeluargaOptions as $k)
+                                            <option value="{{ $k->id_keluarga }}" data-nama="{{ $k->nama_keluarga }}" data-alamat="{{ $k->alamat_domisili }}">
+                                                #{{ $k->id_keluarga }} &bull; {{ $k->nama_keluarga }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <small class="text-muted" style="font-size: 0.72rem;">Pilih keluarga untuk memuat data kontak dan domisili secara otomatis.</small>
+                            </div>
+
+                            <!-- Nama Akun Keluarga -->
                             <div class="col-12">
                                 <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
                                     Nama Akun Keluarga <span class="text-muted">(Opsional)</span>
@@ -1840,9 +1898,11 @@
                                     <span class="input-group-text bg-light text-muted border-end-0 rounded-start-2">
                                         <i class="bi bi-whatsapp text-success"></i>
                                     </span>
-                                    <input type="text" name="nomor_whatsapp" id="inputEditKontakWhatsappPrimary" class="form-control border-start-0 rounded-end-2" placeholder="081234567890 atau +628..." required maxlength="25" style="font-size: 0.88rem;">
+                                    <input type="text" name="nomor_whatsapp" id="inputEditKontakWhatsappPrimary" class="form-control border-start-0 rounded-end-2" placeholder="081234567890 atau +628..." required maxlength="25" style="font-size: 0.88rem;" oninput="validateEditWaPrimary(this)">
                                 </div>
-                                <small class="text-muted" style="font-size: 0.72rem;">Primary Parent (Wali Utama)</small>
+                                <div id="feedbackEditWaPrimary" class="mt-1" style="font-size: 0.72rem;">
+                                    <span class="text-muted">Primary Parent (Wali Utama). Format: diawali 08, 62, atau +62 (9-16 digit).</span>
+                                </div>
                             </div>
 
                             <!-- WhatsApp Secondary Parent (Wali Pendamping) -->
@@ -1856,18 +1916,21 @@
                                     </span>
                                     <input type="text" name="nomor_whatsapp_secondary" id="inputEditKontakWhatsappSecondary" class="form-control border-start-0 rounded-end-2" placeholder="081399998888 (Opsional)" maxlength="25" style="font-size: 0.88rem;">
                                 </div>
-                                <small class="text-muted" style="font-size: 0.72rem;">Secondary Parent (Jika tersedia)</small>
+                                <small class="text-muted" style="font-size: 0.72rem;">Secondary Parent (Jika terdaftar pada Akun Keluarga)</small>
                             </div>
 
-                            <!-- Alamat Domisili -->
+                            <!-- Alamat Domisili Lengkap -->
                             <div class="col-12">
-                                <label class="form-label text-dark fw-medium mb-1" style="font-size: 0.82rem;">
-                                    Alamat Domisili Lengkap <span class="text-danger">*</span>
-                                </label>
-                                <textarea name="alamat_domisili" id="inputEditKontakAlamat" rows="3" class="form-control rounded-2" placeholder="Tuliskan nama jalan, nomor rumah, RT/RW..." required maxlength="500" style="font-size: 0.88rem;"></textarea>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label text-dark fw-medium mb-0" style="font-size: 0.82rem;">
+                                        Alamat Domisili Lengkap <span class="text-danger">*</span>
+                                    </label>
+                                    <span id="counterEditAlamat" class="text-muted fw-semibold" style="font-size: 0.72rem;">0 / 500 karakter</span>
+                                </div>
+                                <textarea name="alamat_domisili" id="inputEditKontakAlamat" rows="3" class="form-control rounded-2" placeholder="Tuliskan nama jalan, nomor rumah, RT/RW, komplek/blok perumahan..." required maxlength="500" style="font-size: 0.88rem;" oninput="updateAlamatCharCount(this)"></textarea>
                                 <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.72rem;">
                                     <span>Format allowlist teks terproteksi XSS.</span>
-                                    <span>Maks. 500 karakter</span>
+                                    <span>Digunakan untuk pengiriman kit modul / sertifikat robotika.</span>
                                 </div>
                             </div>
 
@@ -1891,10 +1954,14 @@
                         <button type="button" class="btn btn-light rounded-3 px-3 py-2 fw-medium text-secondary" data-bs-dismiss="modal" style="font-size: 0.88rem;">
                             Batal
                         </button>
-                        <button type="submit" id="btnSubmitUpdateKontakDomisili" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold d-flex align-items-center gap-2" style="background-color: var(--primary-blue); font-size: 0.88rem;">
+                        <button type="submit" id="btnSubmitUpdateKontakDomisili" class="btn btn-primary rounded-3 px-4 py-2 fw-semibold d-flex align-items-center gap-2 shadow-sm" style="background-color: var(--primary-blue); font-size: 0.88rem;">
                             <i class="bi bi-check-lg"></i> Simpan Perubahan & Catat Log
                         </button>
                     </div>
+                </form>
+            </div>
+        </div>
+    </div>
                 </form>
             </div>
         </div>
@@ -2395,10 +2462,59 @@
         }
 
         // ── Modal Update Kontak WhatsApp Wali & Domisili Akun Keluarga (Backlog B-42 - Arta Maruf Rifaa Ulwan) ──
+        function updateAlamatCharCount(el) {
+            const counter = document.getElementById('counterEditAlamat');
+            if (counter && el) {
+                const len = el.value.length;
+                counter.textContent = `${len} / 500 karakter`;
+                if (len > 480) {
+                    counter.className = 'fw-bold text-danger';
+                } else {
+                    counter.className = 'fw-semibold text-muted';
+                }
+            }
+        }
+
+        function validateEditWaPrimary(el) {
+            if (!el) return true;
+            const val = el.value.trim();
+            const regex = /^(\+62|62|08)[0-9\-\s]{7,15}$/;
+            const feedback = document.getElementById('feedbackEditWaPrimary');
+            if (!val) {
+                el.classList.remove('is-valid', 'is-invalid');
+                if (feedback) feedback.innerHTML = '<span class="text-danger">Nomor WhatsApp wali utama wajib diisi.</span>';
+                return false;
+            }
+            if (regex.test(val)) {
+                el.classList.remove('is-invalid');
+                el.classList.add('is-valid');
+                if (feedback) {
+                    feedback.innerHTML = '<span class="text-success fw-medium"><i class="bi bi-check-circle me-1"></i>Format nomor WhatsApp sah.</span>';
+                }
+                return true;
+            } else {
+                el.classList.remove('is-valid');
+                el.classList.add('is-invalid');
+                if (feedback) {
+                    feedback.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>Format tidak valid. Awali 08, 62, atau +62 (9-16 digit angka).</span>';
+                }
+                return false;
+            }
+        }
+
+        function onSelectKeluargaTargetChange(idKeluarga) {
+            if (!idKeluarga) return;
+            const selectEl = document.getElementById('selectKeluargaTarget');
+            const opt = selectEl ? selectEl.options[selectEl.selectedIndex] : null;
+            const fallbackNama = opt ? opt.getAttribute('data-nama') : '';
+            openUpdateKontakDomisiliModal(idKeluarga, fallbackNama);
+        }
+
         function openUpdateKontakDomisiliModal(idKeluarga, fallbackNama) {
             const form = document.getElementById('formUpdateKontakDomisili');
             const hiddenId = document.getElementById('inputEditKontakIdKeluarga');
             const subtitle = document.getElementById('modalUpdateKontakDomisiliSubtitle');
+            const selectKeluarga = document.getElementById('selectKeluargaTarget');
             const inputNama = document.getElementById('inputEditKontakNamaKeluarga');
             const inputWaPrimary = document.getElementById('inputEditKontakWhatsappPrimary');
             const inputWaSec = document.getElementById('inputEditKontakWhatsappSecondary');
@@ -2406,6 +2522,35 @@
             const inputKel = document.getElementById('inputEditKontakKelurahan');
             const inputKec = document.getElementById('inputEditKontakKecamatan');
             const inputKota = document.getElementById('inputEditKontakKota');
+            const alertErr = document.getElementById('alertEditKontakError');
+
+            if (alertErr) {
+                alertErr.classList.add('d-none');
+                alertErr.textContent = '';
+            }
+
+            if (inputWaPrimary) inputWaPrimary.classList.remove('is-valid', 'is-invalid');
+
+            const modalEl = document.getElementById('modalUpdateKontakDomisili');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            // Jika dipanggil tanpa ID keluarga, arahkan admin untuk memilih dari dropdown
+            if (!idKeluarga) {
+                if (selectKeluarga && selectKeluarga.options.length > 1) {
+                    const firstOption = selectKeluarga.options[1];
+                    idKeluarga = firstOption.value;
+                    fallbackNama = firstOption.getAttribute('data-nama') || '';
+                    selectKeluarga.value = idKeluarga;
+                } else {
+                    if (subtitle) subtitle.textContent = 'Pilih akun keluarga untuk memperbarui kontak dan domisili.';
+                    return;
+                }
+            }
+
+            if (selectKeluarga) {
+                selectKeluarga.value = idKeluarga;
+            }
 
             if (form) {
                 form.action = `/admin/keluarga/${idKeluarga}/update-kontak-domisili`;
@@ -2417,16 +2562,15 @@
             if (inputNama) inputNama.value = fallbackNama || '';
             if (inputWaPrimary) inputWaPrimary.value = 'Memuat...';
             if (inputWaSec) inputWaSec.value = '';
-            if (inputAlamat) inputAlamat.value = 'Memuat alamat domisili...';
+            if (inputAlamat) {
+                inputAlamat.value = 'Memuat alamat domisili...';
+                updateAlamatCharCount(inputAlamat);
+            }
             if (inputKel) inputKel.value = '';
             if (inputKec) inputKec.value = '';
             if (inputKota) inputKota.value = '';
 
-            const modalEl = document.getElementById('modalUpdateKontakDomisili');
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-
-            // Panggil API showKeluarga / orang-tua
+            // Panggil API showKeluarga
             fetch(`/api/admin/keluarga/${idKeluarga}`, {
                 headers: {
                     'Accept': 'application/json',
@@ -2438,12 +2582,19 @@
                 if (data && data.success && data.data) {
                     const d = data.data;
                     if (inputNama) inputNama.value = d.nama_keluarga || fallbackNama || '';
-                    if (inputWaPrimary) inputWaPrimary.value = d.nomor_whatsapp || d.primary_parent?.nomor_whatsapp || '';
+                    if (inputWaPrimary) {
+                        inputWaPrimary.value = d.nomor_whatsapp || d.primary_parent?.nomor_whatsapp || '';
+                        validateEditWaPrimary(inputWaPrimary);
+                    }
                     if (inputWaSec) inputWaSec.value = d.nomor_whatsapp_secondary || d.secondary_parent?.nomor_whatsapp || '';
-                    if (inputAlamat) inputAlamat.value = d.alamat_domisili || '';
+                    if (inputAlamat) {
+                        inputAlamat.value = d.alamat_domisili || '';
+                        updateAlamatCharCount(inputAlamat);
+                    }
                     if (inputKel) inputKel.value = d.kelurahan || '';
                     if (inputKec) inputKec.value = d.kecamatan || '';
                     if (inputKota) inputKota.value = d.kota_kabupaten || '';
+                    if (subtitle) subtitle.textContent = `Memperbarui data kontak & domisili untuk ${d.nama_keluarga || fallbackNama || ('Keluarga #' + idKeluarga)}`;
                 }
             })
             .catch(() => {
@@ -2626,6 +2777,55 @@
                         }
                     }, 350);
                 });
+            }
+
+            // Form Submit & Client Validation untuk Update Kontak & Domisili
+            const formKontak = document.getElementById('formUpdateKontakDomisili');
+            if (formKontak) {
+                formKontak.addEventListener('submit', function (e) {
+                    const waInput = document.getElementById('inputEditKontakWhatsappPrimary');
+                    const alamatInput = document.getElementById('inputEditKontakAlamat');
+                    const idInput = document.getElementById('inputEditKontakIdKeluarga');
+                    const alertErr = document.getElementById('alertEditKontakError');
+
+                    if (!idInput || !idInput.value) {
+                        e.preventDefault();
+                        if (alertErr) {
+                            alertErr.classList.remove('d-none');
+                            alertErr.textContent = 'Silakan pilih Akun Keluarga target terlebih dahulu.';
+                        }
+                        return false;
+                    }
+
+                    if (waInput && !validateEditWaPrimary(waInput)) {
+                        e.preventDefault();
+                        waInput.focus();
+                        if (alertErr) {
+                            alertErr.classList.remove('d-none');
+                            alertErr.textContent = 'Nomor WhatsApp wali utama tidak valid. Gunakan format diawali 08, 62, atau +62 dengan 9-16 digit angka.';
+                        }
+                        return false;
+                    }
+
+                    if (alamatInput && !alamatInput.value.trim()) {
+                        e.preventDefault();
+                        alamatInput.focus();
+                        if (alertErr) {
+                            alertErr.classList.remove('d-none');
+                            alertErr.textContent = 'Alamat domisili keluarga wajib diisi.';
+                        }
+                        return false;
+                    }
+                });
+            }
+
+            // Deteksi parameter URL untuk auto open modal kontak domisili
+            const urlParams = new URLSearchParams(window.location.search);
+            const openParam = urlParams.get('open');
+            const keluargaIdParam = urlParams.get('keluarga_id') || urlParams.get('id');
+            if (openParam === 'kontak' || openParam === 'update-kontak' || urlParams.has('edit_kontak')) {
+                const targetId = keluargaIdParam || urlParams.get('edit_kontak');
+                openUpdateKontakDomisiliModal(targetId, '');
             }
         });
     </script>

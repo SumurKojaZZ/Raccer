@@ -16,6 +16,7 @@ class AkunKeluarga extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'id_keluarga',
         'nama_keluarga',
         'alamat_domisili',
         'kelurahan',

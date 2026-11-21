@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     Artisan::call('migrate');
+    try {
+        DB::statement('PRAGMA foreign_keys = OFF');
+    } catch (\Throwable $e) {}
 });
 
 test('guest cannot access endpoint jadwal mengajar tutor', function () {
@@ -201,16 +204,28 @@ test('tutor schedule includes student participants list on each schedule', funct
 
     $siswa1 = \App\Models\Siswa::create([
         'id_keluarga' => 1,
+        'id_pengguna' => 101,
         'nama' => 'Alya Putri',
         'nama_lengkap' => 'Alya Putri Ramadhani',
+        'nama_panggilan' => 'Alya',
+        'jenjang' => 'SD',
+        'kelas' => '4',
+        'tanggal_lahir' => '2016-05-10',
+        'status_siswa' => 'Aktif',
         'nisn' => '0012345678',
         'program' => 'Junior Robotics',
     ]);
 
     $siswa2 = \App\Models\Siswa::create([
         'id_keluarga' => 1,
+        'id_pengguna' => 102,
         'nama' => 'Bima Aditya',
         'nama_lengkap' => 'Bima Aditya Pratama',
+        'nama_panggilan' => 'Bima',
+        'jenjang' => 'SD',
+        'kelas' => '5',
+        'tanggal_lahir' => '2015-08-20',
+        'status_siswa' => 'Aktif',
         'nisn' => '0012345679',
         'program' => 'Junior Robotics',
     ]);
@@ -256,8 +271,14 @@ test('tutor can view student participants of their own schedule (200 OK)', funct
 
     $siswa = \App\Models\Siswa::create([
         'id_keluarga' => 1,
+        'id_pengguna' => 103,
         'nama' => 'Citra Cantika',
         'nama_lengkap' => 'Citra Cantika Maharani',
+        'nama_panggilan' => 'Citra',
+        'jenjang' => 'SD',
+        'kelas' => '3',
+        'tanggal_lahir' => '2017-01-15',
+        'status_siswa' => 'Aktif',
         'program' => 'Robotics Class Kak Budi',
     ]);
 

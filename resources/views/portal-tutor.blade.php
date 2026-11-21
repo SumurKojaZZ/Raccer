@@ -910,6 +910,11 @@
                                                         <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1" style="font-size: 0.74rem;">
                                                             <i class="bi bi-geo-alt me-1"></i>{{ $jadwalItem->moda ?? 'Offline' }} ({{ $jadwalItem->lokasi ?? 'Lab Robotika' }})
                                                         </span>
+                                                        @if (!empty($jadwalItem->link_kelas))
+                                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1" style="font-size: 0.72rem;">
+                                                                <i class="bi bi-camera-video me-1"></i> Link Kelas Aktif
+                                                            </span>
+                                                        @endif
                                                         <span class="text-muted" style="font-size: 0.8rem;">
                                                             <i class="bi bi-calendar3 me-1"></i>{{ $jadwalItem->tanggal ? \Carbon\Carbon::parse($jadwalItem->tanggal)->isoFormat('dddd, D MMMM Y') : 'Sesuai Jadwal' }}
                                                         </span>
@@ -922,12 +927,17 @@
                                                     </small>
                                                 </div>
 
-                                                <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                                                <div class="d-flex align-items-center gap-2 mt-2 mt-md-0 flex-wrap">
+                                                    @if (!empty($jadwalItem->link_kelas))
+                                                        <a href="{{ $jadwalItem->link_kelas }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success rounded-3 px-2 py-1" style="font-size: 0.78rem;" title="Buka Link Kelas Online">
+                                                            <i class="bi bi-camera-video me-1"></i> Buka Kelas
+                                                        </a>
+                                                    @endif
                                                     <span class="badge bg-light text-dark border px-3 py-2 rounded-3" style="font-size: 0.82rem;">
                                                         <i class="bi bi-people-fill text-primary me-1"></i> {{ $pesertaCount }} Siswa Terdaftar
                                                     </span>
                                                     <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#modalDetailJadwal{{ $jadwalItem->id }}">
-                                                        <i class="bi bi-eye me-1"></i> Detail
+                                                        <i class="bi bi-pencil-square me-1"></i> Detail & Tautan
                                                     </button>
                                                 </div>
                                             </div>
@@ -1508,6 +1518,88 @@
                                         {{ $modalJadwal->lokasi ?? 'Lab Robotika' }}
                                     </strong>
                                     <div class="text-secondary">Tutor: {{ $modalJadwal->tutor ?? $tutorProfile->nama_lengkap }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Box & Form Input / Edit Tautan Kelas Online (Validasi HTTPS & Kepemilikan Tutor) -->
+                            <div class="card border rounded-3 mb-3 bg-white shadow-sm overflow-hidden">
+                                <div class="card-header bg-light d-flex align-items-center justify-content-between py-2 px-3 border-bottom">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-camera-video-fill text-primary fs-6"></i>
+                                        <span class="fw-bold text-dark" style="font-size: 0.85rem;">Tautan Kelas Online (Google Meet / Zoom)</span>
+                                    </div>
+                                    <span class="badge {{ $modalJadwal->moda === 'Online' ? 'bg-primary-subtle text-primary' : 'bg-secondary-subtle text-secondary' }} rounded-pill px-2 py-1" style="font-size: 0.72rem;">
+                                        Moda: {{ $modalJadwal->moda ?? 'Offline' }}
+                                    </span>
+                                </div>
+                                <div class="card-body p-3">
+                                    @if (strcasecmp((string)($modalJadwal->moda ?? 'Offline'), 'Online') !== 0)
+                                        <div class="d-flex align-items-center gap-3 p-3 rounded-3 bg-light text-secondary border">
+                                            <div class="rounded-circle bg-white p-2 border shadow-sm text-primary d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; flex-shrink: 0;">
+                                                <i class="bi bi-geo-alt-fill fs-5"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark" style="font-size: 0.85rem;">Kelas Tatap Muka (Moda Offline)</div>
+                                                <div class="text-muted" style="font-size: 0.78rem;">
+                                                    Sesi ini berlangsung secara langsung di ruang <strong>{{ $modalJadwal->lokasi ?? 'Lab Robotika' }}</strong>. Pengaturan tautan meeting online hanya berlaku untuk sesi bermoda <strong>Online</strong>.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <!-- Container Feedback Status Realtime -->
+                                        <div id="feedbackLink{{ $modalJadwal->id }}"></div>
+
+                                        @if (!empty($modalJadwal->link_kelas))
+                                            <div class="d-flex align-items-center justify-content-between p-2 rounded-3 bg-success-subtle border border-success-subtle mb-3 flex-wrap gap-2" id="previewContainer{{ $modalJadwal->id }}">
+                                                <div class="d-flex align-items-center gap-2 text-truncate" style="max-width: 80%;">
+                                                    <i class="bi bi-shield-check text-success fs-5"></i>
+                                                    <div>
+                                                        <div class="text-success fw-bold" style="font-size: 0.72rem;">TAUTAN HTTPS AKTIF</div>
+                                                        <a href="{{ $modalJadwal->link_kelas }}" id="previewLink{{ $modalJadwal->id }}" target="_blank" rel="noopener noreferrer" class="text-dark fw-semibold text-truncate d-inline-block text-decoration-underline" style="font-size: 0.82rem; max-width: 100%;">
+                                                            {{ $modalJadwal->link_kelas }}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 py-1 px-2 btn-copy-link" style="font-size: 0.74rem;" onclick="copyToClipboard('{{ $modalJadwal->link_kelas }}', this)" title="Salin Tautan">
+                                                        <i class="bi bi-clipboard"></i> Salin
+                                                    </button>
+                                                    <a href="{{ $modalJadwal->link_kelas }}" id="previewBtnBuka{{ $modalJadwal->id }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-success rounded-3 py-1 px-2" style="font-size: 0.74rem;">
+                                                        <i class="bi bi-box-arrow-up-right me-1"></i> Buka
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="d-flex align-items-center gap-2 p-2 rounded-3 bg-warning-subtle text-warning-emphasis border border-warning-subtle mb-3" id="previewContainer{{ $modalJadwal->id }}" style="font-size: 0.8rem;">
+                                                <i class="bi bi-info-circle-fill"></i>
+                                                <span>Tautan kelas online belum diatur. Masukkan URL meeting di bawah ini sebelum sesi dimulai.</span>
+                                            </div>
+                                        @endif
+
+                                        <form action="{{ route('tutor.jadwal.update-link', $modalJadwal->id) }}" method="POST" class="form-update-link-kelas" data-jadwal-id="{{ $modalJadwal->id }}">
+                                            @csrf
+                                            <label class="form-label text-muted fw-semibold mb-1" style="font-size: 0.78rem;">
+                                                Input / Edit Tautan Kelas Online:
+                                            </label>
+                                            <div class="input-group mb-1">
+                                                <span class="input-group-text bg-white text-primary border-end-0 rounded-start-3" style="font-size: 0.85rem;">
+                                                    <i class="bi bi-link-45deg"></i> https://
+                                                </span>
+                                                <input type="url" name="link_kelas" id="inputLinkKelas{{ $modalJadwal->id }}" 
+                                                       class="form-control rounded-end-3" 
+                                                       placeholder="https://meet.google.com/xxx-yyyy-zzz atau https://zoom.us/j/..." 
+                                                       value="{{ old('link_kelas', $modalJadwal->link_kelas ?? ($modalJadwal->moda === 'Online' ? $modalJadwal->lokasi : '')) }}" 
+                                                       required pattern="https://.*" style="font-size: 0.85rem;">
+                                                <button type="submit" class="btn btn-primary rounded-3 px-3 ms-2 text-nowrap d-flex align-items-center gap-1" style="background-color: var(--primary-blue);">
+                                                    <i class="bi bi-floppy"></i> <span>Simpan Tautan</span>
+                                                </button>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-between mt-1 text-muted flex-wrap gap-1" style="font-size: 0.73rem;">
+                                                <span><i class="bi bi-shield-lock-fill text-success me-1"></i>Format wajib diawali dengan <code>https://</code></span>
+                                                <span>Contoh: Google Meet, Zoom, MS Teams</span>
+                                            </div>
+                                        </form>
+                                    @endif
                                 </div>
                             </div>
 

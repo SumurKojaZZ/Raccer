@@ -470,6 +470,14 @@ class AdminController extends Controller
             $allSiswaOptions = $defaultSiswa;
         }
 
+        // Daftar opsi keluarga untuk modal edit kontak & alamat domisili
+        $allKeluargaOptions = collect();
+        try {
+            if (Schema::hasTable('akun_keluarga')) {
+                $allKeluargaOptions = AkunKeluarga::with(['orangTua'])->orderBy('id_keluarga', 'desc')->get();
+            }
+        } catch (\Throwable $e) {}
+
         return view('keluarga', compact(
             'siswaList',
             'search',
@@ -480,7 +488,8 @@ class AdminController extends Controller
             'totalSiswaCount',
             'paketHampirHabisCount',
             'aktivasiWhatsappPercent',
-            'allSiswaOptions'
+            'allSiswaOptions',
+            'allKeluargaOptions'
         ));
     }
 
@@ -1628,9 +1637,22 @@ class AdminController extends Controller
         }
 
         // 2. Validasi input allowlist server-side yang ketat
+        $isPatch = $request->isMethod('patch');
+
+        // Mapping alias field jika dikirimkan format singkat
+        if (!$request->has('nomor_whatsapp') && $request->has('whatsapp')) {
+            $request->merge(['nomor_whatsapp' => $request->input('whatsapp')]);
+        }
+        if (!$request->has('nomor_whatsapp_secondary') && $request->has('whatsapp_secondary')) {
+            $request->merge(['nomor_whatsapp_secondary' => $request->input('whatsapp_secondary')]);
+        }
+        if (!$request->has('alamat_domisili') && $request->has('alamat')) {
+            $request->merge(['alamat_domisili' => $request->input('alamat')]);
+        }
+
         $validated = $request->validate([
             'nomor_whatsapp' => [
-                'required',
+                $isPatch ? 'sometimes' : 'required',
                 'string',
                 'max:25',
                 'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/',
@@ -1641,7 +1663,7 @@ class AdminController extends Controller
                 'max:25',
                 'regex:/^(\+62|62|08)[0-9\-\s]{7,15}$/',
             ],
-            'alamat_domisili' => ['required', 'string', 'max:500'],
+            'alamat_domisili' => [$isPatch ? 'sometimes' : 'required', 'string', 'max:500'],
             'kelurahan' => ['nullable', 'string', 'max:100'],
             'kecamatan' => ['nullable', 'string', 'max:100'],
             'kota_kabupaten' => ['nullable', 'string', 'max:100'],
@@ -1700,12 +1722,14 @@ class AdminController extends Controller
 
         // 5. Susun data baru yang telah divalidasi
         $newNamaKeluarga = !empty($validated['nama_keluarga']) ? trim((string) $validated['nama_keluarga']) : ($keluarga->nama_keluarga ?? ('Keluarga #' . $id));
-        $newAlamat = trim((string) $validated['alamat_domisili']);
-        $newKelurahan = isset($validated['kelurahan']) ? trim((string) $validated['kelurahan']) : ($keluarga->kelurahan ?? null);
-        $newKecamatan = isset($validated['kecamatan']) ? trim((string) $validated['kecamatan']) : ($keluarga->kecamatan ?? null);
-        $newKota = isset($validated['kota_kabupaten']) ? trim((string) $validated['kota_kabupaten']) : ($keluarga->kota_kabupaten ?? null);
-        $cleanWaPrimary = trim((string) $validated['nomor_whatsapp']);
-        $cleanWaSecondary = !empty($validated['nomor_whatsapp_secondary']) ? trim((string) $validated['nomor_whatsapp_secondary']) : ($secondaryParent?->nomor_whatsapp ?? null);
+        $newAlamat = array_key_exists('alamat_domisili', $validated) ? trim((string) $validated['alamat_domisili']) : ($keluarga->alamat_domisili ?? '');
+        $newKelurahan = array_key_exists('kelurahan', $validated) ? trim((string) $validated['kelurahan']) : ($keluarga->kelurahan ?? null);
+        $newKecamatan = array_key_exists('kecamatan', $validated) ? trim((string) $validated['kecamatan']) : ($keluarga->kecamatan ?? null);
+        $newKota = array_key_exists('kota_kabupaten', $validated) ? trim((string) $validated['kota_kabupaten']) : ($keluarga->kota_kabupaten ?? null);
+        $cleanWaPrimary = array_key_exists('nomor_whatsapp', $validated) ? trim((string) $validated['nomor_whatsapp']) : ($primaryParent?->nomor_whatsapp ?? '');
+        $cleanWaSecondary = array_key_exists('nomor_whatsapp_secondary', $validated)
+            ? (!empty($validated['nomor_whatsapp_secondary']) ? trim((string) $validated['nomor_whatsapp_secondary']) : null)
+            : ($secondaryParent?->nomor_whatsapp ?? null);
 
         $newData = [
             'nama_keluarga' => $newNamaKeluarga,
@@ -1740,10 +1764,12 @@ class AdminController extends Controller
 
             // Update nomor WhatsApp Primary Parent di tabel orang_tua
             if ($primaryParent) {
-                DB::table('orang_tua')
-                    ->where('id_orang_tua', $primaryParent->id_orang_tua)
-                    ->update(['nomor_whatsapp' => $newData['whatsapp_primary']]);
-            } else if (Schema::hasTable('orang_tua')) {
+                if (array_key_exists('nomor_whatsapp', $validated)) {
+                    DB::table('orang_tua')
+                        ->where('id_orang_tua', $primaryParent->id_orang_tua)
+                        ->update(['nomor_whatsapp' => $newData['whatsapp_primary']]);
+                }
+            } else if (Schema::hasTable('orang_tua') && !empty($newData['whatsapp_primary'])) {
                 // Jika belum ada record orang tua, buatkan Primary Parent default
                 $idPengguna = DB::table('pengguna')->where('username', 'like', 'ibu.%')->value('id_pengguna') ?? 1;
                 DB::table('orang_tua')->insert([
@@ -1757,7 +1783,7 @@ class AdminController extends Controller
             }
 
             // Update nomor WhatsApp Secondary Parent jika tersedia
-            if ($secondaryParent && !empty($validated['nomor_whatsapp_secondary'])) {
+            if ($secondaryParent && array_key_exists('nomor_whatsapp_secondary', $validated)) {
                 DB::table('orang_tua')
                     ->where('id_orang_tua', $secondaryParent->id_orang_tua)
                     ->update(['nomor_whatsapp' => $newData['whatsapp_secondary']]);
@@ -1766,10 +1792,10 @@ class AdminController extends Controller
             // Sinkronkan ke tabel siswa jika memiliki kolom nomor_whatsapp atau alamat
             if (Schema::hasTable('siswa')) {
                 $updateSiswa = [];
-                if (Schema::hasColumn('siswa', 'nomor_whatsapp')) {
+                if (Schema::hasColumn('siswa', 'nomor_whatsapp') && !empty($newData['whatsapp_primary'])) {
                     $updateSiswa['nomor_whatsapp'] = $newData['whatsapp_primary'];
                 }
-                if (Schema::hasColumn('siswa', 'alamat')) {
+                if (Schema::hasColumn('siswa', 'alamat') && !empty($newData['alamat_domisili'])) {
                     $updateSiswa['alamat'] = $newData['alamat_domisili'];
                 }
                 if (!empty($updateSiswa)) {
@@ -2895,6 +2921,9 @@ class AdminController extends Controller
                     }
                     if (!Schema::hasColumn('jadwal', 'moda')) {
                         $table->string('moda')->default('Offline');
+                    }
+                    if (!Schema::hasColumn('jadwal', 'link_kelas')) {
+                        $table->string('link_kelas', 2048)->nullable();
                     }
                 });
             }

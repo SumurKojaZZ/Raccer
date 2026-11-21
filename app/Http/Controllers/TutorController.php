@@ -7,6 +7,7 @@ use App\Models\Pengumuman;
 use App\Models\PesertaJadwal;
 use App\Models\Siswa;
 use App\Models\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -782,6 +783,142 @@ class TutorController extends Controller
     public function detailJadwal(Request $request, int $id): JsonResponse
     {
         return $this->getPesertaJadwal($request, $id);
+    }
+
+    /**
+     * Endpoint Update URL Link Kelas Online dengan validasi HTTPS dan Kepemilikan Jadwal Tutor.
+     * POST/PUT/PATCH /api/tutor/jadwal/{id}/link
+     * POST/PUT/PATCH /tutor/jadwal/{id}/link
+     */
+    public function updateLinkKelas(Request $request, int $id): JsonResponse|RedirectResponse
+    {
+        // 1. Verifikasi Autentikasi
+        if (!Auth::check()) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated. Silakan login terlebih dahulu.',
+                ], 401);
+            }
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+
+        // 2. Verifikasi Otorisasi Role: Khusus Tutor (atau Admin)
+        $isTutor = method_exists($user, 'isTutor')
+            ? $user->isTutor()
+            : strcasecmp((string) (session('role') ?? $user->role), 'Tutor') === 0;
+
+        $isAdmin = method_exists($user, 'isAdmin')
+            ? $user->isAdmin()
+            : strcasecmp((string) (session('role') ?? $user->role), 'Admin') === 0;
+
+        if (!$isTutor && !$isAdmin) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Akses ini khusus untuk Tutor.',
+                ], 403);
+            }
+            abort(403, 'Unauthorized. Akses ini khusus untuk Tutor.');
+        }
+
+        // 3. Cari Jadwal Kelas
+        $jadwal = Jadwal::find($id);
+        if (!$jadwal) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Jadwal dengan ID {$id} tidak ditemukan.",
+                ], 404);
+            }
+            return back()->withErrors(['link_kelas' => "Jadwal dengan ID {$id} tidak ditemukan."]);
+        }
+
+        // 4. Verifikasi Kepemilikan Jadwal Tutor (Otorisasi Akses Pribadi)
+        if (!$this->authorizeJadwalBelongsToTutor($jadwal, $user)) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Akses ditolak (HTTP 403). Anda hanya dapat mengubah tautan kelas online pada jadwal mengajar milik Anda sendiri.',
+                ], 403);
+            }
+            abort(403, 'Unauthorized. Anda tidak memiliki izin memperbarui jadwal milik Tutor lain.');
+        }
+
+        // 5. Validasi Moda Jadwal (Hanya Jadwal Online yang Memerlukan Tautan Kelas Online)
+        if (strcasecmp((string) ($jadwal->moda ?? 'Offline'), 'Online') !== 0) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tautan kelas online hanya dapat ditambahkan pada jadwal dengan moda Online. Jadwal ini merupakan kelas tatap muka (Offline).',
+                    'errors' => [
+                        'link_kelas' => ['Tautan kelas online hanya dapat ditambahkan pada jadwal dengan moda Online. Jadwal ini berstatus tatap muka (Offline).'],
+                    ],
+                ], 422);
+            }
+            return back()->withErrors(['link_kelas' => 'Tautan kelas online hanya dapat ditambahkan pada jadwal dengan moda Online. Jadwal ini berstatus tatap muka (Offline).']);
+        }
+
+        // 6. Validasi Format URL Wajib HTTPS
+        // Menerima input dari berbagai kemungkinan nama field
+        $urlInput = $request->input('link_kelas')
+            ?? $request->input('link_meeting')
+            ?? $request->input('url_kelas')
+            ?? $request->input('url')
+            ?? $request->input('link')
+            ?? $request->input('tautan_meeting');
+
+        $request->merge(['link_kelas' => $urlInput]);
+
+        $validated = $request->validate([
+            'link_kelas' => [
+                'required',
+                'string',
+                'max:2048',
+                'regex:/^https:\/\/.+/i',
+                'url',
+            ],
+        ], [
+            'link_kelas.required' => 'Tautan URL kelas online wajib diisi.',
+            'link_kelas.regex'    => 'Format URL tautan kelas online tidak valid. Wajib menggunakan protokol HTTPS (https://).',
+            'link_kelas.url'      => 'Format tautan kelas online harus berupa URL yang valid.',
+        ]);
+
+        $cleanUrl = trim((string) $validated['link_kelas']);
+
+        // 6. Simpan URL ke database
+        if (Schema::hasTable('jadwal') && !Schema::hasColumn('jadwal', 'link_kelas')) {
+            Schema::table('jadwal', function (Blueprint $table) {
+                $table->string('link_kelas', 2048)->nullable();
+            });
+        }
+
+        $jadwal->link_kelas = $cleanUrl;
+        // Sinkronkan ke lokasi jika moda kelas adalah Online
+        if ($jadwal->moda === 'Online' || empty($jadwal->lokasi) || str_contains(strtolower((string)$jadwal->lokasi), 'google meet') || str_contains(strtolower((string)$jadwal->lokasi), 'zoom')) {
+            $jadwal->lokasi = $cleanUrl;
+        }
+        $jadwal->save();
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tautan kelas online berhasil diperbarui.',
+                'data' => [
+                    'id' => $jadwal->id,
+                    'program' => $jadwal->program,
+                    'kelas' => $jadwal->kelas,
+                    'moda' => $jadwal->moda,
+                    'lokasi' => $jadwal->lokasi,
+                    'link_kelas' => $jadwal->link_kelas,
+                    'updated_at' => $jadwal->updated_at?->toIso8601String(),
+                ],
+            ], 200);
+        }
+
+        return back()->with('success', 'Tautan kelas online berhasil diperbarui.');
     }
 }
 
