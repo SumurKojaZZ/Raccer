@@ -41,6 +41,11 @@ class AdminController extends Controller
             return redirect()->route('orang-tua');
         }
 
+        // Proteksi hak akses: Jika siswa mencoba akses dashboard admin, tolak dengan 403
+        if ($request->session()->get('role') === 'Siswa' || (Auth::check() && method_exists(Auth::user(), 'isSiswa') && Auth::user()->isSiswa())) {
+            abort(403, 'Akses ditolak. Tindakan ini hanya dapat dilakukan oleh Admin.');
+        }
+
         // Pastikan tabel-tabel dashboard ada di database
         $this->ensureTablesExist();
 
@@ -2277,7 +2282,9 @@ class AdminController extends Controller
             $terdaftarIds = PesertaJadwal::where('id_jadwal', $idJadwal)->pluck('id_siswa')->toArray();
         }
 
-        $query = Siswa::query()->with(['activePaket']);
+        $query = Siswa::query()->with(['activePaket'])->where(function ($q) {
+            $q->whereNull('status_siswa')->orWhere('status_siswa', '!=', 'Non_Aktif_Alumni');
+        });
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {

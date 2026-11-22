@@ -520,7 +520,12 @@
             @auth
                 <!-- User Authenticated Menu -->
                 <div class="d-flex align-items-center gap-2">
-                    @if(session('role') === 'Orang_Tua' || (Auth::user()->isOrangTua()))
+                    @if(session('role') === 'Siswa' || (Auth::user()->isSiswa()))
+                        <a href="{{ route('siswa.beranda') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1" style="font-size: 0.84rem;">
+                            <i class="bi bi-robot"></i>
+                            <span>Beranda Siswa</span>
+                        </a>
+                    @elseif(session('role') === 'Orang_Tua' || (Auth::user()->isOrangTua()))
                         <a href="{{ route('orang-tua') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 fw-semibold d-flex align-items-center gap-1" style="font-size: 0.84rem;">
                             <i class="bi bi-people-fill text-primary"></i>
                             <span>Portal Orang Tua</span>

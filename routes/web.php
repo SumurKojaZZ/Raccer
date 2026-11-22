@@ -237,6 +237,16 @@ Route::middleware(['auth', 'orang_tua', \App\Http\Middleware\CheckIdleTimeout::c
     Route::delete('/orang-tua/secondary-parent', [OrangTuaController::class, 'destroySecondaryParentOrangTua'])->name('orang-tua.secondary-parent.destroy');
 });
 
+// ── Siswa Protected Routes (Khusus Beranda Siswa - Backlog B-56) ───────
+Route::middleware(['auth', 'siswa', \App\Http\Middleware\CheckIdleTimeout::class])->group(function () {
+    Route::get('/siswa', [LoginController::class, 'berandaSiswa'])->name('siswa.beranda');
+    Route::get('/beranda-siswa', [LoginController::class, 'berandaSiswa'])->name('portal.siswa');
+});
+
+// ── API Autentikasi Siswa (Username + PIN 6 Digit - Backlog B-56 Backend) ──
+Route::post('/api/siswa/login', [LoginController::class, 'authenticateSiswa'])->name('api.siswa.login');
+Route::post('/api/login/siswa', [LoginController::class, 'authenticateSiswa'])->name('api.login.siswa');
+
 // ── Lupa Password ──────────────────────────────────────
 Route::get('/forgot-password', function () {
     return view('forgot-password');
