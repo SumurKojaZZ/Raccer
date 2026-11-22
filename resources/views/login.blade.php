@@ -447,8 +447,8 @@
 
             @php
                 // Default ke Login Staf/Pengajar/Wali (Username & Password).
-                // Mode Siswa hanya aktif jika ada query ?role=siswa atau jika submit sebelumnya dari mode siswa (bukan admin).
-                $isSiswaMode = (request('role') === 'siswa' || old('login_mode') === 'siswa') && (old('username') !== 'admin');
+                // Mode Siswa aktif jika ada query ?role=siswa, submit sebelumnya dari mode siswa, atau logout dari akun siswa.
+                $isSiswaMode = (request('role') === 'siswa' || old('login_mode') === 'siswa' || session('logout_role') === 'Siswa') && (old('username') !== 'admin');
             @endphp
 
             <!-- Switcher Tab: Pengajar & Wali vs Siswa (PIN) -->
@@ -832,6 +832,14 @@
 
         // Validasi Submit Form Siswa
         document.getElementById('formLoginSiswa').addEventListener('submit', function(e) {
+            const userVal = document.getElementById('siswaUsername').value;
+            if (!userVal) {
+                e.preventDefault();
+                alert('Silakan pilih profil kamu terlebih dahulu ya! 😊');
+                backToProfileChooser();
+                return;
+            }
+
             if (studentPin.length < maxPinLength) {
                 e.preventDefault();
                 alert('Silakan masukkan 6 angka PIN rahasiamu terlebih dahulu ya! 😊');
