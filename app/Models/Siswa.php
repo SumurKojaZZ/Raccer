@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class Siswa extends Model
 {
@@ -41,6 +43,62 @@ class Siswa extends Model
     protected $hidden = [
         'pin_hash',
     ];
+
+    /**
+     * Booted model event hooks.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function ($siswa): void {
+            if (Schema::hasTable('akun_keluarga')) {
+                $hasFam = !empty($siswa->id_keluarga) && DB::table('akun_keluarga')->where('id_keluarga', $siswa->id_keluarga)->exists();
+                if (!$hasFam) {
+                    try {
+                        $famId = $siswa->id_keluarga ?: 1;
+                        DB::table('akun_keluarga')->insert([
+                            'id_keluarga' => $famId,
+                            'nama_keluarga' => 'Keluarga Siswa',
+                            'alamat_domisili' => 'Jl. Merdeka No. 1',
+                            'kelurahan' => 'Kramat',
+                            'kecamatan' => 'Senen',
+                            'kota_kabupaten' => 'Jakarta Pusat',
+                            'dibuat_pada' => now(),
+                        ]);
+                        $siswa->id_keluarga = $famId;
+                    } catch (\Throwable $e) {}
+                }
+            }
+
+            if (empty($siswa->id_pengguna) && Schema::hasTable('pengguna')) {
+                $randomUser = 'siswa.' . Str::lower(Str::random(8));
+                try {
+                    $idPengguna = DB::table('pengguna')->insertGetId([
+                        'username' => $randomUser,
+                        'password_hash' => Hash::make('123456'),
+                        'role' => 'Siswa',
+                        'status_aktif' => 1,
+                        'jumlah_gagal_login' => 0,
+                        'dibuat_pada' => now(),
+                    ]);
+                    $siswa->id_pengguna = $idPengguna;
+                } catch (\Throwable $e) {}
+            }
+
+            if (empty($siswa->nama_panggilan)) {
+                $name = $siswa->nama_lengkap ?? $siswa->nama ?? 'Siswa';
+                $siswa->nama_panggilan = explode(' ', trim($name))[0] ?: $name;
+            }
+            if (empty($siswa->jenjang)) {
+                $siswa->jenjang = 'SD';
+            }
+            if (empty($siswa->kelas)) {
+                $siswa->kelas = '1';
+            }
+            if (empty($siswa->tanggal_lahir)) {
+                $siswa->tanggal_lahir = '2016-01-01';
+            }
+        });
+    }
 
     /**
      * Fallback accessor untuk status pembayaran (Belum Bayar / Lunas).

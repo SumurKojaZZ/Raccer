@@ -79,6 +79,18 @@ class User extends Authenticatable
             return 'Admin';
         }
 
+        if ($this->isSiswa()) {
+            return 'Siswa';
+        }
+
+        if ($this->isTutor()) {
+            return 'Tutor';
+        }
+
+        if ($this->isOrangTua()) {
+            return 'Orang_Tua';
+        }
+
         return 'Guest';
     }
 
@@ -265,6 +277,47 @@ class User extends Authenticatable
                         ->limit(1);
                 })
                 ->where('jenis_wali', 'Secondary_Parent')
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Memeriksa apakah user memiliki peran Siswa.
+     */
+    public function isSiswa(): bool
+    {
+        // 1. Cek langsung atribut role pada instance jika ada
+        if (!empty($this->role)) {
+            return strcasecmp((string) $this->role, 'Siswa') === 0;
+        }
+
+        // 2. Cek session role jika ada
+        if (session()->has('role')) {
+            return strcasecmp((string) session('role'), 'Siswa') === 0;
+        }
+
+        // 3. Cek tabel pengguna
+        try {
+            $pengguna = \Illuminate\Support\Facades\DB::table('pengguna')
+                ->where('username', $this->username)
+                ->first();
+
+            if ($pengguna && isset($pengguna->role)) {
+                return strcasecmp((string) $pengguna->role, 'Siswa') === 0;
+            }
+        } catch (\Throwable $e) {}
+
+        // 4. Cek apakah terdaftar di tabel siswa
+        try {
+            return \Illuminate\Support\Facades\DB::table('siswa')
+                ->where('id_pengguna', function ($q) {
+                    $q->select('id_pengguna')
+                        ->from('pengguna')
+                        ->where('username', $this->username)
+                        ->limit(1);
+                })
                 ->exists();
         } catch (\Throwable $e) {
             return false;

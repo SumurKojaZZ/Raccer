@@ -41,9 +41,11 @@ class CheckIdleTimeout
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                $pesan = ($role === 'Orang_Tua')
-                    ? 'Sesi akun Orang Tua Anda telah berakhir karena tidak ada aktivitas selama 15 menit. Silakan masuk kembali demi keamanan data keluarga.'
-                    : 'Sesi Anda telah berakhir karena tidak ada aktivitas (AFK) selama 15 menit. Silakan masuk kembali.';
+                $pesan = match ($role) {
+                    'Siswa' => 'Sesi belajarmu sudah selesai karena tidak ada aktivitas selama 15 menit. Yuk masuk lagi dengan PIN kamu ya!',
+                    'Orang_Tua' => 'Sesi akun Orang Tua Anda telah berakhir karena tidak ada aktivitas selama 15 menit. Silakan masuk kembali demi keamanan data keluarga.',
+                    default => 'Sesi Anda telah berakhir karena tidak ada aktivitas (AFK) selama 15 menit. Silakan masuk kembali.',
+                };
 
                 return redirect()->route('login')->withErrors([
                     'username' => $pesan,

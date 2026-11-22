@@ -41,6 +41,11 @@ class AdminController extends Controller
             return redirect()->route('orang-tua');
         }
 
+        // Proteksi hak akses: Jika siswa mencoba akses dashboard admin, tolak dengan 403
+        if ($request->session()->get('role') === 'Siswa' || (Auth::check() && method_exists(Auth::user(), 'isSiswa') && Auth::user()->isSiswa())) {
+            abort(403, 'Akses ditolak. Tindakan ini hanya dapat dilakukan oleh Admin.');
+        }
+
         // Pastikan tabel-tabel dashboard ada di database
         $this->ensureTablesExist();
 
