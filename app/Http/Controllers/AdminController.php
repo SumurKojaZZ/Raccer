@@ -2256,7 +2256,9 @@ class AdminController extends Controller
             $terdaftarIds = PesertaJadwal::where('id_jadwal', $idJadwal)->pluck('id_siswa')->toArray();
         }
 
-        $query = Siswa::query()->with(['activePaket']);
+        $query = Siswa::query()->with(['activePaket'])->where(function ($q) {
+            $q->whereNull('status_siswa')->orWhere('status_siswa', '!=', 'Non_Aktif_Alumni');
+        });
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {

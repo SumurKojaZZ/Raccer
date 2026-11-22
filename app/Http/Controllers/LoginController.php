@@ -261,7 +261,58 @@ class LoginController extends Controller
                 $siswaRecord = DB::table('siswa')->where('id_pengguna', $pengguna->id_pengguna)->first();
             }
 
-            // A. Pengecekan Status [Gagal]: Tolak siswa berstatus Non-Aktif / Alumni meskipun PIN benar
+            // A. Verifikasi PIN Angka Siswa berbasis hash
+            $isPinValid = Hash::check($password, $pengguna->password_hash);
+            if (!$isPinValid && $siswaRecord && !empty($siswaRecord->pin_hash)) {
+                $isPinValid = Hash::check($password, $siswaRecord->pin_hash);
+            }
+
+            // Jika PIN salah, jangan bocorkan status akun; catat gagal dan kunci setelah 5 kali salah
+            if (!$isPinValid) {
+                RateLimiter::hit($throttleKey, $this->decaySeconds);
+                $newGagal = (int) ($pengguna->jumlah_gagal_login ?? 0) + 1;
+                $updateData = ['jumlah_gagal_login' => $newGagal];
+
+                if ($newGagal >= $this->maxAttempts) {
+                    $lockUntil = now()->addSeconds($this->decaySeconds);
+                    $updateData['terkunci_sampai'] = $lockUntil;
+
+                    Log::warning('Akun Siswa dikunci 60 detik karena 5 kali salah PIN berturut-turut', [
+                        'username' => $pengguna->username,
+                        'role' => 'Siswa',
+                        'jumlah_gagal' => $newGagal,
+                        'terkunci_sampai' => $lockUntil->toDateTimeString(),
+                        'ip_address' => $request->ip(),
+                    ]);
+
+                    DB::table('pengguna')->where('id_pengguna', $pengguna->id_pengguna)->update($updateData);
+
+                    $pesanLock = "Yah, kamu sudah 5 kali salah memasukkan PIN. Akunmu dikunci sementara selama 60 detik ya. Jangan cemas, istirahat dulu atau minta bantuan Ayah/Bunda!";
+                    if ($request->expectsJson() || $request->is('api/*')) {
+                        return response()->json(['success' => false, 'message' => $pesanLock], 429);
+                    }
+                    return back()->withErrors(['username' => $pesanLock])->withInput($request->except(['password', 'pin']));
+                }
+
+                DB::table('pengguna')->where('id_pengguna', $pengguna->id_pengguna)->update($updateData);
+
+                $sisa = $this->maxAttempts - $newGagal;
+                Log::warning('Percobaan login siswa gagal: PIN salah', [
+                    'username' => $pengguna->username,
+                    'role' => 'Siswa',
+                    'jumlah_gagal' => $newGagal,
+                    'sisa_percobaan' => $sisa,
+                    'ip_address' => $request->ip(),
+                ]);
+
+                $pesanSalah = "Oops! PIN yang kamu masukkan kurang pas nih. Masih ada {$sisa} kesempatan lagi ya. Yuk coba lagi pelan-pelan!";
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json(['success' => false, 'message' => $pesanSalah], 422);
+                }
+                return back()->withErrors(['username' => $pesanSalah])->withInput($request->except(['password', 'pin']));
+            }
+
+            // B. Pengecekan Status [Gagal]: Tolak siswa berstatus Non-Aktif / Alumni meskipun PIN benar
             if ($siswaRecord && $siswaRecord->status_siswa === 'Non_Aktif_Alumni') {
                 Log::warning('Login siswa ditolak: status siswa Non-Aktif / Alumni', [
                     'username' => $pengguna->username,
@@ -286,112 +337,62 @@ class LoginController extends Controller
                 return back()->withErrors(['username' => $pesanNonAktif])->withInput($request->except(['password', 'pin']));
             }
 
-            // B. Verifikasi PIN Angka Siswa berbasis hash
-            $isPinValid = Hash::check($password, $pengguna->password_hash);
-            if (!$isPinValid && $siswaRecord && !empty($siswaRecord->pin_hash)) {
-                $isPinValid = Hash::check($password, $siswaRecord->pin_hash);
-            }
-
             // C. Jika Login Siswa Berhasil
-            if ($isPinValid) {
-                DB::table('pengguna')->where('id_pengguna', $pengguna->id_pengguna)->update([
-                    'jumlah_gagal_login' => 0,
-                    'terkunci_sampai' => null,
-                ]);
-                RateLimiter::clear($throttleKey);
+            DB::table('pengguna')->where('id_pengguna', $pengguna->id_pengguna)->update([
+                'jumlah_gagal_login' => 0,
+                'terkunci_sampai' => null,
+            ]);
+            RateLimiter::clear($throttleKey);
 
-                $displayName = $siswaRecord?->nama_panggilan ?? $siswaRecord?->nama_lengkap ?? ucfirst($pengguna->username);
-                $user = User::updateOrCreate(
-                    ['username' => $pengguna->username],
-                    [
-                        'name' => $displayName,
-                        'email' => $pengguna->username . '@siswa.raccer.com',
-                        'password' => $pengguna->password_hash,
-                        'role' => 'Siswa',
-                    ]
-                );
-
-                Auth::login($user, false);
-                $request->session()->put('role', 'Siswa');
-                $request->session()->put('id_pengguna', $pengguna->id_pengguna);
-                $request->session()->put('id_siswa', $siswaRecord?->id_siswa);
-                $request->session()->put('id_keluarga', $siswaRecord?->id_keluarga);
-                $request->session()->put('nama_siswa', $siswaRecord?->nama_lengkap ?? $displayName);
-                $request->session()->put('nama_panggilan', $displayName);
-                $request->session()->put('jenjang', $siswaRecord?->jenjang ?? 'SD');
-                $request->session()->put('kelas', $siswaRecord?->kelas ?? '1');
-                $request->session()->put('program', $siswaRecord?->program ?? 'Junior Robotics');
-                $request->session()->put('status_siswa', $siswaRecord?->status_siswa ?? 'Aktif');
-                $request->session()->put('login_at', now()->timestamp);
-                $request->session()->put('last_activity_time', now()->timestamp);
-                $request->session()->regenerate();
-
-                Log::info('Siswa berhasil login', [
-                    'id_siswa' => $siswaRecord?->id_siswa,
-                    'username' => $user->username,
-                    'nama' => $displayName,
+            $displayName = $siswaRecord?->nama_panggilan ?? $siswaRecord?->nama_lengkap ?? ucfirst($pengguna->username);
+            $user = User::updateOrCreate(
+                ['username' => $pengguna->username],
+                [
+                    'name' => $displayName,
+                    'email' => $pengguna->username . '@siswa.raccer.com',
+                    'password' => $pengguna->password_hash,
                     'role' => 'Siswa',
-                    'ip_address' => $request->ip(),
-                ]);
+                ]
+            );
 
-                if ($request->expectsJson() || $request->is('api/*')) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => "Hore! Selamat datang di kelas robotika, {$displayName}! 🤖🚀",
-                        'redirect' => route('siswa.beranda'),
-                        'user' => [
-                            'username' => $user->username,
-                            'name' => $displayName,
-                            'role' => 'Siswa',
-                        ],
-                    ]);
-                }
+            Auth::login($user, false);
+            $request->session()->put('role', 'Siswa');
+            $request->session()->put('id_pengguna', $pengguna->id_pengguna);
+            $request->session()->put('id_siswa', $siswaRecord?->id_siswa);
+            $request->session()->put('id_keluarga', $siswaRecord?->id_keluarga);
+            $request->session()->put('nama_siswa', $siswaRecord?->nama_lengkap ?? $displayName);
+            $request->session()->put('nama_panggilan', $displayName);
+            $request->session()->put('avatar', $request->input('avatar', '🤖'));
+            $request->session()->put('jenjang', $siswaRecord?->jenjang ?? 'SD');
+            $request->session()->put('kelas', $siswaRecord?->kelas ?? '1');
+            $request->session()->put('program', $siswaRecord?->program ?? 'Junior Robotics');
+            $request->session()->put('status_siswa', $siswaRecord?->status_siswa ?? 'Aktif');
+            $request->session()->put('login_at', now()->timestamp);
+            $request->session()->put('last_activity_time', now()->timestamp);
+            $request->session()->regenerate();
 
-                return redirect()->route('siswa.beranda')->with('success', "Hore! Selamat datang di kelas robotika, {$displayName}! 🤖🚀");
-            }
-
-            // D. Jika PIN Siswa Salah [Gagal]: Catat gagal, tampilkan pesan ramah anak, & kunci setelah 5 kali
-            RateLimiter::hit($throttleKey, $this->decaySeconds);
-            $newGagal = (int) ($pengguna->jumlah_gagal_login ?? 0) + 1;
-            $updateData = ['jumlah_gagal_login' => $newGagal];
-
-            if ($newGagal >= $this->maxAttempts) {
-                $lockUntil = now()->addSeconds($this->decaySeconds);
-                $updateData['terkunci_sampai'] = $lockUntil;
-
-                Log::warning('Akun Siswa dikunci 60 detik karena 5 kali salah PIN berturut-turut', [
-                    'username' => $pengguna->username,
-                    'role' => 'Siswa',
-                    'jumlah_gagal' => $newGagal,
-                    'terkunci_sampai' => $lockUntil->toDateTimeString(),
-                    'ip_address' => $request->ip(),
-                ]);
-
-                DB::table('pengguna')->where('id_pengguna', $pengguna->id_pengguna)->update($updateData);
-
-                $pesanLock = "Yah, kamu sudah 5 kali salah memasukkan PIN. Akunmu dikunci sementara selama 60 detik ya. Jangan cemas, istirahat dulu atau minta bantuan Ayah/Bunda!";
-                if ($request->expectsJson() || $request->is('api/*')) {
-                    return response()->json(['success' => false, 'message' => $pesanLock], 429);
-                }
-                return back()->withErrors(['username' => $pesanLock])->withInput($request->except(['password', 'pin']));
-            }
-
-            DB::table('pengguna')->where('id_pengguna', $pengguna->id_pengguna)->update($updateData);
-
-            $sisa = $this->maxAttempts - $newGagal;
-            Log::warning('Percobaan login siswa gagal: PIN salah', [
-                'username' => $pengguna->username,
+            Log::info('Siswa berhasil login', [
+                'id_siswa' => $siswaRecord?->id_siswa,
+                'username' => $user->username,
+                'nama' => $displayName,
                 'role' => 'Siswa',
-                'jumlah_gagal' => $newGagal,
-                'sisa_percobaan' => $sisa,
                 'ip_address' => $request->ip(),
             ]);
 
-            $pesanSalah = "Oops! PIN yang kamu masukkan kurang pas nih. Masih ada {$sisa} kesempatan lagi ya. Yuk coba lagi pelan-pelan!";
             if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['success' => false, 'message' => $pesanSalah], 422);
+                return response()->json([
+                    'success' => true,
+                    'message' => "Hore! Selamat datang di kelas robotika, {$displayName}! 🤖🚀",
+                    'redirect' => route('siswa.beranda'),
+                    'user' => [
+                        'username' => $user->username,
+                        'name' => $displayName,
+                        'role' => 'Siswa',
+                    ],
+                ]);
             }
-            return back()->withErrors(['username' => $pesanSalah])->withInput($request->except(['password', 'pin']));
+
+            return redirect()->route('siswa.beranda')->with('success', "Hore! Selamat datang di kelas robotika, {$displayName}! 🤖🚀");
         }
 
         $isPasswordValid = false;
@@ -839,9 +840,9 @@ class LoginController extends Controller
                     'nama' => 'Kenzo Pratama',
                     'nama_wali' => 'Wali: Ibu Ratna',
                     'program' => 'Junior Robotics',
-                    'jenis_paket' => 'Bulanan',
-                    'paket_belajar' => 'Junior Robotics · Bulanan (8 Sesi)',
-                    'total_sesi' => 8,
+                    'jenis_paket' => 'Semester',
+                    'paket_belajar' => 'Junior Robotics · Semester (12 Sesi)',
+                    'total_sesi' => 12,
                     'sesi_terpakai' => 3,
                     'status_paket' => 'Aktif',
                     'status_pembayaran' => 'Lunas',

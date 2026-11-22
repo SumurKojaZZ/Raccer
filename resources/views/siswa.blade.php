@@ -290,8 +290,8 @@
         <section class="hero-student-card">
             <div class="row align-items-center">
                 <div class="col-auto">
-                    <div class="avatar-robot-box" title="Avatar Robot Kamu">
-                        🤖
+                    <div class="avatar-robot-box" title="Avatar Kamu">
+                        {{ session('avatar') ?? '🤖' }}
                     </div>
                 </div>
                 <div class="col mt-3 mt-sm-0">

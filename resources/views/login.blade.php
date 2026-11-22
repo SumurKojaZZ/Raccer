@@ -645,6 +645,7 @@
                         @csrf
                         <input type="hidden" name="login_mode" value="siswa">
                         <input type="hidden" name="username" id="siswaUsername" value="{{ $oldStudentUsername }}">
+                        <input type="hidden" name="avatar" id="siswaAvatarInput" value="{{ $selectedStudentAvatar }}">
                         <input type="hidden" name="password" id="siswaPinInput" value="">
                         <input type="hidden" name="pin" id="siswaPinAliasInput" value="">
 
@@ -860,6 +861,8 @@
         function selectSiswaProfile(username, displayName, emoji, bg, border) {
             document.getElementById('siswaUsername').value = username;
             document.getElementById('selectedAvatarName').textContent = displayName;
+            const inputAvatar = document.getElementById('siswaAvatarInput');
+            if (inputAvatar) inputAvatar.value = emoji;
             const avatarEl = document.getElementById('selectedAvatarIcon');
             if (avatarEl) {
                 avatarEl.textContent = emoji;
