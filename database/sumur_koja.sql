@@ -304,13 +304,6 @@ CREATE TABLE `sessions` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dumping data for table `sessions`
---
-
-INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('xpEtf9e6CIoUOAlzq5VjExkBwOHWKDBDNpFYdrna', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0', 'eyJfdG9rZW4iOiJJQ3Jhc1dnNHZHRGxIQndtREltVnN6c1luTGx2Y25zNDlpRlJibmVZIiwiX3ByZXZpb3VzIjp7InVybCI6Imh0dHA6XC9cL3JhY2Nlci50ZXN0XC9sb2dpbiIsInJvdXRlIjoibG9naW4ifSwiX2ZsYXNoIjp7Im9sZCI6W10sIm5ldyI6W119fQ==', 1793597677);
-
--- --------------------------------------------------------
 
 --
 -- Table structure for table `siswa`
